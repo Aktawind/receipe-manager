@@ -1,0 +1,100 @@
+name: CI
+
+# Vérifie chaque PR et chaque envoi sur develop, puis publie l'APK de test
+# dans la pré-version « develop-latest » (lien de téléchargement fixe).
+on:
+  pull_request:
+    paths-ignore: ["docs/**", "**.md"]
+  push:
+    branches: [develop]
+    paths-ignore: ["docs/**", "**.md"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Analyse et tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+      - run: dart format --output=none --set-exit-if-changed lib test
+      - run: flutter analyze
+      - run: flutter test
+
+  apk:
+    name: APK de test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+        with:
+          android: "true"
+
+      - name: Clé de signature
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::Secrets de signature absents : APK signé avec une clé de debug (pas de mise à jour possible par-dessus)."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      # arm64 uniquement : c'est l'architecture de tous les appareils récents,
+      # et ça divise le temps de compilation.
+      - name: Compilation
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          flutter build apk --release --flavor dev \
+            --target-platform android-arm64 --split-per-abi \
+            --build-number=${{ github.run_number }}
+          mv build/app/outputs/flutter-apk/app-arm64-v8a-dev-release.apk recettes-test.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: recettes-test-${{ github.run_number }}
+          path: recettes-test.apk
+          retention-days: 14
+
+  publish:
+    name: Publier la version de test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: [check, apk]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
+        with:
+          name: recettes-test-${{ github.run_number }}
+      - name: Mettre à jour la pré-version develop-latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git tag -f develop-latest
+          git push -f origin develop-latest
+          notes="Dernière version de test (develop), compilation n°${{ github.run_number }}, commit ${GITHUB_SHA::7}.
+
+          Installe « Recettes (test) » à côté de l'application principale, sans toucher à tes données.
+
+          Changements : https://github.com/${{ github.repository }}/commits/develop"
+          if gh release view develop-latest >/dev/null 2>&1; then
+            gh release edit develop-latest --prerelease --title "Version de test (develop)" --notes "$notes"
+          else
+            gh release create develop-latest --prerelease --title "Version de test (develop)" --notes "$notes" --verify-tag
+          fi
+          gh release upload develop-latest recettes-test.apk --clobber
