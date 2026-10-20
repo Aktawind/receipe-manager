@@ -1,0 +1,29 @@
+name: Préparer Flutter
+description: Installe Java, Flutter et Gradle avec leurs caches.
+inputs:
+  android:
+    description: Préparer aussi la compilation Android (Java + cache Gradle).
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - if: inputs.android == 'true'
+      uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        java-version: "21"
+
+    - if: inputs.android == 'true'
+      uses: gradle/actions/setup-gradle@v5
+      with:
+        # Le cache n'est enregistré que depuis develop et main (les PR le lisent).
+        cache-read-only: ${{ github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main' }}
+
+    - uses: subosito/flutter-action@v2
+      with:
+        flutter-version-file: pubspec.yaml
+        channel: stable
+        cache: true
+
+    - shell: bash
+      run: flutter pub get

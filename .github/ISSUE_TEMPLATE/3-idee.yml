@@ -1,0 +1,15 @@
+name: 💡 Idée
+description: Une nouvelle idée, à placer dans la roadmap
+labels: [idée]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: L'idée
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Importance pour toi
+      options: [Indispensable, Important, Bonus]
