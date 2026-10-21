@@ -28,6 +28,9 @@ téléphone et tablette. Nom provisoire : « Recettes ».
 - Couleurs via `Theme.of(context).colorScheme` uniquement (`docs/design/palette.md`).
 - Ne jamais committer de clé de signature (`*.jks`, `key.properties`).
 - Ne pas changer `applicationId` (sinon ce n'est plus la même application).
+- Garder `android.builtInKotlin=true` (AGP 9) : sinon le Kotlin de certains plugins n'est pas
+  compilé et l'app reste bloquée au démarrage. La CI le vérifie (`tools/check_apk_plugins.sh`).
+  Après l'ajout d'un plugin, vérifier qu'il n'applique pas lui-même `kotlin-android`.
 
 ## Commandes
 ```bash

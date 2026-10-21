@@ -51,6 +51,9 @@ jobs:
             --build-name="$VERSION" --build-number="$VERSION_CODE"
           mv build/app/outputs/flutter-apk/app-prod-release.apk "recettes-$VERSION.apk"
 
+      - name: Vérifier que tous les plugins sont dans l'APK
+        run: tools/check_apk_plugins.sh prodRelease
+
       - name: Publier la release
         env:
           GH_TOKEN: ${{ github.token }}
