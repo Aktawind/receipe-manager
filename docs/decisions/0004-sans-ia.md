@@ -8,6 +8,6 @@ accompagnements, recommandations, génération de menus, mode improvisation) rep
 règles, des tables de données et des algorithmes déterministes. Une fonction impossible sans IA
 est abandonnée ou simplifiée (voir la fin de `docs/ROADMAP.md`).
 
-## Point ouvert
-L'OCR sur l'appareil (Google ML Kit, hors ligne) pour l'import de photos en 0.9 est de la
-reconnaissance de caractères. Il faudra confirmer qu'il est accepté avant la 0.9.
+## Précision (2026-10-21)
+L'OCR sur l'appareil (Google ML Kit, hors ligne, aucune donnée envoyée) est **accepté** pour
+l'import de photos en 0.9 : c'est de la reconnaissance de caractères, pas de l'IA générative.
