@@ -7,5 +7,12 @@
 # shared_preferences_android (bindings JNI, méthodes suspend)
 -keep class io.flutter.plugins.sharedpreferences.** { *; }
 
-# Les signatures JNI des méthodes suspend mentionnent Continuation : son nom doit rester intact.
+# Classes Kotlin que la bibliothèque jni (package:jni) charge par leur nom pour appeler les
+# méthodes suspend. Liste obtenue en cherchant les noms de classes JNI dans le code Dart des
+# dépendances (voir CLAUDE.md, section R8).
+-keep class kotlin.Unit { *; }
+-keep class kotlin.Result { *; }
+-keep class kotlin.Result$Failure { *; }
 -keep class kotlin.coroutines.Continuation { *; }
+-keep class kotlin.coroutines.intrinsics.IntrinsicsKt { *; }
+-keep class kotlin.coroutines.intrinsics.CoroutineSingletons { *; }
