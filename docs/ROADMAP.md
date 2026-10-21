@@ -7,7 +7,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 
 | Version | Thème | Statut |
 |---|---|---|
-| [0.0](#00--fondations) | Fondations | 🟨 |
+| [0.0](#00--fondations) | Fondations | 🟦 |
 | [0.1](#01--saisir-ses-recettes-et-les-sauvegarder) | Saisir ses recettes et les sauvegarder | ⬜ |
 | [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | ⬜ |
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ⬜ |
@@ -23,7 +23,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ⬜ |
 | [1.1 → 1.6](#après-la-10--fonctions-différenciantes) | Fonctions différenciantes et foyer partagé | ⬜ |
 
-L'ordre est une proposition : il est pensé pour que tu puisses **utiliser l'app au quotidien le
+Roadmap validée le 2026-10-21. L'ordre est pensé pour que tu puisses **utiliser l'app au quotidien le
 plus tôt possible** (dès la 0.2 avec tes recettes Recipe Keeper) et ne jamais risquer tes données
 (sauvegarde dès la 0.1, synchronisation en 0.4). On peut permuter les versions après la 0.4 selon
 tes priorités.
@@ -220,9 +220,8 @@ avion puis reconnecter ; modifier la même recette sur les deux appareils.
 - Reconnaissance des ingrédients et des étapes, extraction de la photo principale par recadrage
 - Correction des erreurs avant import
 
-> ⚠️ À trancher : l'OCR de ML Kit est de la reconnaissance de caractères, pas une IA générative,
-> et rien ne sort du téléphone. Je pense qu'il respecte ta règle « pas d'IA », mais c'est toi qui
-> décides.
+> ✅ Validé le 2026-10-21 : l'OCR sur l'appareil (ML Kit, hors ligne) est accepté
+> ([décision 0004](decisions/0004-sans-ia.md)).
 
 ## 0.10 — Listes de courses
 
