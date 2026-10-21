@@ -20,8 +20,18 @@ Future<void> main() async {
         child: const RecettesApp(),
       ),
     );
+    _logAfterFirstFrame(startupOkMarker);
   } catch (error, stackTrace) {
     // Without this, a startup failure leaves the app stuck on the splash screen.
     runApp(StartupErrorApp(error: error, stackTrace: stackTrace));
+    _logAfterFirstFrame('$startupFailedMarker $error');
   }
+}
+
+/// Startup markers read from logcat by the CI smoke test (tools/smoke_test.sh).
+const startupOkMarker = 'RECETTES_STARTUP_OK';
+const startupFailedMarker = 'RECETTES_STARTUP_FAILED';
+
+void _logAfterFirstFrame(String message) {
+  WidgetsBinding.instance.addPostFrameCallback((_) => debugPrint(message));
 }

@@ -54,6 +54,11 @@ jobs:
       - name: Vérifier que tous les plugins sont dans l'APK
         run: tools/check_apk_plugins.sh prodRelease
 
+      - uses: ./.github/actions/emulator-smoke-test
+        with:
+          apk: recettes-${{ env.VERSION }}.apk
+          package: io.github.aktawind.recettes
+
       - name: Publier la release
         env:
           GH_TOKEN: ${{ github.token }}

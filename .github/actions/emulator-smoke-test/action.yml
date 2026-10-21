@@ -1,0 +1,50 @@
+name: Test de démarrage sur émulateur
+description: Installe l'APK sur un émulateur Android et vérifie que l'app affiche son premier écran.
+inputs:
+  apk:
+    description: Chemin de l'APK (doit contenir x86_64)
+    required: true
+  package:
+    description: Identifiant de l'application
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Activer KVM
+      shell: bash
+      run: |
+        echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger --name-match=kvm
+
+    - name: Cache de l'émulateur
+      id: avd-cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.android/avd/*
+          ~/.android/adb*
+        key: avd-api35-google_apis-x86_64-v1
+
+    - name: Créer l'émulateur
+      if: steps.avd-cache.outputs.cache-hit != 'true'
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 35
+        target: google_apis
+        arch: x86_64
+        force-avd-creation: false
+        emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        disable-animations: false
+        script: echo "Émulateur prêt"
+
+    - name: Lancer l'application
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 35
+        target: google_apis
+        arch: x86_64
+        force-avd-creation: false
+        emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        disable-animations: true
+        script: ${{ github.workspace }}/tools/smoke_test.sh ${{ inputs.apk }} ${{ inputs.package }}
