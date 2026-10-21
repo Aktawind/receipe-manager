@@ -50,8 +50,8 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
-      # arm64 uniquement : c'est l'architecture de tous les appareils récents,
-      # et ça divise le temps de compilation.
+      # arm64 : l'APK publié (tous les appareils récents).
+      # x86_64 : uniquement pour le test de démarrage sur émulateur.
       - name: Compilation
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -59,23 +59,45 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           flutter build apk --release --flavor dev \
-            --target-platform android-arm64 --split-per-abi \
+            --target-platform android-arm64,android-x64 --split-per-abi \
             --build-number=${{ github.run_number }}
           mv build/app/outputs/flutter-apk/app-arm64-v8a-dev-release.apk recettes-test.apk
+          mv build/app/outputs/flutter-apk/app-x86_64-dev-release.apk recettes-test-x86_64.apk
 
       - name: Vérifier que tous les plugins sont dans l'APK
         run: tools/check_apk_plugins.sh devRelease
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: recettes-test-${{ github.run_number }}
           path: recettes-test.apk
           retention-days: 14
 
+      - uses: actions/upload-artifact@v5
+        with:
+          name: recettes-test-x86_64-${{ github.run_number }}
+          path: recettes-test-x86_64.apk
+          retention-days: 3
+
+  smoke:
+    name: Démarrage sur émulateur
+    needs: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
+        with:
+          name: recettes-test-x86_64-${{ github.run_number }}
+      - uses: ./.github/actions/emulator-smoke-test
+        with:
+          apk: recettes-test-x86_64.apk
+          package: io.github.aktawind.recettes.dev
+
   publish:
     name: Publier la version de test
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-    needs: [check, apk]
+    needs: [check, apk, smoke]
     runs-on: ubuntu-latest
     permissions:
       contents: write

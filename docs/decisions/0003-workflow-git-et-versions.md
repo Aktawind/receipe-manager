@@ -37,3 +37,9 @@ Les deux s'installent côte à côte : une version de test ne peut jamais abîme
   releases.
 - Les modifications de documentation seule ne déclenchent pas de compilation.
 - Une nouvelle compilation annule la précédente sur la même branche.
+
+## Test de démarrage
+Chaque APK (test et release) est installé et lancé sur un émulateur Android (API 35) avant
+publication : l'app doit afficher son premier écran sans erreur. Cela ajoute quelques minutes à la
+CI, mais évite de publier un APK qui ne démarre pas (les erreurs liées à R8 n'existent qu'en
+release et échappent aux tests unitaires).

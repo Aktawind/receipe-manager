@@ -33,6 +33,12 @@ téléphone et tablette. Nom provisoire : « Recettes ».
   présent dans l'APK (`tools/check_apk_plugins.sh`).
 - Rien d'asynchrone qui puisse échouer avant `runApp` sans être rattrapé : une erreur à ce
   moment-là laisse l'app figée sur l'écran de lancement (voir `lib/main.dart`).
+- R8 (mode complet, AGP 9) supprime les méthodes appelées seulement par JNI (plugins à bindings
+  jnigen, ex. `shared_preferences_android`) : ajouter les règles `-keep` nécessaires dans
+  `android/app/proguard-rules.pro` quand on ajoute un tel plugin. Pour trouver les classes
+  chargées par nom : `grep -rhoE "'(kotlin|androidx|io/flutter)/[A-Za-z0-9_/$]+'" <plugin>/lib`.
+- La CI lance chaque APK sur un émulateur (`tools/smoke_test.sh`) : un APK qui ne démarre pas
+  n'est jamais publié. Les tests unitaires ne voient pas ces problèmes (pas de R8 en test).
 
 ## Commandes
 ```bash
