@@ -42,6 +42,10 @@ class RecipeDetailPage extends ConsumerWidget {
 
 enum _MenuAction { duplicate, delete }
 
+/// Hauteur de la barre système (navigation Android) à ne pas recouvrir.
+double _bottomInset(BuildContext context) =>
+    MediaQuery.paddingOf(context).bottom;
+
 String _capitalize(String text) =>
     text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 
@@ -194,7 +198,12 @@ class _RecipeDetail extends ConsumerWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+              padding: EdgeInsets.fromLTRB(
+                20,
+                0,
+                20,
+                40 + _bottomInset(context),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -243,7 +252,12 @@ class _RecipeDetail extends ConsumerWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    20,
+                    20,
+                    40 + _bottomInset(context),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -258,7 +272,12 @@ class _RecipeDetail extends ConsumerWidget {
           const VerticalDivider(width: 1),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(32, 12, 32, 40),
+              padding: EdgeInsets.fromLTRB(
+                32,
+                12,
+                32,
+                40 + _bottomInset(context),
+              ),
               children: [
                 Align(
                   alignment: Alignment.centerRight,
@@ -276,8 +295,6 @@ class _RecipeDetail extends ConsumerWidget {
 
   List<Widget> _secondarySections(BuildContext context, WidgetRef ref) {
     return [
-      if (recipe.description.trim().isNotEmpty)
-        _DescriptionSection(recipe: recipe),
       _NotesSection(recipe: recipe, onEdit: () => _edit(context)),
       _AboutSection(recipe: recipe, onCooked: () => _markCooked(context, ref)),
     ];
@@ -365,34 +382,6 @@ class _CircleButton extends StatelessWidget {
 Color _tint(BuildContext context) =>
     Theme.of(context).colorScheme.primary.withValues(alpha: 0.08);
 
-/// « Prêt en 12 h environ, dont 10 h de repos », ou `null` s'il n'y a rien
-/// d'utile à ajouter aux cartes de temps.
-String? _readyIn(AppLocalizations l10n, Recipe recipe) {
-  final total = recipe.totalMinutes;
-  final given = [
-    recipe.prepMinutes,
-    recipe.cookMinutes,
-    recipe.restMinutes,
-  ].nonNulls.length;
-  if (total == null || given < 2) return null;
-
-  var minutes = total;
-  var approximate = false;
-  if (total >= 120) {
-    final rounded = (total / 15).round() * 15;
-    approximate = rounded != total;
-    minutes = rounded;
-  }
-  final duration = formatMinutes(l10n, minutes);
-  final ready = approximate
-      ? l10n.readyInApprox(duration)
-      : l10n.readyIn(duration);
-  final rest = recipe.restMinutes;
-  return rest == null || rest == 0
-      ? ready
-      : '$ready${l10n.ofWhichRest(formatMinutes(l10n, rest))}';
-}
-
 class _Header extends StatelessWidget {
   const _Header({required this.recipe});
 
@@ -410,7 +399,6 @@ class _Header extends StatelessWidget {
       (Icons.local_fire_department_outlined, l10n.cookTime, recipe.cookMinutes),
       (Icons.bedtime_outlined, l10n.restTime, recipe.restMinutes),
     ].where((t) => t.$3 != null).toList();
-    final ready = _readyIn(l10n, recipe);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,6 +410,17 @@ class _Header extends StatelessWidget {
             height: 1.15,
           ),
         ),
+        if (recipe.description.trim().isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Text(
+            recipe.description.trim(),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontStyle: FontStyle.italic,
+              height: 1.4,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
         if (times.isNotEmpty) ...[
           const SizedBox(height: 16),
           Row(
@@ -437,15 +436,6 @@ class _Header extends StatelessWidget {
                 ),
               ],
             ],
-          ),
-        ],
-        if (ready != null) ...[
-          const SizedBox(height: 10),
-          Text(
-            ready,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
           ),
         ],
         if (recipe.servings case final servings?) ...[
@@ -587,10 +577,6 @@ class _IngredientsSection extends StatelessWidget {
         );
         continue;
       }
-      // Un trait entre deux ingrédients, pas après un titre de groupe.
-      if (index > 0 && !lines[index - 1].isSection) {
-        children.add(const Divider(height: 1, thickness: 0.5));
-      }
       children.add(
         _IngredientRow(line: line, optionalLabel: l10n.optionalIngredient),
       );
@@ -617,7 +603,7 @@ class _IngredientRow extends StatelessWidget {
     final noteOnRight = amount.isEmpty && line.note.isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -731,28 +717,6 @@ class _StepsSection extends StatelessWidget {
               ],
             ),
           ),
-      ],
-    );
-  }
-}
-
-class _DescriptionSection extends StatelessWidget {
-  const _DescriptionSection({required this.recipe});
-
-  final Recipe recipe;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(l10n.descriptionTitle),
-        Text(
-          recipe.description,
-          style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
-        ),
       ],
     );
   }

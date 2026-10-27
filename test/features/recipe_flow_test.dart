@@ -75,6 +75,8 @@ Pour la pâte :
     await settle(tester);
     await scrollTo(tester, find.text('Cuire dans une poêle chaude.'));
     expect(find.text('Pour la pâte'), findsOneWidget);
+    // Pas de trait entre les ingrédients : seul le titre de groupe en a un.
+    expect(find.byType(Divider), findsOneWidget);
     expect(find.text('Farine'), findsOneWidget);
     expect(find.text('250 g'), findsOneWidget);
     expect(find.text('2 c. à soupe'), findsOneWidget);
@@ -95,6 +97,7 @@ Pour la pâte :
       await app.services.recipes.save(
         created.copyWith(
           title: 'Entremets',
+          description: 'Un entremets en trois textures.',
           prepMinutes: () => 90,
           cookMinutes: () => 25,
           restMinutes: () => 600,
@@ -115,11 +118,19 @@ Pour la pâte :
     expect(find.text('1 h 30'), findsOneWidget);
     expect(find.text('25 min'), findsOneWidget);
     expect(find.text('10 h'), findsOneWidget);
-    expect(
-      find.text('Prêt en 12 h environ, dont 10 h de repos'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Prêt en'), findsNothing);
     expect(find.text('8 pers.'), findsOneWidget);
+
+    // La description est juste sous le titre, en italique, avant les temps.
+    final description = find.text('Un entremets en trois textures.');
+    expect(description, findsOneWidget);
+    expect(tester.widget<Text>(description).style?.fontStyle, FontStyle.italic);
+    final titleY = tester.getBottomLeft(find.text('Entremets').first).dy;
+    expect(tester.getTopLeft(description).dy, greaterThanOrEqualTo(titleY));
+    expect(
+      tester.getBottomLeft(description).dy,
+      lessThan(tester.getTopLeft(find.text('Cuisson')).dy),
+    );
 
     await scrollTo(tester, find.text('Cuire 25 minutes.'));
     expect(find.text('BISCUIT'), findsOneWidget);

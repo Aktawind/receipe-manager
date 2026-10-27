@@ -279,7 +279,14 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
       body: recipe == null
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 48),
+              // Marge du bas : la barre de navigation Android ne doit pas
+              // recouvrir la fin du formulaire.
+              padding: EdgeInsets.fromLTRB(
+                16,
+                8,
+                16,
+                48 + MediaQuery.paddingOf(context).bottom,
+              ),
               children: [
                 _PhotoField(
                   photo: _photo,
@@ -305,15 +312,43 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                   minLines: 3,
                 ),
                 _Heading(l10n.sectionInfo),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+                Row(
                   children: [
-                    _NumberField(_servings, l10n.fieldServings),
-                    _NumberField(_prep, l10n.fieldPrepMinutes),
-                    _NumberField(_cook, l10n.fieldCookMinutes),
-                    _NumberField(_rest, l10n.fieldRestMinutes),
-                    _NumberField(_timesCooked, l10n.fieldTimesCooked),
+                    Expanded(
+                      child: _NumberField(_servings, l10n.fieldServings),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _NumberField(_timesCooked, l10n.fieldTimesCooked),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _NumberField(
+                        _prep,
+                        l10n.fieldPrepMinutes,
+                        suffix: l10n.minutesUnit,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _NumberField(
+                        _cook,
+                        l10n.fieldCookMinutes,
+                        suffix: l10n.minutesUnit,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _NumberField(
+                        _rest,
+                        l10n.fieldRestMinutes,
+                        suffix: l10n.minutesUnit,
+                      ),
+                    ),
                   ],
                 ),
                 _Heading(l10n.fieldIngredients),
@@ -321,7 +356,6 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                   key: const ValueKey('field-ingredients'),
                   controller: _ingredients,
                   hint: l10n.ingredientsHint,
-                  help: l10n.ingredientsHelp,
                   minLines: 8,
                   capitalization: TextCapitalization.none,
                 ),
@@ -330,7 +364,6 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                   key: const ValueKey('field-steps'),
                   controller: _steps,
                   hint: l10n.stepsHint,
-                  help: l10n.stepsHelp,
                   minLines: 8,
                 ),
                 _Heading(l10n.fieldNotes),
@@ -382,7 +415,6 @@ class _BigField extends StatelessWidget {
     required this.minLines,
     this.label,
     this.hint,
-    this.help,
     this.capitalization = TextCapitalization.sentences,
   });
 
@@ -390,20 +422,13 @@ class _BigField extends StatelessWidget {
   final int minLines;
   final String? label;
   final String? hint;
-  final String? help;
   final TextCapitalization capitalization;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (help != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(help!, style: theme.textTheme.bodySmall),
-          ),
         TextField(
           controller: controller,
           minLines: minLines,
@@ -416,7 +441,6 @@ class _BigField extends StatelessWidget {
             hintText: hint,
             hintMaxLines: 6,
             alignLabelWithHint: true,
-            border: const OutlineInputBorder(),
           ),
         ),
       ],
@@ -425,21 +449,19 @@ class _BigField extends StatelessWidget {
 }
 
 class _NumberField extends StatelessWidget {
-  const _NumberField(this.controller, this.label);
+  const _NumberField(this.controller, this.label, {this.suffix});
 
   final TextEditingController controller;
   final String label;
+  final String? suffix;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 160,
-      child: TextField(
-        controller: controller,
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: InputDecoration(labelText: label),
-      ),
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      decoration: InputDecoration(labelText: label, suffixText: suffix),
     );
   }
 }
