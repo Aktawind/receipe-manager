@@ -36,7 +36,6 @@
       }
     }
   },
-  "devBuildBadge": "Version de test",
   "startupErrorTitle": "Démarrage impossible",
   "startupErrorMessage": "L'application n'a pas pu démarrer. Copie le détail ci-dessous et colle-le dans un ticket « Bug » sur GitHub.",
   "copyDetails": "Copier le détail",

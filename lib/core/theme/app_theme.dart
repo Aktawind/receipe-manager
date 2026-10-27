@@ -55,11 +55,22 @@ abstract final class AppTheme {
         backgroundColor: scheme.tertiary,
         foregroundColor: scheme.onTertiary,
       ),
+      // The selected tab sits on a butter-yellow indicator in both themes, so
+      // its icon must use the dark "on" color, not the theme's default.
       navigationBarTheme: NavigationBarThemeData(
         indicatorColor: scheme.tertiaryContainer,
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? scheme.onTertiaryContainer
+                : scheme.onSurfaceVariant,
+          ),
+        ),
       ),
       navigationRailTheme: NavigationRailThemeData(
         indicatorColor: scheme.tertiaryContainer,
+        selectedIconTheme: IconThemeData(color: scheme.onTertiaryContainer),
+        unselectedIconTheme: IconThemeData(color: scheme.onSurfaceVariant),
       ),
     );
   }
