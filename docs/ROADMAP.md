@@ -8,7 +8,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | Version | Thème | Statut |
 |---|---|---|
 | [0.0](#00--fondations) | Fondations | ✅ |
-| [0.1](#01--saisir-ses-recettes-et-les-sauvegarder) | Saisir ses recettes et les sauvegarder | 🟨 |
+| [0.1](#01--saisir-ses-recettes-et-les-sauvegarder) | Saisir ses recettes et les sauvegarder | ✅ |
 | [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | ⬜ |
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ⬜ |
 | [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ⬜ |
@@ -54,25 +54,25 @@ Premier usage réel : créer des recettes sans jamais risquer de les perdre.
 *Création et édition*
 - Créer, modifier, dupliquer, supprimer une recette (suppression → corbeille, restaurable 30 jours)
 - Enregistrement automatique des modifications (pas de bouton « Enregistrer » à oublier)
-- Titre, description, photo principale (appareil photo ou galerie, compressée + miniature)
-- Source (texte libre ou URL), date d'ajout automatique
-- Notes personnelles, astuces
+- Titre, description (champ long), photo principale carrée (appareil photo ou galerie, compressée)
+- Source (texte libre ou lien cliquable, y compris vidéo), date d'ajout automatique
+- Notes personnelles (un seul champ « Notes »)
 - Nombre de portions
 - Temps de préparation, de cuisson et de repos
 - Nombre de fois réalisée (compteur)
 
 *Ingrédients*
+- **Coller toute la liste d'un coup** (depuis un site ou une IA), une ligne par ingrédient, analysée automatiquement
 - Nom, quantité, unité (liste d'unités courantes + saisie libre)
 - Ingrédient facultatif
 - Ingrédients sans quantité précise (« une pincée », « selon le goût »)
 - Groupes d'ingrédients (« Pour la pâte », « Pour la sauce »)
-- Réordonner par glisser-déposer
 
 *Étapes*
-- Instructions numérotées, réordonner par glisser-déposer
+- **Coller toute la préparation d'un coup**, numérotée ou non ; titres de parties (« Biscuit », « Montage »)
 
 *Consultation*
-- Liste des recettes (vue liste et vue grille), fiche recette lisible, recherche simple par titre
+- Liste des recettes (vue liste et vue grille), fiche recette soignée (grande photo, temps, ingrédients en deux colonnes, étapes numérotées), recherche simple par titre
 
 *Données et sauvegarde*
 - Base de données locale, fonctionnement 100 % hors ligne
