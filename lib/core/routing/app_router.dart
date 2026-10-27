@@ -3,20 +3,66 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/home/home_shell.dart';
 import '../../features/planning/planning_page.dart';
+import '../../features/recipes/recipe_detail_page.dart';
+import '../../features/recipes/recipe_editor_page.dart';
 import '../../features/recipes/recipes_page.dart';
 import '../../features/settings/settings_page.dart';
+import '../../features/settings/trash_page.dart';
 import '../../features/shopping/shopping_page.dart';
 
+final _rootKey = GlobalKey<NavigatorState>();
+
 GoRouter buildRouter() => GoRouter(
+  navigatorKey: _rootKey,
   initialLocation: '/recettes',
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => HomeShell(navigationShell: shell),
       branches: [
-        _branch('/recettes', const RecipesPage()),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/recettes',
+              builder: (context, state) => const RecipesPage(),
+              routes: [
+                // Fiche et éditeur en plein écran, au-dessus de la navigation.
+                GoRoute(
+                  path: ':id',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) =>
+                      RecipeDetailPage(recipeId: state.pathParameters['id']!),
+                  routes: [
+                    GoRoute(
+                      path: 'modifier',
+                      parentNavigatorKey: _rootKey,
+                      builder: (context, state) => RecipeEditorPage(
+                        recipeId: state.pathParameters['id']!,
+                        isNew: state.uri.queryParameters['nouvelle'] == '1',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
         _branch('/planning', const PlanningPage()),
         _branch('/courses', const ShoppingPage()),
-        _branch('/reglages', const SettingsPage()),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/reglages',
+              builder: (context, state) => const SettingsPage(),
+              routes: [
+                GoRoute(
+                  path: 'corbeille',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const TrashPage(),
+                ),
+              ],
+            ),
+          ],
+        ),
       ],
     ),
   ],

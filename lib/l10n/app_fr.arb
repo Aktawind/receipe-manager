@@ -39,5 +39,249 @@
   "startupErrorTitle": "Démarrage impossible",
   "startupErrorMessage": "L'application n'a pas pu démarrer. Copie le détail ci-dessous et colle-le dans un ticket « Bug » sur GitHub.",
   "copyDetails": "Copier le détail",
-  "copied": "Copié"
+  "copied": "Copié",
+  "untitledRecipe": "Sans titre",
+  "recipesEmptyHint": "Appuie sur « Nouvelle recette » pour ajouter ta première recette, ou importe une sauvegarde depuis les Réglages.",
+  "newRecipe": "Nouvelle recette",
+  "searchRecipes": "Rechercher une recette",
+  "search": "Rechercher",
+  "closeSearch": "Fermer la recherche",
+  "noSearchResults": "Aucune recette ne correspond à « {query} »",
+  "@noSearchResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "viewAsGrid": "Afficher en grille",
+  "viewAsList": "Afficher en liste",
+  "edit": "Modifier",
+  "duplicate": "Dupliquer",
+  "delete": "Supprimer",
+  "duplicateSuffix": " (copie)",
+  "recipeDuplicated": "Recette dupliquée",
+  "recipeMovedToTrash": "« {title} » est dans la corbeille",
+  "@recipeMovedToTrash": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "undo": "Annuler",
+  "servingsCount": "{count, plural, =1{1 portion} other{{count} portions}}",
+  "@servingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "minutesShort": "{minutes} min",
+  "@minutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursMinutesShort": "{hours} h {minutes}",
+  "@hoursMinutesShort": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "hoursShort": "{hours} h",
+  "@hoursShort": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "prepTime": "Préparation",
+  "cookTime": "Cuisson",
+  "restTime": "Repos",
+  "totalTime": "Total",
+  "ingredients": "Ingrédients",
+  "steps": "Étapes",
+  "tips": "Astuces",
+  "notes": "Notes personnelles",
+  "source": "Source",
+  "addedOn": "Ajoutée le {date}",
+  "@addedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "timesCooked": "{count, plural, =0{Jamais réalisée} =1{Réalisée 1 fois} other{Réalisée {count} fois}}",
+  "@timesCooked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "iCookedThis": "J'ai fait cette recette",
+  "cookedCountIncremented": "C'est noté : réalisée {count} fois",
+  "@cookedCountIncremented": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "optionalIngredient": "facultatif",
+  "recipeNotFound": "Cette recette n'existe plus",
+  "editorTitleNew": "Nouvelle recette",
+  "editorTitleEdit": "Modifier la recette",
+  "saving": "Enregistrement…",
+  "saved": "Enregistré",
+  "fieldTitle": "Titre",
+  "fieldDescription": "Description",
+  "fieldServings": "Portions",
+  "fieldPrepMinutes": "Préparation (min)",
+  "fieldCookMinutes": "Cuisson (min)",
+  "fieldRestMinutes": "Repos (min)",
+  "fieldTimesCooked": "Nombre de fois réalisée",
+  "fieldSource": "Source (livre, site, personne…)",
+  "fieldNotes": "Notes personnelles",
+  "fieldTips": "Astuces",
+  "sectionInfo": "Informations",
+  "sectionMore": "Notes et source",
+  "ingredientHint": "ex. 200 g de farine",
+  "ingredientsHelp": "Une ligne par ingrédient : « 200 g de farine », « sel, selon le goût », « 50 g de noix (facultatif) ». Termine une ligne par « : » pour un titre de groupe (« Pour la pâte : »).",
+  "addIngredient": "Ajouter un ingrédient",
+  "addStep": "Ajouter une étape",
+  "stepHint": "Décris l'étape",
+  "stepNumber": "Étape {number}",
+  "@stepNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "removeLine": "Retirer",
+  "reorder": "Déplacer",
+  "addPhoto": "Ajouter une photo",
+  "changePhoto": "Changer la photo",
+  "takePhoto": "Prendre une photo",
+  "chooseFromGallery": "Choisir dans la galerie",
+  "removePhoto": "Retirer la photo",
+  "photoError": "Impossible d'ajouter la photo : {error}",
+  "@photoError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidNumber": "Nombre entier attendu",
+  "settingsData": "Données",
+  "trash": "Corbeille",
+  "trashSubtitle": "Les recettes supprimées restent 30 jours",
+  "trashEmpty": "La corbeille est vide",
+  "trashInfo": "Les recettes sont supprimées définitivement 30 jours après leur mise à la corbeille.",
+  "deletedOn": "Supprimée le {date}",
+  "@deletedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "restore": "Restaurer",
+  "recipeRestored": "« {title} » est restaurée",
+  "@recipeRestored": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteForever": "Supprimer définitivement",
+  "deleteForeverConfirm": "Supprimer définitivement « {title} » ? Cette action est irréversible.",
+  "@deleteForeverConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyTrash": "Vider la corbeille",
+  "emptyTrashConfirm": "Supprimer définitivement {count, plural, =1{la recette} other{les {count} recettes}} de la corbeille ? Cette action est irréversible.",
+  "@emptyTrashConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cancel": "Annuler",
+  "exportBackup": "Exporter une sauvegarde",
+  "exportBackupSubtitle": "Toutes les recettes et leurs photos, dans un fichier ZIP",
+  "shareBackup": "Partager une sauvegarde",
+  "shareBackupSubtitle": "Envoyer le fichier vers Drive, un mail…",
+  "importBackup": "Importer une sauvegarde",
+  "importBackupSubtitle": "Depuis un fichier ZIP exporté par l'app",
+  "backupSaved": "Sauvegarde enregistrée",
+  "backupFailed": "La sauvegarde a échoué : {error}",
+  "@backupFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "importTitle": "Importer la sauvegarde",
+  "importSummary": "{count, plural, =0{Ce fichier ne contient aucune recette.} =1{Ce fichier contient 1 recette.} other{Ce fichier contient {count} recettes.}}",
+  "@importSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importMerge": "Fusionner",
+  "importMergeHelp": "Ajoute les nouvelles recettes et met à jour celles modifiées plus récemment dans le fichier. Rien n'est supprimé.",
+  "importReplace": "Remplacer tout",
+  "importReplaceHelp": "Supprime toutes tes recettes actuelles et les remplace par celles du fichier.",
+  "importReplaceConfirm": "Toutes tes recettes actuelles seront remplacées. Une sauvegarde automatique est faite avant. Continuer ?",
+  "importSafetyNote": "Une sauvegarde automatique de tes recettes actuelles est faite juste avant l'import.",
+  "importDone": "Import terminé : {added} ajoutée(s), {updated} mise(s) à jour, {unchanged} inchangée(s)",
+  "@importDone": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      },
+      "unchanged": {
+        "type": "int"
+      }
+    }
+  },
+  "importErrorNotABackup": "Ce fichier n'est pas une sauvegarde de l'application.",
+  "importErrorNewerVersion": "Cette sauvegarde vient d'une version plus récente de l'application. Mets l'application à jour pour l'importer.",
+  "importErrorInvalid": "Cette sauvegarde est abîmée ou incomplète. Rien n'a été importé.",
+  "importErrorMissingPhoto": "Une photo manque dans la sauvegarde. Rien n'a été importé.",
+  "importFailed": "L'import a échoué, tes recettes n'ont pas été modifiées : {error}",
+  "@importFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "continueLabel": "Continuer"
 }

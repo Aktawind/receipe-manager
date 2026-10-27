@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/settings/theme_mode_controller.dart';
 import '../../l10n/app_localizations.dart';
+import '../recipes/recipe_providers.dart';
+import 'backup_actions.dart';
 
 final _packageInfoProvider = FutureProvider<PackageInfo>(
   (ref) => PackageInfo.fromPlatform(),
@@ -17,6 +20,7 @@ class SettingsPage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final themeMode = ref.watch(themeModeProvider);
     final info = ref.watch(_packageInfoProvider).value;
+    final trashCount = ref.watch(trashProvider).value?.length ?? 0;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.navSettings)),
@@ -50,6 +54,32 @@ class SettingsPage extends ConsumerWidget {
                 }
               },
             ),
+          ),
+          _SectionTitle(l10n.settingsData),
+          ListTile(
+            leading: const Icon(Icons.save_alt),
+            title: Text(l10n.exportBackup),
+            subtitle: Text(l10n.exportBackupSubtitle),
+            onTap: () => BackupActions(context, ref).export(),
+          ),
+          ListTile(
+            leading: const Icon(Icons.share_outlined),
+            title: Text(l10n.shareBackup),
+            subtitle: Text(l10n.shareBackupSubtitle),
+            onTap: () => BackupActions(context, ref).share(),
+          ),
+          ListTile(
+            leading: const Icon(Icons.upload_file),
+            title: Text(l10n.importBackup),
+            subtitle: Text(l10n.importBackupSubtitle),
+            onTap: () => BackupActions(context, ref).import(),
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_outline),
+            title: Text(l10n.trash),
+            subtitle: Text(l10n.trashSubtitle),
+            trailing: trashCount == 0 ? null : Badge.count(count: trashCount),
+            onTap: () => context.push('/reglages/corbeille'),
           ),
           _SectionTitle(l10n.settingsAbout),
           ListTile(

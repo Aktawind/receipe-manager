@@ -24,7 +24,12 @@ téléphone et tablette. Nom provisoire : « Recettes ».
 
 ## Règles non négociables
 - **Ne jamais perdre de données** : toute modification du schéma passe par une migration Drift
-  testée ; l'import/export doit rester compatible avec les anciennes versions du format.
+  testée ; l'import/export doit rester compatible avec les anciennes versions du format
+  (`docs/FORMAT_EXPORT.md`).
+- Schéma Drift (`lib/data/database.dart`) : après modification, incrémenter
+  `latestSchemaVersion`, écrire la migration, puis `dart run build_runner build` et
+  `dart run drift_dev make-migrations` (instantané dans `drift_schemas/`, tests générés dans
+  `test/data/generated_migrations/`). Le code généré (`*.g.dart`) est versionné.
 - Modèle de données prêt pour la synchro : UUID, date de modification, suppression douce.
 - Toute chaîne visible passe par `lib/l10n/app_fr.arb` (jamais de texte en dur dans les widgets).
 - Couleurs via `Theme.of(context).colorScheme` uniquement (`docs/design/palette.md`).
@@ -45,6 +50,7 @@ téléphone et tablette. Nom provisoire : « Recettes ».
 ## Commandes
 ```bash
 flutter pub get            # génère aussi lib/l10n/app_localizations*.dart (non versionnés)
+dart run build_runner build   # après une modification de lib/data/database.dart
 dart format lib test       # la CI refuse le code non formaté
 flutter analyze
 flutter test
@@ -59,11 +65,20 @@ Les variantes `dev` et `prod` sont obligatoires pour `flutter build/run` (`--fla
   429) dans l'environnement cloud : la CI GitHub est alors la référence pour la compilation
   Android. Analyse et tests fonctionnent en local.
 
+## Tests
+- Tests de widgets : `test/helpers/test_app.dart` fournit une app complète sur une base en
+  mémoire. Tout appel direct à la base depuis un test de widget passe par `tester.runAsync`
+  (sinon le test bloque), et `settle()` remplace `pumpAndSettle()` (qui rend la main avant la fin
+  des requêtes). Les listes ne construisent que ce qui est visible : `scrollTo()`.
+- Un `SnackBar` avec action reste affiché indéfiniment par défaut : toujours `persist: false`.
+
 ## Structure
 ```
 lib/
   main.dart, app.dart
-  core/        thème, routage, réglages, widgets communs
+  core/        thème, routage, réglages, formats, widgets communs
+  domain/      modèle métier (Recipe, analyse des lignes d'ingrédients)
+  data/        base Drift, dépôt, photos, sauvegardes (backup/)
   features/    un dossier par fonctionnalité (recipes, planning, shopping, settings…)
   l10n/        traductions (app_fr.arb = modèle)
 test/          tests (mêmes dossiers que lib/)
