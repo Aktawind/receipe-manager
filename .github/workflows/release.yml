@@ -1,9 +1,17 @@
 name: Release
 
-# Déclenché par un tag vX.Y.Z posé sur main après validation d'une version.
+# Publie une version validée. Deux façons de la lancer :
+# - Actions → Release → « Run workflow » depuis main, avec le numéro (ex. 0.1.0) :
+#   le workflow pose lui-même le tag vX.Y.Z sur main ;
+# - ou en poussant un tag vX.Y.Z sur main.
 on:
   push:
     tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Numéro de version, sans le v (ex. 0.1.0)"
+        required: true
 
 permissions:
   contents: write
@@ -22,12 +30,27 @@ jobs:
       - run: flutter test
 
       - name: Version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              echo "::error::Une release se lance depuis main."
+              exit 1
+            fi
+            version="${INPUT_VERSION#v}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Numéro de version invalide : $version"
+            exit 1
+          fi
           IFS=. read -r major minor patch <<< "$version"
           # versionCode croissant : 0.4.2 -> 4002, 1.2.0 -> 1002000
           echo "VERSION=$version" >> "$GITHUB_ENV"
           echo "VERSION_CODE=$((major * 1000000 + minor * 1000 + patch))" >> "$GITHUB_ENV"
+          echo "TAG=v$version" >> "$GITHUB_ENV"
 
       - name: Clé de signature
         env:
@@ -65,5 +88,9 @@ jobs:
         run: |
           notes="docs/releases/v$VERSION.md"
           [ -f "$notes" ] || { echo "::error::Notes de version manquantes : $notes"; exit 1; }
-          gh release create "$GITHUB_REF_NAME" "recettes-$VERSION.apk" \
-            --title "v$VERSION" --notes-file "$notes" --verify-tag
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            git tag "$TAG" "$GITHUB_SHA"
+            git push origin "$TAG"
+          fi
+          gh release create "$TAG" "recettes-$VERSION.apk" \
+            --title "$TAG" --notes-file "$notes" --verify-tag

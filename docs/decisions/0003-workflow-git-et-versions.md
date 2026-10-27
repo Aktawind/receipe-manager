@@ -6,7 +6,9 @@
 - `main` : uniquement les versions validées, chacune taguée `vX.Y.Z`.
 - `develop` : intégration ; chaque envoi produit l'APK de test.
 - `claude/…` ou `feature/…` : travail en cours, fusionné dans `develop` par une PR dont la CI est verte.
-- Quand une version est validée : PR `develop` → `main`, puis tag sur `main`.
+- Quand une version est validée : PR `develop` → `main`, puis lancement du workflow « Release »
+  depuis `main` (Actions → Release → Run workflow, avec le numéro) : il pose le tag `vX.Y.Z` et
+  publie l'APK. Pousser le tag à la main fonctionne aussi.
 
 ## Numéros de version
 - Versions de la roadmap : `0.1` → tag `v0.1.0` ; corrections : `v0.1.1`… La 0.0 est taguée `v0.0.1`.
