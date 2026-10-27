@@ -79,7 +79,7 @@ Future<void> goBack(WidgetTester tester) async {
 Future<void> scrollTo(WidgetTester tester, Finder finder) async {
   await tester.dragUntilVisible(
     finder,
-    find.byType(CustomScrollView),
+    find.byType(Scrollable).first,
     const Offset(0, -250),
   );
   await tester.pump();

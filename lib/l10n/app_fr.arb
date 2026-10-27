@@ -111,9 +111,7 @@
   "totalTime": "Total",
   "ingredients": "Ingrédients",
   "steps": "Étapes",
-  "tips": "Astuces",
-  "notes": "Notes personnelles",
-  "source": "Source",
+  "notes": "Notes",
   "addedOn": "Ajoutée le {date}",
   "@addedOn": {
     "placeholders": {
@@ -152,26 +150,9 @@
   "fieldCookMinutes": "Cuisson (min)",
   "fieldRestMinutes": "Repos (min)",
   "fieldTimesCooked": "Nombre de fois réalisée",
-  "fieldSource": "Source (livre, site, personne…)",
-  "fieldNotes": "Notes personnelles",
-  "fieldTips": "Astuces",
+  "fieldSource": "Source (livre et page, site, lien…)",
+  "fieldNotes": "Notes",
   "sectionInfo": "Informations",
-  "sectionMore": "Notes et source",
-  "ingredientHint": "ex. 200 g de farine",
-  "ingredientsHelp": "Une ligne par ingrédient : « 200 g de farine », « sel, selon le goût », « 50 g de noix (facultatif) ». Termine une ligne par « : » pour un titre de groupe (« Pour la pâte : »).",
-  "addIngredient": "Ajouter un ingrédient",
-  "addStep": "Ajouter une étape",
-  "stepHint": "Décris l'étape",
-  "stepNumber": "Étape {number}",
-  "@stepNumber": {
-    "placeholders": {
-      "number": {
-        "type": "int"
-      }
-    }
-  },
-  "removeLine": "Retirer",
-  "reorder": "Déplacer",
   "addPhoto": "Ajouter une photo",
   "changePhoto": "Changer la photo",
   "takePhoto": "Prendre une photo",
@@ -185,7 +166,6 @@
       }
     }
   },
-  "invalidNumber": "Nombre entier attendu",
   "settingsData": "Données",
   "trash": "Corbeille",
   "trashSubtitle": "Les recettes supprimées restent 30 jours",
@@ -283,5 +263,55 @@
       }
     }
   },
-  "continueLabel": "Continuer"
+  "continueLabel": "Continuer",
+  "fieldNotesHint": "Astuces, variantes, ce que tu changerais la prochaine fois…",
+  "fieldDescriptionHint": "Quelques mots sur la recette : d'où elle vient, à quoi elle ressemble…",
+  "fieldIngredients": "Ingrédients",
+  "ingredientsHint": "200 g de farine\n2 œufs\n1 pincée de sel",
+  "ingredientsHelp": "Colle ta liste d'un coup ou saisis un ingrédient par ligne : « 200 g de farine », « 2 œufs », « sel, selon le goût ». Une ligne qui finit par « : » ou qui commence par « Pour » (« Pour la pâte ») est un titre de groupe.",
+  "fieldSteps": "Préparation",
+  "stepsHint": "Préchauffer le four à 180 °C.\nMélanger la farine et les œufs.\nCuire 30 minutes.",
+  "stepsHelp": "Colle toute la préparation d'un coup, ou saisis une étape par ligne. Les numéros (1., 2.) sont reconnus. Une ligne qui finit par « : » (« Biscuit : ») est un titre de partie.",
+  "sectionAbout": "À propos",
+  "sourceLabel": "SOURCE",
+  "sourceWebsite": "SOURCE · SITE WEB",
+  "sourceVideo": "SOURCE · VIDÉO",
+  "linkOpenFailed": "Impossible d'ouvrir ce lien",
+  "descriptionTitle": "Description",
+  "noteEmpty": "Aucune note pour l'instant.",
+  "addNote": "Ajouter une note",
+  "editNotes": "Modifier les notes",
+  "servingsLabel": "Nombre de personnes",
+  "personsShort": "{count} pers.",
+  "@personsShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "readyIn": "Prêt en {duration}",
+  "@readyIn": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "readyInApprox": "Prêt en {duration} environ",
+  "@readyInApprox": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "ofWhichRest": ", dont {duration} de repos",
+  "@ofWhichRest": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  }
 }

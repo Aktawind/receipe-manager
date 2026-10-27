@@ -11,6 +11,7 @@ import '../../data/photo_store.dart';
 import '../../data/recipe_repository.dart';
 import '../../domain/ingredient_text.dart';
 import '../../domain/recipe.dart';
+import '../../domain/step_text.dart';
 import '../../l10n/app_localizations.dart';
 import 'recipe_photo.dart';
 
@@ -35,22 +36,6 @@ class RecipeEditorPage extends ConsumerStatefulWidget {
 
 enum _SaveState { idle, saving, saved }
 
-/// Une ligne éditable (ingrédient ou étape) avec un identifiant stable.
-class _Line {
-  _Line(this.id, String text)
-    : controller = TextEditingController(text: text),
-      focusNode = FocusNode();
-
-  final String id;
-  final TextEditingController controller;
-  final FocusNode focusNode;
-
-  void dispose() {
-    controller.dispose();
-    focusNode.dispose();
-  }
-}
-
 class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
   late final RecipeRepository _repository;
   late final PhotoStore _photos;
@@ -65,9 +50,8 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
   final _timesCooked = TextEditingController();
   final _source = TextEditingController();
   final _notes = TextEditingController();
-  final _tips = TextEditingController();
-  final _ingredients = <_Line>[];
-  final _steps = <_Line>[];
+  final _ingredients = TextEditingController();
+  final _steps = TextEditingController();
   String? _photo;
   final _replacedPhotos = <String>{};
 
@@ -86,7 +70,8 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _timesCooked,
     _source,
     _notes,
-    _tips,
+    _ingredients,
+    _steps,
   ];
 
   @override
@@ -110,27 +95,13 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _timesCooked.text = recipe.timesCooked == 0 ? '' : '${recipe.timesCooked}';
     _source.text = recipe.source;
     _notes.text = recipe.notes;
-    _tips.text = recipe.tips;
     _photo = recipe.mainPhoto;
-    for (final line in recipe.ingredients) {
-      _ingredients.add(_watch(_Line(line.id, IngredientText.format(line))));
-    }
-    for (final step in recipe.steps) {
-      _steps.add(_watch(_Line(step.id, step.text)));
-    }
-    if (_ingredients.isEmpty) _ingredients.add(_watch(_newLine()));
-    if (_steps.isEmpty) _steps.add(_watch(_newLine()));
+    _ingredients.text = IngredientText.formatList(recipe.ingredients);
+    _steps.text = StepText.format(recipe.steps);
     for (final controller in _fieldControllers) {
       controller.addListener(_scheduleSave);
     }
     setState(() => _recipe = recipe);
-  }
-
-  _Line _newLine() => _Line(RecipeRepository.newId(), '');
-
-  _Line _watch(_Line line) {
-    line.controller.addListener(_scheduleSave);
-    return line;
   }
 
   void _scheduleSave() {
@@ -166,18 +137,15 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
       timesCooked: number(_timesCooked) ?? 0,
       source: _source.text.trim(),
       notes: _notes.text.trim(),
-      tips: _tips.text.trim(),
       mainPhoto: () => _photo,
-      ingredients: [
-        for (final line in _ingredients)
-          if (line.controller.text.trim().isNotEmpty)
-            IngredientText.parse(line.controller.text, id: line.id),
-      ],
-      steps: [
-        for (final line in _steps)
-          if (line.controller.text.trim().isNotEmpty)
-            RecipeStep(id: line.id, text: line.controller.text.trim()),
-      ],
+      ingredients: IngredientText.parseList(
+        _ingredients.text,
+        previousIds: [for (final line in base.ingredients) line.id],
+      ),
+      steps: StepText.parse(
+        _steps.text,
+        previousIds: [for (final step in base.steps) step.id],
+      ),
     );
   }
 
@@ -208,33 +176,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     for (final controller in _fieldControllers) {
       controller.dispose();
     }
-    for (final line in [..._ingredients, ..._steps]) {
-      line.dispose();
-    }
     super.dispose();
-  }
-
-  void _addLine(List<_Line> lines, {int? after}) {
-    final line = _watch(_newLine());
-    setState(
-      () => lines.insert(after == null ? lines.length : after + 1, line),
-    );
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => line.focusNode.requestFocus(),
-    );
-  }
-
-  void _removeLine(List<_Line> lines, int index) {
-    final line = lines.removeAt(index);
-    setState(() {});
-    // Disposed after the frame: the TextField may still be using it.
-    WidgetsBinding.instance.addPostFrameCallback((_) => line.dispose());
-    _scheduleSave();
-  }
-
-  void _reorder(List<_Line> lines, int oldIndex, int newIndex) {
-    setState(() => lines.insert(newIndex, lines.removeAt(oldIndex)));
-    _scheduleSave();
   }
 
   Future<void> _pickPhoto(ImageSource source) async {
@@ -336,103 +278,74 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
       ),
       body: recipe == null
           ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.all(16),
-                  sliver: SliverList.list(
-                    children: [
-                      _PhotoField(
-                        photo: _photo,
-                        onTap: _showPhotoMenu,
-                        label: _photo == null
-                            ? l10n.addPhoto
-                            : l10n.changePhoto,
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _title,
-                        autofocus: widget.isNew,
-                        textCapitalization: TextCapitalization.sentences,
-                        style: theme.textTheme.titleLarge,
-                        decoration: InputDecoration(labelText: l10n.fieldTitle),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _description,
-                        textCapitalization: TextCapitalization.sentences,
-                        minLines: 1,
-                        maxLines: 4,
-                        decoration: InputDecoration(
-                          labelText: l10n.fieldDescription,
-                        ),
-                      ),
-                      _Heading(l10n.sectionInfo),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          _NumberField(_servings, l10n.fieldServings),
-                          _NumberField(_prep, l10n.fieldPrepMinutes),
-                          _NumberField(_cook, l10n.fieldCookMinutes),
-                          _NumberField(_rest, l10n.fieldRestMinutes),
-                          _NumberField(_timesCooked, l10n.fieldTimesCooked),
-                        ],
-                      ),
-                      _Heading(l10n.ingredients),
-                      Text(
-                        l10n.ingredientsHelp,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ),
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 48),
+              children: [
+                _PhotoField(
+                  photo: _photo,
+                  onTap: _showPhotoMenu,
+                  label: _photo == null ? l10n.addPhoto : l10n.changePhoto,
                 ),
-                _LineList(
-                  lines: _ingredients,
-                  hint: l10n.ingredientHint,
-                  multiline: false,
-                  onSubmitted: (index) => _addLine(_ingredients, after: index),
-                  onRemove: (index) => _removeLine(_ingredients, index),
-                  onReorder: (a, b) => _reorder(_ingredients, a, b),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _title,
+                  autofocus: widget.isNew,
+                  textCapitalization: TextCapitalization.sentences,
+                  minLines: 1,
+                  maxLines: 3,
+                  style: theme.textTheme.titleLarge,
+                  decoration: InputDecoration(labelText: l10n.fieldTitle),
                 ),
-                _AddButton(
-                  label: l10n.addIngredient,
-                  onPressed: () => _addLine(_ingredients),
+                const SizedBox(height: 16),
+                _BigField(
+                  key: const ValueKey('field-description'),
+                  controller: _description,
+                  label: l10n.fieldDescription,
+                  hint: l10n.fieldDescriptionHint,
+                  minLines: 3,
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: SliverToBoxAdapter(child: _Heading(l10n.steps)),
+                _Heading(l10n.sectionInfo),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _NumberField(_servings, l10n.fieldServings),
+                    _NumberField(_prep, l10n.fieldPrepMinutes),
+                    _NumberField(_cook, l10n.fieldCookMinutes),
+                    _NumberField(_rest, l10n.fieldRestMinutes),
+                    _NumberField(_timesCooked, l10n.fieldTimesCooked),
+                  ],
                 ),
-                _LineList(
-                  lines: _steps,
-                  hint: l10n.stepHint,
-                  multiline: true,
-                  numbered: true,
-                  onRemove: (index) => _removeLine(_steps, index),
-                  onReorder: (a, b) => _reorder(_steps, a, b),
+                _Heading(l10n.fieldIngredients),
+                _BigField(
+                  key: const ValueKey('field-ingredients'),
+                  controller: _ingredients,
+                  hint: l10n.ingredientsHint,
+                  help: l10n.ingredientsHelp,
+                  minLines: 8,
+                  capitalization: TextCapitalization.none,
                 ),
-                _AddButton(
-                  label: l10n.addStep,
-                  onPressed: () => _addLine(_steps),
+                _Heading(l10n.fieldSteps),
+                _BigField(
+                  key: const ValueKey('field-steps'),
+                  controller: _steps,
+                  hint: l10n.stepsHint,
+                  help: l10n.stepsHelp,
+                  minLines: 8,
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 48),
-                  sliver: SliverList.list(
-                    children: [
-                      _Heading(l10n.sectionMore),
-                      _TextArea(_tips, l10n.fieldTips),
-                      const SizedBox(height: 12),
-                      _TextArea(_notes, l10n.fieldNotes),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _source,
-                        decoration: InputDecoration(
-                          labelText: l10n.fieldSource,
-                        ),
-                      ),
-                    ],
-                  ),
+                _Heading(l10n.fieldNotes),
+                _BigField(
+                  key: const ValueKey('field-notes'),
+                  controller: _notes,
+                  hint: l10n.fieldNotesHint,
+                  minLines: 3,
+                ),
+                _Heading(l10n.sectionAbout),
+                TextField(
+                  key: const ValueKey('field-source'),
+                  controller: _source,
+                  keyboardType: TextInputType.url,
+                  decoration: InputDecoration(labelText: l10n.fieldSource),
                 ),
               ],
             ),
@@ -460,6 +373,57 @@ class _Heading extends StatelessWidget {
   }
 }
 
+/// Un grand champ de texte multi-lignes, dans un encadré qui grandit avec le
+/// texte (descriptions, listes collées, notes).
+class _BigField extends StatelessWidget {
+  const _BigField({
+    super.key,
+    required this.controller,
+    required this.minLines,
+    this.label,
+    this.hint,
+    this.help,
+    this.capitalization = TextCapitalization.sentences,
+  });
+
+  final TextEditingController controller;
+  final int minLines;
+  final String? label;
+  final String? hint;
+  final String? help;
+  final TextCapitalization capitalization;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (help != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(help!, style: theme.textTheme.bodySmall),
+          ),
+        TextField(
+          controller: controller,
+          minLines: minLines,
+          maxLines: null,
+          keyboardType: TextInputType.multiline,
+          textCapitalization: capitalization,
+          textAlignVertical: TextAlignVertical.top,
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: hint,
+            hintMaxLines: 6,
+            alignLabelWithHint: true,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _NumberField extends StatelessWidget {
   const _NumberField(this.controller, this.label);
 
@@ -480,24 +444,7 @@ class _NumberField extends StatelessWidget {
   }
 }
 
-class _TextArea extends StatelessWidget {
-  const _TextArea(this.controller, this.label);
-
-  final TextEditingController controller;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      textCapitalization: TextCapitalization.sentences,
-      minLines: 2,
-      maxLines: null,
-      decoration: InputDecoration(labelText: label, alignLabelWithHint: true),
-    );
-  }
-}
-
+/// La photo telle qu'elle s'affichera partout : un carré.
 class _PhotoField extends StatelessWidget {
   const _PhotoField({
     required this.photo,
@@ -512,146 +459,34 @@ class _PhotoField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            RecipePhoto(photo: photo, decodeWidth: 1080, iconSize: 56),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(onTap: onTap),
-            ),
-            Positioned(
-              right: 12,
-              bottom: 12,
-              child: FilledButton.tonalIcon(
-                onPressed: onTap,
-                icon: const Icon(Icons.photo_camera_outlined),
-                label: Text(label),
-                style: FilledButton.styleFrom(
-                  backgroundColor: theme.colorScheme.tertiaryContainer,
-                  foregroundColor: theme.colorScheme.onTertiaryContainer,
+    final side = (MediaQuery.sizeOf(context).width - 32).clamp(0.0, 320.0);
+    return Center(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: SizedBox.square(
+          dimension: side,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              RecipePhoto(photo: photo, decodeWidth: 960, iconSize: 56),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(onTap: onTap),
+              ),
+              Positioned(
+                right: 12,
+                bottom: 12,
+                child: FilledButton.tonalIcon(
+                  onPressed: onTap,
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: Text(label),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: theme.colorScheme.tertiaryContainer,
+                    foregroundColor: theme.colorScheme.onTertiaryContainer,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LineList extends StatelessWidget {
-  const _LineList({
-    required this.lines,
-    required this.hint,
-    required this.multiline,
-    required this.onRemove,
-    required this.onReorder,
-    this.onSubmitted,
-    this.numbered = false,
-  });
-
-  final List<_Line> lines;
-  final String hint;
-  final bool multiline;
-  final bool numbered;
-  final void Function(int index)? onSubmitted;
-  final void Function(int index) onRemove;
-  final void Function(int oldIndex, int newIndex) onReorder;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return SliverReorderableList(
-      itemCount: lines.length,
-      onReorderItem: onReorder,
-      itemBuilder: (context, index) {
-        final line = lines[index];
-        return Material(
-          key: ValueKey(line.id),
-          color: theme.colorScheme.surface,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ReorderableDragStartListener(
-                  index: index,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Icon(
-                      Icons.drag_indicator,
-                      semanticLabel: l10n.reorder,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                if (numbered)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 14, right: 8),
-                    child: Text(
-                      '${index + 1}.',
-                      style: theme.textTheme.titleSmall,
-                    ),
-                  ),
-                Expanded(
-                  child: TextField(
-                    controller: line.controller,
-                    focusNode: line.focusNode,
-                    textCapitalization: TextCapitalization.sentences,
-                    minLines: 1,
-                    maxLines: multiline ? null : 1,
-                    keyboardType: multiline
-                        ? TextInputType.multiline
-                        : TextInputType.text,
-                    textInputAction: multiline
-                        ? TextInputAction.newline
-                        : TextInputAction.next,
-                    onSubmitted: onSubmitted == null
-                        ? null
-                        : (_) => onSubmitted!(index),
-                    decoration: InputDecoration(
-                      hintText: numbered ? l10n.stepNumber(index + 1) : hint,
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: l10n.removeLine,
-                  icon: const Icon(Icons.close),
-                  onPressed: () => onRemove(index),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _AddButton extends StatelessWidget {
-  const _AddButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      sliver: SliverToBoxAdapter(
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: onPressed,
-            icon: const Icon(Icons.add),
-            label: Text(label),
+            ],
           ),
         ),
       ),

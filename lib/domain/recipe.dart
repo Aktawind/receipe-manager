@@ -12,7 +12,6 @@ class Recipe {
     this.description = '',
     this.source = '',
     this.notes = '',
-    this.tips = '',
     this.servings,
     this.prepMinutes,
     this.cookMinutes,
@@ -31,7 +30,6 @@ class Recipe {
   final String description;
   final String source;
   final String notes;
-  final String tips;
   final int? servings;
   final int? prepMinutes;
   final int? cookMinutes;
@@ -59,7 +57,6 @@ class Recipe {
       description.trim().isEmpty &&
       source.trim().isEmpty &&
       notes.trim().isEmpty &&
-      tips.trim().isEmpty &&
       servings == null &&
       prepMinutes == null &&
       cookMinutes == null &&
@@ -73,7 +70,6 @@ class Recipe {
     String? description,
     String? source,
     String? notes,
-    String? tips,
     ValueGetter<int?>? servings,
     ValueGetter<int?>? prepMinutes,
     ValueGetter<int?>? cookMinutes,
@@ -92,7 +88,6 @@ class Recipe {
       description: description ?? this.description,
       source: source ?? this.source,
       notes: notes ?? this.notes,
-      tips: tips ?? this.tips,
       servings: servings != null ? servings() : this.servings,
       prepMinutes: prepMinutes != null ? prepMinutes() : this.prepMinutes,
       cookMinutes: cookMinutes != null ? cookMinutes() : this.cookMinutes,
@@ -158,15 +153,22 @@ class IngredientLine {
 
 @immutable
 class RecipeStep {
-  const RecipeStep({required this.id, this.text = ''});
+  const RecipeStep({required this.id, this.title = '', this.text = ''});
 
   final String id;
+
+  /// Titre optionnel de la partie (« Biscuit », « Montage »), affiché au-dessus
+  /// de l'étape.
+  final String title;
   final String text;
 
   @override
   bool operator ==(Object other) =>
-      other is RecipeStep && other.id == id && other.text == text;
+      other is RecipeStep &&
+      other.id == id &&
+      other.title == title &&
+      other.text == text;
 
   @override
-  int get hashCode => Object.hash(id, text);
+  int get hashCode => Object.hash(id, title, text);
 }

@@ -29,9 +29,15 @@ téléphone et tablette. Nom provisoire : « Recettes ».
 - Schéma Drift (`lib/data/database.dart`) : après modification, incrémenter
   `latestSchemaVersion`, écrire la migration, puis `dart run build_runner build` et
   `dart run drift_dev make-migrations` (instantané dans `drift_schemas/`, tests générés dans
-  `test/data/generated_migrations/`). Le code généré (`*.g.dart`) est versionné.
+  `test/data/generated_migrations/`). Le code généré (`*.g.dart`, `database.steps.dart`) est
+  versionné. Chaque migration a un test avec de vraies données (modèle : `test/data/migration_v2_test.dart`)
+  et une évolution du format de sauvegarde (`BackupFormat.currentVersion`) en garde la lecture de l'ancien.
+- Les listes d'ingrédients et la préparation se saisissent en un seul champ de texte, analysé par
+  `IngredientText` et `StepText` (`lib/domain/`). Toute évolution des règles de lecture s'accompagne
+  de tests (`test/domain/`) avec des textes réalistes (sites de cuisine, sorties d'IA).
 - Modèle de données prêt pour la synchro : UUID, date de modification, suppression douce.
 - Toute chaîne visible passe par `lib/l10n/app_fr.arb` (jamais de texte en dur dans les widgets).
+- Les photos de recette s'affichent toujours en carré (`BoxFit.cover`, centré).
 - Couleurs via `Theme.of(context).colorScheme` uniquement (`docs/design/palette.md`).
 - Ne jamais committer de clé de signature (`*.jks`, `key.properties`).
 - Ne pas changer `applicationId` (sinon ce n'est plus la même application).
