@@ -1,0 +1,483 @@
+# Liste des fonctionnalités souhaitées
+
+> Document de référence fourni au lancement du projet. La répartition par version est dans [ROADMAP.md](ROADMAP.md).
+
+- Application de gestion de recettes
+  - Catalogue de recettes
+    - Création et édition
+      - Créer une recette manuellement
+      - Modifier une recette
+      - Dupliquer une recette
+      - Supprimer une recette
+      - Enregistrer automatiquement les modifications
+      - Ajouter un titre
+      - Ajouter une description
+      - Ajouter une photo principale
+      - Ajouter plusieurs photos
+      - Ajouter des liens URL vers des vidéos
+      - Enregistrer la source
+      - Enregistrer la date d'ajout (auto)
+      - Ajouter des notes personnelles
+      - Ajouter des astuces
+      - Définir le nombre de portions
+      - Indiquer le nombre de fois que la recette a été réalisée 
+    - Ingrédients
+      - Nom de l'ingrédient
+      - Quantité avec unité de mesure
+      - Ingrédient facultatif
+      - Réordonner les ingrédients
+      - Définir des substitutions possibles
+      - Gérer les ingrédients sans quantité précise
+        - Une pincée
+        - Selon le goût
+      - Gérer les ingrédients composés
+        - Pâte préparée à l'avance
+        - Sauce préparée à l'avance
+    - Étapes de préparation
+      - Ajouter des instructions numérotées
+      - Réordonner les étapes
+      - Mettre en forme le texte
+      - Déclencher un minuteur depuis une étape
+      - Gérer les temps de repos
+      - Gérer les étapes parallèles
+      - Ajouter les temps de préparation
+      - Ajouter les temps de cuisson
+      - Ajouter les temps de repos
+      - Ajouter le matériel nécessaire
+      - Ajouter des conseils
+  - Organisation et classement
+    - Catégories
+      - Entrées
+      - Plats
+      - Desserts
+      - Boissons
+      - Pains
+      - Sauces
+      - Créer des sous-catégories
+      - Personnaliser les catégories
+      - Personnaliser les icônes des catégories
+      - Personnaliser les couleurs des catégories
+      - Fusionner des catégories en doublon
+    - Collections personnalisées
+      - Mes recettes de Noël
+      - Recettes à tester
+      - Goûters de la famille
+      - Ajouter une recette à plusieurs collections
+      - Réordonner les recettes d'une collection
+      - Créer des collections personnalisées 
+    - Favoris
+      - Ajouter une recette aux favoris
+      - Retirer une recette des favoris
+      - Accéder rapidement aux favoris
+    - Étiquettes et tags
+      - Rapide
+      - Économique
+      - Végétarien
+      - Batch cooking
+      - Créer des tags personnalisés
+      - Fusionner des tags en doublon
+    - Classements complémentaires
+      - Origine culinaire
+        - Française
+        - Italienne
+        - Japonaise
+        - Méditerranéenne
+      - Type de repas
+        - Petit-déjeuner
+        - Déjeuner
+        - Goûter
+        - Dîner
+      - Occasion
+        - Anniversaire
+        - Pique-nique
+        - Repas de fête
+        - Repas du quotidien
+      - Saison
+        - Printemps
+        - Été
+        - Automne
+        - Hiver
+      - Statut de la recette
+        - À tester
+        - Validée
+        - À améliorer
+      - Afficher les recettes récemment consultées
+      - Afficher les recettes ajoutées récemment
+  - Recherche et filtres
+    - Recherche textuelle
+      - Rechercher par titre
+      - Rechercher par ingrédient
+      - Rechercher dans les instructions
+      - Rechercher dans les notes
+      - Tolérer les fautes de frappe
+    - Recherche par ingrédients
+      - Recettes contenant tous les ingrédients sélectionnés
+      - Recettes contenant au moins un ingrédient sélectionné
+      - Exclure certains ingrédients
+      - Rechercher avec plusieurs ingrédients
+      - Rechercher les recettes utilisant les ingrédients disponibles
+    - Filtres
+      - Temps total
+      - Temps de préparation
+      - Temps de cuisson
+      - Saison
+      - Matériel disponible
+      - Statut de la recette
+      - Collection
+      - Combiner plusieurs filtres
+    - Tri des résultats
+      - Date d'ajout
+      - Durée
+      - Nombre de fois réalisée 
+    - Historique des recherches
+    - Enregistrer des recherches fréquentes
+  - Importation de recettes
+    - Import depuis Internet
+      - Coller une URL de recette
+      - Extraire automatiquement le titre
+      - Extraire les ingrédients et quantités
+      - Extraire les étapes
+      - Extraire la photo principale
+      - Extraire les temps de préparation et cuisson
+      - Afficher un aperçu avant importation
+      - Corriger les données extraites
+      - Conserver l'URL source
+      - Gérer les sites incompatibles
+      - Gérer les pages protégées
+      - Gérer les erreurs d'extraction
+    - Import depuis des images et documents
+      - Photographier une recette dans un livre
+      - Scanner une fiche papier
+      - Reconnaître le texte par OCR
+      - Importer un PDF
+      - Importer un document
+      - Importer une capture d'écran
+      - Reconnaître les ingrédients
+      - Reconnaître les étapes
+      - Extraire la photo principale 
+      - Corriger les erreurs de reconnaissance
+      - Gérer plusieurs pages pour une recette
+      - Coller du texte brut
+      - Détecter les doublons à l'importation
+      - Importer les commentaires ou notes si disponibles
+  - Ajustement des quantités
+    - Modifier le nombre de portions
+    - Recalculer proportionnellement les quantités
+    - Proposer des nombres de portions courants
+      - 2 portions
+      - 4 portions
+      - 6 portions
+      - 8 portions
+      - 12 portions
+    - Saisir un nombre de portions personnalisé
+    - Adapter les quantités à un poids final
+    - Convertir les portions en poids ou volume lorsque les données le permettent
+    - Arrondir intelligemment les quantités
+    - Gérer les œufs
+    - Gérer les sachets
+    - Gérer les boîtes
+    - Gérer les unités indivisibles
+    - Ajuster séparément les préparations et garnitures
+    - Afficher les quantités originales et ajustées
+    - Signaler les ingrédients nécessitant un ajustement manuel
+    - Ne pas multiplier automatiquement le temps de cuisson
+    - Tenir compte des limites liées à la levure, aux épices, au sel et aux moules
+  - Conversions et unités
+    - Grammes
+    - Kilogrammes
+    - Millilitres
+    - Litres
+    - Cuillères à café
+    - Cuillères à soupe
+    - Tasses et cups
+    - Pièces
+    - Tranches
+    - Gousses
+    - Bottes
+    - Sachets
+    - Convertir entre unités compatibles
+    - Système métrique
+    - Système impérial
+    - Convertir Celsius et Fahrenheit
+    - Convertir les dimensions des moules
+    - Utiliser les densités propres aux ingrédients
+    - Configurer les unités par utilisateur
+    - Gérer les fractions
+      - Un demi
+      - Un quart
+      - Un tiers
+    - Arrondir selon les balances et ustensiles courants
+    - Distinguer les conversions exactes des conversions dépendant de l'ingrédient
+  - Listes de courses
+    - Ajouter un produit manuellement
+    - Ajouter les ingrédients d'une recette
+    - Ajouter les ingrédients de plusieurs recettes
+    - Fusionner les ingrédients identiques
+    - Additionner les quantités nécessaires
+    - Distinguer les unités incompatibles
+    - Cocher les produits achetés
+    - Supprimer des éléments
+    - Déplacer des éléments
+    - Regrouper par rayon
+      - Fruits et légumes
+      - Produits frais
+      - Épicerie
+      - Surgelés
+    - Organiser par magasin
+    - Ajouter un format
+    - Ajouter un commentaire
+    - Définir une quantité à acheter différente de la quantité théorique
+    - Partager la liste avec le foyer
+    - Conserver plusieurs listes
+      - Liste de la semaine
+      - Liste par magasin
+      - Liste pour un événement
+    - Réutiliser une ancienne liste
+    - Exporter la liste
+    - Imprimer la liste
+    - Partager la liste
+  - Planification des repas
+    - Vue par jour
+    - Vue par semaine
+    - Vue par mois
+    - Créneaux de repas
+      - Petit-déjeuner
+      - Déjeuner
+      - Goûter
+      - Dîner
+    - Glisser-déposer des recettes dans le calendrier
+    - Affecter une recette à plusieurs jours
+    - Planifier les repas de toute la famille
+    - Définir le nombre de personnes par repas
+    - Planifier les restes pour le lendemain
+    - Créer des menus thématiques
+    - Réutiliser une semaine type
+    - Dupliquer un planning
+    - Proposer un menu selon les recettes disponibles
+    - Répartir les repas selon le temps disponible
+    - Prévoir les repas à préparer à l'avance
+    - Signaler les ingrédients à utiliser rapidement
+    - Afficher les recettes non testées
+    - Planifier les repas des vacances
+    - Planifier les repas d'occasions spéciales
+    - Générer la liste de courses du planning
+    - Générer des menus sous contraintes
+      - Respecter un temps de préparation
+      - Respecter les préférences alimentaires
+      - Prévoir le nombre de repas demandé
+      - Éviter trop de répétitions
+  - Personnalisation et suivi des recettes
+    - Noter une recette de 1 à 5 étoiles
+    - Ajouter un commentaire après réalisation
+    - Enregistrer la date de dernière réalisation
+    - Compter le nombre de réalisations
+    - Ajouter des photos du résultat
+    - Identifier les recettes préférées du foyer
+    - Marquer les recettes approuvées par la famille
+    - Marquer une recette à refaire prochainement
+    - Suivre les recettes à tester
+    - Historique des modifications
+  - Aide intelligente et recommandations
+    - Assistant culinaire
+      - Proposer des recettes avec des ingrédients disponibles
+      - Suggérer des substitutions
+      - Proposer des accompagnements
+      - Aider à utiliser les restes
+    - Recommandations personnalisées
+      - Tenir compte des recettes appréciées
+      - Varier les menus
+      - Recommander des recettes saisonnières
+      - Identifier les recettes oubliées
+  - Partage et gestion du foyer
+    - Créer un foyer avec plusieurs utilisateurs
+    - Partager les recettes entre membres
+    - Définir les droits de lecture
+    - Définir les droits de modification
+    - Collaborer sur une liste de courses
+    - Partager le planning des repas
+    - Synchroniser les changements en temps réel
+    - Ajouter des commentaires
+    - Exporter une recette pour un proche
+    - Créer un lien de partage en lecture seule
+    - Imprimer une recette
+    - Envoyer une recette en PDF
+    - Résoudre les conflits de modifications simultanées
+    - Gérer les droits d'accès
+    - Révoquer un partage
+  - Présentation, confort et accessibilité
+    - Tableau de bord personnalisable
+    - Vue en grille
+    - Vue en liste
+    - Vue en cartes
+    - Afficher les photos ou une vue sans photos
+    - Thème clair
+    - Thème sombre
+    - Thème automatique
+    - Personnaliser couleurs et icônes
+    - Accéder rapidement aux favoris
+    - Navigation par onglets
+    - Raccourcis vers les fonctions fréquentes
+    - Interface smartphone
+    - Interface tablette
+    - Interface ordinateur
+    - Contrastes suffisants
+    - Compatibilité avec les lecteurs d'écran
+    - Langues multiples
+    - Formats régionaux
+    - Widgets si la plateforme le permet
+    - Impression optimisée
+    - Fonctionnement hors ligne
+    - Sauvegarde et synchronisation
+  - Statistiques et tableaux de bord
+    - Nombre total de recettes
+    - Nombre de recettes par catégorie
+    - Répartition par saison
+    - Recettes les plus réalisées
+    - Recettes les mieux notées
+    - Recettes jamais testées
+    - Dernières recettes consultées
+    - Fréquence de réalisation par recette
+    - Temps moyen de préparation
+    - Nombre de repas planifiés
+    - Ingrédients les plus utilisés
+  - Sauvegarde, synchronisation et gestion des données
+    - Sauvegarde automatique
+    - Restaurer après une suppression accidentelle
+    - Synchroniser plusieurs appareils
+    - Exporter toutes les recettes
+    - Importer des fichiers JSON
+    - Importer des fichiers CSV
+    - Exporter en PDF
+    - Imprimer les recettes
+    - Exporter en Markdown
+    - Exporter une recette individuelle
+    - Sauvegarde complète en ZIP avec photos et pièces jointes
+    - Historique des modifications
+    - Corbeille avec délai de restauration
+    - Détecter les doublons
+    - Résoudre les conflits de synchronisation
+    - Gérer les modifications hors ligne
+    - Supprimer complètement les données du compte
+    - Modèle de données pérenne
+    - Conserver les relations entre ingrédients, variantes, catégories et collections
+  - Paramètres et préférences
+    - Profil utilisateur
+    - Nom et langue
+    - Unités de mesure par défaut
+    - Unité de température
+    - Nombre de portions par défaut
+    - Temps maximal habituel de cuisine
+    - Magasins favoris
+    - Préférences d'affichage
+    - Notifications activables ou désactivables
+    - Fréquence des sauvegardes
+    - Paramètres de synchronisation
+    - Gestion du compte
+    - Gestion des autorisations
+    - Importation et exportation des données
+    - Conditions de confidentialité
+    - Consentements
+  - Fonctions spécifiques au mobile
+    - Ajouter une recette avec l'appareil photo
+    - Scanner des pages de livres
+    - Partager une page web vers l'application
+    - Utiliser les notifications pour les minuteurs
+    - Consulter les recettes sans Internet
+    - Synchroniser en arrière-plan
+    - Utiliser la dictée vocale
+    - Ajouter une recette depuis le presse-papiers
+    - Widget de recette du jour
+    - Widget du repas du jour
+    - Raccourcis de l'écran d'accueil
+    - Utiliser les fonctions de partage natives Android
+    - Adapter l'affichage à l'orientation de l'écran
+    - Gérer les autorisations de caméra
+    - Gérer les autorisations de notifications
+    - Gérer les autorisations de stockage
+    - Limiter les manipulations à une main
+    - Garder les actions principales accessibles pendant la cuisine
+  - Fonctions différenciantes
+    - Cuisine de saison
+      - Calendrier des fruits et légumes de saison
+      - Suggestions selon le mois
+      - Filtrer par produit de saison
+      - Collections saisonnières
+      - Calendrier annuel des recettes
+      - Recettes traditionnelles associées aux fêtes
+    - Batch cooking intelligent
+      - Construire un programme de préparation groupée
+      - Regrouper les étapes communes
+      - Calculer l'ordre optimal de préparation
+      - Réutiliser les ingrédients entre recettes
+      - Organiser les cuissons simultanées
+      - Planifier le stockage des préparations
+      - Générer une liste de tâches
+      - Générer un planning de préparation
+    - Mode improvisation
+      - Sélectionner les ingrédients disponibles
+      - Définir les exclusions
+      - Obtenir des suggestions de recettes
+    - Mode réception
+      - Calculer les quantités pour plusieurs personnes
+      - Préparer le planning d'un repas
+    - Mode pâtisserie
+      - Gérer les ratios
+      - Calculer les pourcentages de boulanger
+      - Calculer le rendement
+    - Mode collectionneur
+      - Gérer les livres de cuisine
+      - Gérer les auteurs
+      - Gérer les éditions
+      - Associer les recettes à leur livre source
+  - Exigences techniques transversales
+    - Performance
+      - Recherche rapide
+      - Listes paginées
+      - Chargement progressif des images
+    - Fiabilité
+      - Validation des données
+      - Gestion des erreurs
+      - Prévention des pertes de données
+    - Architecture
+      - Modèle de données versionné
+      - Migrations
+      - Identifiants stables
+    - Synchronisation
+      - Résolution des conflits
+      - Gestion des modifications hors ligne
+    - Sécurité
+      - Authentification si nécessaire
+      - Contrôle d'accès
+      - Chiffrement des données sensibles
+    - Confidentialité
+      - Export des données
+      - Suppression des données
+      - Consentement aux fonctions externes
+    - Accessibilité
+      - Navigation clavier
+      - Lecteurs d'écran
+      - Contrastes
+      - Tailles de texte
+    - Internationalisation
+      - Langues
+      - Formats de date
+      - Unités
+      - Nombres
+      - Températures
+    - Gestion des médias
+      - Compression
+      - Miniatures
+      - Gestion du stockage
+      - Gestion des pièces jointes
+    - Maintenance
+      - Tests automatisés
+      - Journalisation
+      - Suivi des erreurs
+      - Sauvegardes vérifiées
+    - Importation
+      - Validation des données importées
+      - Détection des doublons
+      - Récupération après échec
+    - Interopérabilité
+      - API si nécessaire
+      - Format d'échange documenté

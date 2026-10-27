@@ -1,0 +1,69 @@
+name: Release
+
+# Déclenché par un tag vX.Y.Z posé sur main après validation d'une version.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup
+        with:
+          android: "true"
+
+      - run: flutter analyze
+      - run: flutter test
+
+      - name: Version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          IFS=. read -r major minor patch <<< "$version"
+          # versionCode croissant : 0.4.2 -> 4002, 1.2.0 -> 1002000
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$((major * 1000000 + minor * 1000 + patch))" >> "$GITHUB_ENV"
+
+      - name: Clé de signature
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Les secrets de signature sont obligatoires pour une release."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      # APK universel : un seul fichier qui fonctionne sur tous les appareils.
+      - name: Compilation
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          flutter build apk --release --flavor prod \
+            --build-name="$VERSION" --build-number="$VERSION_CODE"
+          mv build/app/outputs/flutter-apk/app-prod-release.apk "recettes-$VERSION.apk"
+
+      - name: Vérifier que tous les plugins sont dans l'APK
+        run: tools/check_apk_plugins.sh prodRelease
+
+      - uses: ./.github/actions/emulator-smoke-test
+        with:
+          apk: recettes-${{ env.VERSION }}.apk
+          package: io.github.aktawind.recettes
+
+      - name: Publier la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="docs/releases/v$VERSION.md"
+          [ -f "$notes" ] || { echo "::error::Notes de version manquantes : $notes"; exit 1; }
+          gh release create "$GITHUB_REF_NAME" "recettes-$VERSION.apk" \
+            --title "v$VERSION" --notes-file "$notes" --verify-tag

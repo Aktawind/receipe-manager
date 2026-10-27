@@ -1,0 +1,43 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Recettes",
+  "@appTitle": {
+    "description": "Nom provisoire de l'application"
+  },
+  "navRecipes": "Recettes",
+  "navPlanning": "Planning",
+  "navShopping": "Courses",
+  "navSettings": "Réglages",
+  "comingInVersion": "Arrive dans la version {version}",
+  "@comingInVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "recipesEmptyTitle": "Aucune recette pour l'instant",
+  "planningEmptyTitle": "Le planning des repas",
+  "shoppingEmptyTitle": "Les listes de courses",
+  "settingsAppearance": "Apparence",
+  "settingsTheme": "Thème",
+  "themeSystem": "Automatique",
+  "themeLight": "Clair",
+  "themeDark": "Sombre",
+  "settingsAbout": "À propos",
+  "aboutVersion": "Version {version} ({build})",
+  "@aboutVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
+  "startupErrorTitle": "Démarrage impossible",
+  "startupErrorMessage": "L'application n'a pas pu démarrer. Copie le détail ci-dessous et colle-le dans un ticket « Bug » sur GitHub.",
+  "copyDetails": "Copier le détail",
+  "copied": "Copié"
+}

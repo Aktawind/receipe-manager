@@ -1,0 +1,26 @@
+name: 🐞 Bug
+description: Quelque chose ne marche pas comme prévu
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Visible dans Réglages → À propos
+      placeholder: 0.1.0 ou 0.1.0-dev (42)
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: Appareil
+      options: [Téléphone, Tablette, Les deux]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: Que s'est-il passé ?
+      description: Ce que tu as fait, ce que tu attendais, ce qui s'est passé. Une capture d'écran aide beaucoup.
+    validations:
+      required: true

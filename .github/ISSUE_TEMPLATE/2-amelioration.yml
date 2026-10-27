@@ -1,0 +1,16 @@
+name: ✨ Amélioration
+description: Une fonctionnalité existante pourrait être mieux
+labels: [enhancement]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: 0.1.0
+  - type: textarea
+    id: what
+    attributes:
+      label: Qu'est-ce qui pourrait être mieux ?
+      description: Ce qui te gêne aujourd'hui, et ce que tu aimerais à la place.
+    validations:
+      required: true
