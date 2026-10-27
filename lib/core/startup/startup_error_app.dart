@@ -28,7 +28,12 @@ class StartupErrorApp extends StatelessWidget {
           return Scaffold(
             appBar: AppBar(title: Text(l10n.startupErrorTitle)),
             body: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                16 + MediaQuery.paddingOf(context).bottom,
+              ),
               children: [
                 Text(
                   l10n.startupErrorMessage,

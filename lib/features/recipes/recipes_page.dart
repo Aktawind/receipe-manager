@@ -53,6 +53,8 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                 decoration: InputDecoration(
                   hintText: l10n.searchRecipes,
                   border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
                 ),
                 textInputAction: TextInputAction.search,
                 onChanged: ref.read(recipeSearchProvider.notifier).set,

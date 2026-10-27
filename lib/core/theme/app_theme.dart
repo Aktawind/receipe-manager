@@ -51,6 +51,7 @@ abstract final class AppTheme {
         foregroundColor: scheme.onSurface,
         centerTitle: false,
       ),
+      inputDecorationTheme: _inputTheme(scheme),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: scheme.tertiary,
         foregroundColor: scheme.onTertiary,
@@ -72,6 +73,24 @@ abstract final class AppTheme {
         selectedIconTheme: IconThemeData(color: scheme.onTertiaryContainer),
         unselectedIconTheme: IconThemeData(color: scheme.onSurfaceVariant),
       ),
+    );
+  }
+
+  /// Champs de saisie : même cadre arrondi et même taille partout.
+  static InputDecorationTheme _inputTheme(ColorScheme scheme) {
+    final radius = BorderRadius.circular(14);
+    OutlineInputBorder border(Color color, [double width = 1]) =>
+        OutlineInputBorder(
+          borderRadius: radius,
+          borderSide: BorderSide(color: color, width: width),
+        );
+    return InputDecorationTheme(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: border(scheme.outline),
+      enabledBorder: border(scheme.outline),
+      focusedBorder: border(scheme.primary, 2),
+      errorBorder: border(scheme.error),
+      focusedErrorBorder: border(scheme.error, 2),
     );
   }
 }

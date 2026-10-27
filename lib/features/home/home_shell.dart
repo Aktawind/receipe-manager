@@ -31,24 +31,29 @@ class HomeShell extends StatelessWidget {
     final isTablet = MediaQuery.sizeOf(context).width >= tabletBreakpoint;
     if (isTablet) {
       return Scaffold(
-        body: Row(
-          children: [
-            NavigationRail(
-              selectedIndex: navigationShell.currentIndex,
-              onDestinationSelected: _onSelect,
-              labelType: NavigationRailLabelType.all,
-              destinations: [
-                for (final (icon, selectedIcon, label) in destinations)
-                  NavigationRailDestination(
-                    icon: Icon(icon),
-                    selectedIcon: Icon(selectedIcon),
-                    label: Text(label),
-                  ),
-              ],
-            ),
-            const VerticalDivider(width: 1),
-            Expanded(child: navigationShell),
-          ],
+        // Sans barre du bas, la barre de navigation Android ne doit pas
+        // recouvrir le contenu.
+        body: SafeArea(
+          top: false,
+          child: Row(
+            children: [
+              NavigationRail(
+                selectedIndex: navigationShell.currentIndex,
+                onDestinationSelected: _onSelect,
+                labelType: NavigationRailLabelType.all,
+                destinations: [
+                  for (final (icon, selectedIcon, label) in destinations)
+                    NavigationRailDestination(
+                      icon: Icon(icon),
+                      selectedIcon: Icon(selectedIcon),
+                      label: Text(label),
+                    ),
+                ],
+              ),
+              const VerticalDivider(width: 1),
+              Expanded(child: navigationShell),
+            ],
+          ),
         ),
       );
     }

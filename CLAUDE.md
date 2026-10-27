@@ -37,6 +37,9 @@ téléphone et tablette. Nom provisoire : « Recettes ».
   de tests (`test/domain/`) avec des textes réalistes (sites de cuisine, sorties d'IA).
 - Modèle de données prêt pour la synchro : UUID, date de modification, suppression douce.
 - Toute chaîne visible passe par `lib/l10n/app_fr.arb` (jamais de texte en dur dans les widgets).
+- Tout écran qui défile ajoute `MediaQuery.paddingOf(context).bottom` à sa marge du bas : la barre de
+  navigation Android (mode bord à bord) ne doit jamais recouvrir le contenu
+  (`test/features/layout_test.dart`).
 - Les photos de recette s'affichent toujours en carré (`BoxFit.cover`, centré).
 - Couleurs via `Theme.of(context).colorScheme` uniquement (`docs/design/palette.md`).
 - Ne jamais committer de clé de signature (`*.jks`, `key.properties`).

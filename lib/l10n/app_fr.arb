@@ -108,7 +108,6 @@
   "prepTime": "Préparation",
   "cookTime": "Cuisson",
   "restTime": "Repos",
-  "totalTime": "Total",
   "ingredients": "Ingrédients",
   "steps": "Étapes",
   "notes": "Notes",
@@ -146,10 +145,10 @@
   "fieldTitle": "Titre",
   "fieldDescription": "Description",
   "fieldServings": "Portions",
-  "fieldPrepMinutes": "Préparation (min)",
-  "fieldCookMinutes": "Cuisson (min)",
-  "fieldRestMinutes": "Repos (min)",
-  "fieldTimesCooked": "Nombre de fois réalisée",
+  "fieldPrepMinutes": "Préparation",
+  "fieldCookMinutes": "Cuisson",
+  "fieldRestMinutes": "Repos",
+  "fieldTimesCooked": "Fois réalisée",
   "fieldSource": "Source (livre et page, site, lien…)",
   "fieldNotes": "Notes",
   "sectionInfo": "Informations",
@@ -268,16 +267,13 @@
   "fieldDescriptionHint": "Quelques mots sur la recette : d'où elle vient, à quoi elle ressemble…",
   "fieldIngredients": "Ingrédients",
   "ingredientsHint": "200 g de farine\n2 œufs\n1 pincée de sel",
-  "ingredientsHelp": "Colle ta liste d'un coup ou saisis un ingrédient par ligne : « 200 g de farine », « 2 œufs », « sel, selon le goût ». Une ligne qui finit par « : » ou qui commence par « Pour » (« Pour la pâte ») est un titre de groupe.",
   "fieldSteps": "Préparation",
   "stepsHint": "Préchauffer le four à 180 °C.\nMélanger la farine et les œufs.\nCuire 30 minutes.",
-  "stepsHelp": "Colle toute la préparation d'un coup, ou saisis une étape par ligne. Les numéros (1., 2.) sont reconnus. Une ligne qui finit par « : » (« Biscuit : ») est un titre de partie.",
   "sectionAbout": "À propos",
   "sourceLabel": "SOURCE",
   "sourceWebsite": "SOURCE · SITE WEB",
   "sourceVideo": "SOURCE · VIDÉO",
   "linkOpenFailed": "Impossible d'ouvrir ce lien",
-  "descriptionTitle": "Description",
   "noteEmpty": "Aucune note pour l'instant.",
   "addNote": "Ajouter une note",
   "editNotes": "Modifier les notes",
@@ -290,28 +286,5 @@
       }
     }
   },
-  "readyIn": "Prêt en {duration}",
-  "@readyIn": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "readyInApprox": "Prêt en {duration} environ",
-  "@readyInApprox": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "ofWhichRest": ", dont {duration} de repos",
-  "@ofWhichRest": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  }
+  "minutesUnit": "min"
 }
