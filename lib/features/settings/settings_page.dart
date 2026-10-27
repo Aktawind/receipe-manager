@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -27,30 +26,29 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.palette_outlined),
             title: Text(l10n.settingsTheme),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: SegmentedButton<ThemeMode>(
-                segments: [
-                  ButtonSegment(
-                    value: ThemeMode.system,
-                    label: Text(l10n.themeSystem),
-                    icon: const Icon(Icons.brightness_auto_outlined),
-                  ),
-                  ButtonSegment(
-                    value: ThemeMode.light,
-                    label: Text(l10n.themeLight),
-                    icon: const Icon(Icons.light_mode_outlined),
-                  ),
-                  ButtonSegment(
-                    value: ThemeMode.dark,
-                    label: Text(l10n.themeDark),
-                    icon: const Icon(Icons.dark_mode_outlined),
-                  ),
-                ],
-                selected: {themeMode},
-                onSelectionChanged: (selection) =>
-                    ref.read(themeModeProvider.notifier).set(selection.single),
-              ),
+            trailing: DropdownButton<ThemeMode>(
+              value: themeMode,
+              underline: const SizedBox.shrink(),
+              borderRadius: BorderRadius.circular(12),
+              items: [
+                DropdownMenuItem(
+                  value: ThemeMode.system,
+                  child: Text(l10n.themeSystem),
+                ),
+                DropdownMenuItem(
+                  value: ThemeMode.light,
+                  child: Text(l10n.themeLight),
+                ),
+                DropdownMenuItem(
+                  value: ThemeMode.dark,
+                  child: Text(l10n.themeDark),
+                ),
+              ],
+              onChanged: (mode) {
+                if (mode != null) {
+                  ref.read(themeModeProvider.notifier).set(mode);
+                }
+              },
             ),
           ),
           _SectionTitle(l10n.settingsAbout),
@@ -60,9 +58,6 @@ class SettingsPage extends ConsumerWidget {
             subtitle: info == null
                 ? null
                 : Text(l10n.aboutVersion(info.version, info.buildNumber)),
-            trailing: appFlavor == 'dev'
-                ? Chip(label: Text(l10n.devBuildBadge))
-                : null,
           ),
         ],
       ),

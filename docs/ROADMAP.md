@@ -7,8 +7,8 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 
 | Version | Thème | Statut |
 |---|---|---|
-| [0.0](#00--fondations) | Fondations | 🟦 |
-| [0.1](#01--saisir-ses-recettes-et-les-sauvegarder) | Saisir ses recettes et les sauvegarder | ⬜ |
+| [0.0](#00--fondations) | Fondations | ✅ |
+| [0.1](#01--saisir-ses-recettes-et-les-sauvegarder) | Saisir ses recettes et les sauvegarder | 🟨 |
 | [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | ⬜ |
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ⬜ |
 | [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ⬜ |

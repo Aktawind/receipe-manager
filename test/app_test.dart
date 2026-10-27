@@ -50,7 +50,9 @@ void main() {
 
     await tester.tap(find.text('Réglages').last);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sombre'));
+    await tester.tap(find.text('Automatique'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sombre').last);
     await tester.pumpAndSettle();
 
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
@@ -63,5 +65,21 @@ void main() {
 
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.themeMode, ThemeMode.light);
+  });
+
+  testWidgets('l\'onglet sélectionné reste lisible en thème sombre', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await _pumpApp(tester, await _prefs({'theme_mode': 'dark'}));
+
+    final context = tester.element(find.byType(NavigationBar));
+    final theme = Theme.of(context);
+    final iconTheme = theme.navigationBarTheme.iconTheme!.resolve({
+      WidgetState.selected,
+    })!;
+    expect(iconTheme.color, theme.colorScheme.onTertiaryContainer);
   });
 }
