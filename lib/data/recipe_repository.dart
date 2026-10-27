@@ -79,7 +79,6 @@ class RecipeRepository {
       description: original.description,
       source: original.source,
       notes: original.notes,
-      tips: original.tips,
       servings: original.servings,
       prepMinutes: original.prepMinutes,
       cookMinutes: original.cookMinutes,
@@ -101,7 +100,7 @@ class RecipeRepository {
       ],
       steps: [
         for (final step in original.steps)
-          RecipeStep(id: newId(), text: step.text),
+          RecipeStep(id: newId(), title: step.title, text: step.text),
       ],
     );
     await _db.transaction(() => _write(copy));
@@ -189,7 +188,6 @@ class RecipeRepository {
             description: Value(recipe.description),
             source: Value(recipe.source),
             notes: Value(recipe.notes),
-            tips: Value(recipe.tips),
             servings: Value(recipe.servings),
             prepMinutes: Value(recipe.prepMinutes),
             cookMinutes: Value(recipe.cookMinutes),
@@ -228,6 +226,7 @@ class RecipeRepository {
             id: step.id,
             recipeId: recipe.id,
             position: index,
+            title: Value(step.title),
             body: Value(step.text),
           ),
       ]);
@@ -258,7 +257,10 @@ class RecipeRepository {
             optional: i.optional,
           ),
       ],
-      steps: [for (final s in steps) RecipeStep(id: s.id, text: s.body)],
+      steps: [
+        for (final s in steps)
+          RecipeStep(id: s.id, title: s.title, text: s.body),
+      ],
     );
   }
 
@@ -268,7 +270,6 @@ class RecipeRepository {
     description: row.description,
     source: row.source,
     notes: row.notes,
-    tips: row.tips,
     servings: row.servings,
     prepMinutes: row.prepMinutes,
     cookMinutes: row.cookMinutes,

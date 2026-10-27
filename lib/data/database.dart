@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import 'database.steps.dart';
+
 part 'database.g.dart';
 
 /// Une recette. Les identifiants sont des UUID générés sur l'appareil, et une
@@ -11,6 +13,9 @@ class Recipes extends Table {
   TextColumn get description => text().withDefault(const Constant(''))();
   TextColumn get source => text().withDefault(const Constant(''))();
   TextColumn get notes => text().withDefault(const Constant(''))();
+
+  /// Ancien champ « Astuces », fusionné dans [notes] par la migration v2.
+  /// Toujours vide : la colonne reste pour ne pas reconstruire la table.
   TextColumn get tips => text().withDefault(const Constant(''))();
   IntColumn get servings => integer().nullable()();
   IntColumn get prepMinutes => integer().nullable()();
@@ -49,6 +54,9 @@ class RecipeSteps extends Table {
   TextColumn get recipeId =>
       text().references(Recipes, #id, onDelete: KeyAction.cascade)();
   IntColumn get position => integer()();
+
+  /// Titre optionnel de la partie (« Biscuit ») ; ajouté en v2.
+  TextColumn get title => text().withDefault(const Constant(''))();
   TextColumn get body => text().withDefault(const Constant(''))();
 
   @override
@@ -61,7 +69,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 1;
+  static const latestSchemaVersion = 2;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -71,6 +79,21 @@ class AppDatabase extends _$AppDatabase {
     onCreate: (m) async {
       await m.createAll();
     },
+    onUpgrade: stepByStep(
+      // v2 : titres d'étapes, et « Astuces » fusionnées dans « Notes ».
+      from1To2: (m, schema) async {
+        await m.addColumn(schema.recipeSteps, schema.recipeSteps.title);
+        await customStatement('''
+UPDATE recipes SET
+  notes = CASE
+    WHEN trim(tips) = '' THEN notes
+    WHEN trim(notes) = '' THEN trim(tips)
+    ELSE trim(notes) || char(10) || char(10) || trim(tips)
+  END,
+  tips = ''
+''');
+      },
+    ),
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },

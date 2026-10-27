@@ -12,19 +12,29 @@ recettes-2026-10-27-1430.zip
 
 ## Règles de compatibilité
 
-- Le champ `version` indique la version du format (actuellement **1**).
+- Le champ `version` indique la version du format (actuellement **2**).
 - Toute version de l'application sait lire **toutes les versions précédentes** du format.
 - Une sauvegarde d'une version **plus récente** que l'application est refusée, sans rien
   modifier (message : « Mets l'application à jour »).
 - Un fichier invalide est refusé en entier : rien n'est importé partiellement.
 - Toute évolution du format incrémente `version` et met à jour ce document.
 
-## `recettes.json` — version 1
+## Historique des versions
+
+| Version | Application | Changements |
+|---|---|---|
+| 1 | 0.1.0 | Première version : champs `notes` et `tips` (« Astuces ») |
+| 2 | 0.1.0 (corrigée) | `tips` supprimé ; son contenu est fusionné dans `notes`. Titre optionnel `title` sur les étapes |
+
+Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une ligne vide) ; les
+étapes n'ont pas de titre.
+
+## `recettes.json` — version 2
 
 ```json
 {
   "format": "recettes-backup",
-  "version": 1,
+  "version": 2,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
   "recipes": [
@@ -33,8 +43,7 @@ recettes-2026-10-27-1430.zip
       "title": "Quiche lorraine",
       "description": "",
       "source": "Livre de mamie, p. 12",
-      "notes": "",
-      "tips": "Précuire la pâte 10 min.",
+      "notes": "Précuire la pâte 10 min.",
       "servings": 6,
       "prepMinutes": 20,
       "cookMinutes": 35,
@@ -53,7 +62,8 @@ recettes-2026-10-27-1430.zip
           "unit": "", "note": "selon le goût", "optional": false }
       ],
       "steps": [
-        { "id": "…", "text": "Préparer la pâte." }
+        { "id": "…", "title": "La pâte", "text": "Préparer la pâte." },
+        { "id": "…", "title": "", "text": "Étaler et piquer le fond." }
       ]
     }
   ]
@@ -69,6 +79,7 @@ recettes-2026-10-27-1430.zip
 | `createdAt`, `updatedAt`, `deletedAt` | date ISO 8601 UTC | `deletedAt` non nul = dans la corbeille |
 | `ingredients[].section` | booléen | vrai = titre de groupe (« Pour la pâte ») |
 | `ingredients[].quantity` | nombre ou `null` | `null` = sans quantité précise |
+| `steps[].title` | texte | titre de la partie (« Biscuit »), vide le plus souvent ; porté par la première étape de la partie |
 | `ingredients[].unit` | texte | forme canonique : `g`, `kg`, `ml`, `cl`, `L`, `c. à s.`, `c. à c.`, `pincée`… |
 
 L'ordre des listes `ingredients` et `steps` est l'ordre d'affichage.

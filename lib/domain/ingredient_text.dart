@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 import 'recipe.dart';
 
 /// Conversion entre une ligne de texte (« 200 g de farine, tamisée ») et un
@@ -14,6 +16,9 @@ abstract final class IngredientText {
     'dl': ['dl', 'décilitre', 'décilitres'],
     'L': ['l', 'litre', 'litres'],
     'c. à s.': [
+      'c. à soupe',
+      'c à soupe',
+      'c.à soupe',
       'c. à s.',
       'c.à.s.',
       'c.à.s',
@@ -28,6 +33,9 @@ abstract final class IngredientText {
       'cuil. à soupe',
     ],
     'c. à c.': [
+      'c. à café',
+      'c à café',
+      'c.à café',
       'c. à c.',
       'c.à.c.',
       'c.à.c',
@@ -59,7 +67,20 @@ abstract final class IngredientText {
     'noisette': ['noisette', 'noisettes'],
     'filet': ['filet', 'filets'],
     'trait': ['trait', 'traits'],
+    'rouleau': ['rouleau', 'rouleaux'],
+    'bouquet': ['bouquet', 'bouquets'],
+    'tige': ['tige', 'tiges'],
+    'cube': ['cube', 'cubes'],
+    'morceau': ['morceau', 'morceaux'],
+    'barquette': ['barquette', 'barquettes'],
+    'bocal': ['bocal', 'bocaux'],
   };
+
+  /// Forme affichée d'une unité, quand elle diffère de la forme enregistrée
+  /// (les données déjà saisies gardent « c. à s. »).
+  static const _displayForm = {'c. à s.': 'c. à soupe', 'c. à c.': 'c. à café'};
+
+  static const _irregularPlural = {'rouleau': 'rouleaux', 'bocal': 'bocaux'};
 
   /// Unités qui s'accordent au pluriel à l'affichage (« 2 pincées »).
   static const _pluralizable = {
@@ -80,6 +101,13 @@ abstract final class IngredientText {
     'noisette',
     'filet',
     'trait',
+    'rouleau',
+    'bouquet',
+    'tige',
+    'cube',
+    'morceau',
+    'barquette',
+    'bocal',
   };
 
   static const _unicodeFractions = {
@@ -100,16 +128,64 @@ abstract final class IngredientText {
     caseSensitive: false,
   );
 
-  /// Analyse une ligne saisie. Une ligne terminée par « : » devient un titre
-  /// de groupe.
-  static IngredientLine parse(String input, {required String id}) {
+  static final _bulletPattern = RegExp(
+    r'^(?:[-*•–—·▪◦►▶]+|\[[ xX✓]?\]|\d{1,2}\s*[.)](?=\s))\s*',
+  );
+  static final _forPattern = RegExp(
+    r"^pour (?:le|la|les|l['’]|un|une|des|du|de la)\b",
+    caseSensitive: false,
+  );
+  static final _nameColonAmount = RegExp(r'^([^:\d]{2,40}?)\s*:\s*(\d.*)$');
+  static final _trailingParens = RegExp(r'\s*\(([^()]*)\)\s*$');
+  static final _rangeAfterQuantity = RegExp(
+    r'^(?:(?:à|a|ou)\s+|[-–—]\s*)\d',
+    caseSensitive: false,
+  );
+
+  /// Retire puces, numéros et marques de mise en forme d'une ligne collée.
+  /// Renvoie le texte nettoyé et `true` si la ligne était un titre (« ## Pâte »,
+  /// « **Pâte** »).
+  static (String, bool) _clean(String input) {
     var text = input.trim().replaceAll(RegExp(r'\s+'), ' ');
-    if (text.endsWith(':')) {
+    for (var i = 0; i < 2; i++) {
+      text = text.replaceFirst(_bulletPattern, '');
+    }
+    var heading = false;
+    final hashes = RegExp(r'^#{1,6}\s+(.*)$').firstMatch(text);
+    if (hashes != null) {
+      heading = true;
+      text = hashes.group(1)!;
+    }
+    final bold = RegExp(r'^(?:\*\*|__)(.+?)(?:\*\*|__)\s*:?$').firstMatch(text);
+    if (bold != null && !RegExp(r'^\d').hasMatch(bold.group(1)!)) {
+      heading = true;
+      text = bold.group(1)!;
+    }
+    text = text.replaceAll('**', '').replaceAll('__', '').trim();
+    return (text, heading);
+  }
+
+  /// Analyse une ligne saisie ou collée. Une ligne terminée par « : », un
+  /// titre en gras ou « ## », ou « Pour la pâte » devient un titre de groupe.
+  static IngredientLine parse(String input, {required String id}) {
+    var (text, heading) = _clean(input);
+    final words = text.split(' ').length;
+    final looksLikeFor =
+        _forPattern.hasMatch(text) &&
+        !RegExp(r'[\d,]').hasMatch(text) &&
+        words <= 6;
+    if (text.endsWith(':') || heading || looksLikeFor) {
       return IngredientLine(
         id: id,
         isSection: true,
-        name: text.substring(0, text.length - 1).trim(),
+        name: text.replaceFirst(RegExp(r'\s*:$'), '').trim(),
       );
+    }
+
+    // « Farine : 200 g » (liste générée) -> « 200 g Farine ».
+    final reordered = _nameColonAmount.firstMatch(text);
+    if (reordered != null) {
+      text = '${reordered.group(2)} ${reordered.group(1)}';
     }
 
     var optional = false;
@@ -125,6 +201,12 @@ abstract final class IngredientText {
       text = text.replaceFirst(_toTastePattern, ' ').trim();
     }
 
+    final parens = _trailingParens.firstMatch(text);
+    if (parens != null && parens.start > 0) {
+      notes.insert(0, parens.group(1)!.trim());
+      text = text.substring(0, parens.start).trim();
+    }
+
     // A comma between two digits is a decimal separator, not a note.
     final comma = text.indexOf(RegExp(r'(?<!\d),|,(?!\d)'));
     if (comma >= 0) {
@@ -135,8 +217,13 @@ abstract final class IngredientText {
     double? quantity;
     final quantityMatch = _matchQuantity(text);
     if (quantityMatch != null) {
-      quantity = quantityMatch.$1;
-      text = text.substring(quantityMatch.$2).trim();
+      final rest = text.substring(quantityMatch.$2).trim();
+      // « 2 à 3 œufs », « 1-2 c. à café » : on garde la ligne telle quelle
+      // plutôt que de perdre la fourchette.
+      if (!_rangeAfterQuantity.hasMatch(rest)) {
+        quantity = quantityMatch.$1;
+        text = rest;
+      }
     }
 
     var unit = '';
@@ -179,6 +266,39 @@ abstract final class IngredientText {
     if (line.note.isNotEmpty) buffer.write(', ${line.note}');
     if (line.optional) buffer.write(' (facultatif)');
     return buffer.toString().trim();
+  }
+
+  /// Analyse une liste d'ingrédients collée en une fois : une ligne par
+  /// ingrédient. Les lignes vides et les séparateurs (« --- ») sont ignorés.
+  /// [previousIds] permet de garder l'identifiant des lignes déjà enregistrées.
+  static List<IngredientLine> parseList(
+    String text, {
+    List<String> previousIds = const [],
+  }) {
+    final lines = <IngredientLine>[];
+    for (final raw in text.split(RegExp(r'\r?\n'))) {
+      if (!RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(raw)) continue;
+      final id = lines.length < previousIds.length
+          ? previousIds[lines.length]
+          : const Uuid().v4();
+      lines.add(parse(raw, id: id));
+    }
+    return lines;
+  }
+
+  /// Texte d'édition d'une liste d'ingrédients : l'inverse de [parseList].
+  static String formatList(List<IngredientLine> lines) =>
+      lines.map(format).join('\n');
+
+  /// Quantité et unité telles qu'affichées à droite du nom : « 250 g »,
+  /// « 2 gousses », « 3 ». Vide si l'ingrédient n'a pas de quantité.
+  static String formatAmount(IngredientLine line) {
+    final quantity = line.quantity;
+    if (quantity == null) return '';
+    final amount = formatQuantity(quantity);
+    return line.unit.isEmpty
+        ? amount
+        : '$amount ${_unitFor(line.unit, quantity)}';
   }
 
   /// « 1,5 » → « 1 ½ », « 0,333 » → « ⅓ », « 2 » → « 2 ».
@@ -264,8 +384,10 @@ abstract final class IngredientText {
   }
 
   static String _unitFor(String unit, double quantity) {
-    if (quantity >= 2 && _pluralizable.contains(unit)) return '${unit}s';
-    return unit;
+    if (quantity >= 2 && _pluralizable.contains(unit)) {
+      return _irregularPlural[unit] ?? '${unit}s';
+    }
+    return _displayForm[unit] ?? unit;
   }
 
   static String _partitive(String name) {

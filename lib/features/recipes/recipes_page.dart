@@ -127,57 +127,75 @@ class _RecipeGrid extends StatelessWidget {
 
   final List<Recipe> recipes;
 
+  /// Hauteur du bloc texte sous la photo carrée.
+  static const _textHeight = 76.0;
+  static const _spacing = 12.0;
+  static const _padding = 12.0;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 96),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 240,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.78,
-      ),
-      itemCount: recipes.length,
-      itemBuilder: (context, index) {
-        final recipe = recipes[index];
-        final summary = _recipeSummary(l10n, recipe);
-        return Card(
-          clipBehavior: Clip.antiAlias,
-          margin: EdgeInsets.zero,
-          child: InkWell(
-            onTap: () => _openRecipe(context, recipe),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: RecipePhoto(photo: recipe.mainPhoto, decodeWidth: 480),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _recipeTitle(l10n, recipe),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall,
-                      ),
-                      if (summary != null)
-                        Text(
-                          summary,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall,
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // La photo est un carré : la hauteur d'une carte vient de sa largeur.
+        final columns = (constraints.maxWidth / 190).floor().clamp(2, 8);
+        final cellWidth =
+            (constraints.maxWidth - 2 * _padding - (columns - 1) * _spacing) /
+            columns;
+        return GridView.builder(
+          padding: const EdgeInsets.fromLTRB(_padding, 4, _padding, 96),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: _spacing,
+            crossAxisSpacing: _spacing,
+            mainAxisExtent: cellWidth + _textHeight,
           ),
+          itemCount: recipes.length,
+          itemBuilder: (context, index) {
+            final recipe = recipes[index];
+            final summary = _recipeSummary(l10n, recipe);
+            return Card(
+              clipBehavior: Clip.antiAlias,
+              margin: EdgeInsets.zero,
+              child: InkWell(
+                onTap: () => _openRecipe(context, recipe),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AspectRatio(
+                      aspectRatio: 1,
+                      child: RecipePhoto(
+                        photo: recipe.mainPhoto,
+                        decodeWidth: 480,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _recipeTitle(l10n, recipe),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall,
+                          ),
+                          if (summary != null)
+                            Text(
+                              summary,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );

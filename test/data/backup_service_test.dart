@@ -66,7 +66,13 @@ void main() {
             unit: 'kg',
           ),
         ],
-        steps: [RecipeStep(id: RecipeRepository.newId(), text: 'Mélanger.')],
+        steps: [
+          RecipeStep(
+            id: RecipeRepository.newId(),
+            title: 'Pâte',
+            text: 'Mélanger.',
+          ),
+        ],
       ),
     );
   }
@@ -85,6 +91,7 @@ void main() {
     expect(imported.title, 'Tarte');
     expect(imported.ingredients.single.quantity, 1.5);
     expect(imported.steps.single.text, 'Mélanger.');
+    expect(imported.steps.single.title, 'Pâte');
     expect(imported.updatedAt, tart.updatedAt);
     expect(
       await target.photos.file('tarte.jpg').readAsString(),
@@ -143,6 +150,59 @@ void main() {
       await result.safetyBackup.readAsBytes(),
     );
     expect(safety.recipes.single.title, 'Avant');
+  });
+
+  test('une sauvegarde de la 0.1.0 (version 1) est encore lue', () async {
+    final archive = Archive()
+      ..addFile(
+        ArchiveFile.string(
+          BackupFormat.dataFile,
+          jsonEncode({
+            'format': 'recettes-backup',
+            'version': 1,
+            'recipes': [
+              {
+                'id': 'old-1',
+                'title': 'Tarte',
+                'notes': 'Ma note',
+                'tips': 'Précuire la pâte',
+                'createdAt': '2026-10-01T08:00:00Z',
+                'updatedAt': '2026-10-02T08:00:00Z',
+                'ingredients': [
+                  {'id': 'i1', 'name': 'farine', 'quantity': 250, 'unit': 'g'},
+                ],
+                'steps': [
+                  {'id': 's1', 'text': 'Mélanger.'},
+                ],
+              },
+              {
+                'id': 'old-2',
+                'title': 'Soupe',
+                'tips': 'Mixer très fin',
+                'createdAt': '2026-10-01T08:00:00Z',
+                'updatedAt': '2026-10-02T08:00:00Z',
+              },
+            ],
+          }),
+        ),
+      );
+    final contents = target.service.readZip(ZipEncoder().encode(archive));
+    expect(contents.recipes[0].notes, 'Ma note\n\nPrécuire la pâte');
+    expect(contents.recipes[1].notes, 'Mixer très fin');
+    expect(contents.recipes[0].steps.single.title, '');
+    await target.service.import(contents, ImportMode.merge);
+    expect((await target.repo.getRecipe('old-1'))!.notes, contains('Précuire'));
+  });
+
+  test('l’export est en version 2, sans champ « tips »', () async {
+    await addRecipe(source, 'Tarte');
+    final archive = ZipDecoder().decodeBytes(await source.service.exportZip());
+    final json = jsonDecode(
+      utf8.decode(archive.findFile(BackupFormat.dataFile)!.content),
+    ) as Map<String, Object?>;
+    expect(json['version'], 2);
+    final recipe = (json['recipes'] as List).single as Map<String, Object?>;
+    expect(recipe.containsKey('tips'), isFalse);
   });
 
   group('fichiers refusés', () {

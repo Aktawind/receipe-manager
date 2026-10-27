@@ -6,9 +6,12 @@ import '../photo_store.dart';
 /// Règle : une version de l'app sait toujours lire les versions précédentes du
 /// format. Toute évolution incrémente [currentVersion] et garde la lecture de
 /// l'ancienne.
+///
+/// - v1 : première version (champ `tips` « Astuces »).
+/// - v2 : `tips` supprimé (fusionné dans `notes`), titre optionnel des étapes.
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 1;
+  static const currentVersion = 2;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 
@@ -32,7 +35,6 @@ abstract final class BackupFormat {
     'description': r.description,
     'source': r.source,
     'notes': r.notes,
-    'tips': r.tips,
     'servings': r.servings,
     'prepMinutes': r.prepMinutes,
     'cookMinutes': r.cookMinutes,
@@ -55,7 +57,7 @@ abstract final class BackupFormat {
         },
     ],
     'steps': [
-      for (final s in r.steps) {'id': s.id, 'text': s.text},
+      for (final s in r.steps) {'id': s.id, 'title': s.title, 'text': s.text},
     ],
   };
 
@@ -77,7 +79,7 @@ abstract final class BackupFormat {
     if (list is! List) {
       throw const BackupFormatException(BackupError.invalid, 'recipes');
     }
-    final recipes = [for (final item in list) _decodeRecipe(item)];
+    final recipes = [for (final item in list) _decodeRecipe(item, version)];
     final ids = <String>{};
     for (final recipe in recipes) {
       if (!ids.add(recipe.id)) {
@@ -87,7 +89,7 @@ abstract final class BackupFormat {
     return recipes;
   }
 
-  static Recipe _decodeRecipe(Object? json) {
+  static Recipe _decodeRecipe(Object? json, int version) {
     final m = _map(json, 'recipe');
     final id = _string(m, 'id', required: true);
     if (id.isEmpty) {
@@ -102,8 +104,9 @@ abstract final class BackupFormat {
       title: _string(m, 'title'),
       description: _string(m, 'description'),
       source: _string(m, 'source'),
-      notes: _string(m, 'notes'),
-      tips: _string(m, 'tips'),
+      notes: version >= 2
+          ? _string(m, 'notes')
+          : _mergeNotes(_string(m, 'notes'), _string(m, 'tips')),
       servings: _int(m, 'servings'),
       prepMinutes: _int(m, 'prepMinutes'),
       cookMinutes: _int(m, 'cookMinutes'),
@@ -134,11 +137,20 @@ abstract final class BackupFormat {
             final s = _map(item, 'step');
             return RecipeStep(
               id: _string(s, 'id', required: true),
+              title: _string(s, 'title'),
               text: _string(s, 'text'),
             );
           }(),
       ],
     );
+  }
+
+  /// v1 : « Astuces » et « Notes » étaient deux champs ; ils n'en font plus qu'un.
+  static String _mergeNotes(String notes, String tips) {
+    final a = notes.trim(), b = tips.trim();
+    if (a.isEmpty) return b;
+    if (b.isEmpty) return a;
+    return '$a\n\n$b';
   }
 
   static Map<String, Object?> _map(Object? value, String what) {

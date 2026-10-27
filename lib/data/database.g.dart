@@ -391,6 +391,9 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
   final String description;
   final String source;
   final String notes;
+
+  /// Ancien champ « Astuces », fusionné dans [notes] par la migration v2.
+  /// Toujours vide : la colonne reste pour ne pas reconstruire la table.
   final String tips;
   final int? servings;
   final int? prepMinutes;
@@ -1455,6 +1458,16 @@ class $RecipeStepsTable extends RecipeSteps
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _bodyMeta = const VerificationMeta('body');
   @override
   late final GeneratedColumn<String> body = GeneratedColumn<String>(
@@ -1466,7 +1479,7 @@ class $RecipeStepsTable extends RecipeSteps
     defaultValue: const Constant(''),
   );
   @override
-  List<GeneratedColumn> get $columns => [id, recipeId, position, body];
+  List<GeneratedColumn> get $columns => [id, recipeId, position, title, body];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1500,6 +1513,12 @@ class $RecipeStepsTable extends RecipeSteps
     } else if (isInserting) {
       context.missing(_positionMeta);
     }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
     if (data.containsKey('body')) {
       context.handle(
         _bodyMeta,
@@ -1527,6 +1546,10 @@ class $RecipeStepsTable extends RecipeSteps
         DriftSqlType.int,
         data['${effectivePrefix}position'],
       )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
       body: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}body'],
@@ -1544,11 +1567,15 @@ class StepRow extends DataClass implements Insertable<StepRow> {
   final String id;
   final String recipeId;
   final int position;
+
+  /// Titre optionnel de la partie (« Biscuit ») ; ajouté en v2.
+  final String title;
   final String body;
   const StepRow({
     required this.id,
     required this.recipeId,
     required this.position,
+    required this.title,
     required this.body,
   });
   @override
@@ -1557,6 +1584,7 @@ class StepRow extends DataClass implements Insertable<StepRow> {
     map['id'] = Variable<String>(id);
     map['recipe_id'] = Variable<String>(recipeId);
     map['position'] = Variable<int>(position);
+    map['title'] = Variable<String>(title);
     map['body'] = Variable<String>(body);
     return map;
   }
@@ -1566,6 +1594,7 @@ class StepRow extends DataClass implements Insertable<StepRow> {
       id: Value(id),
       recipeId: Value(recipeId),
       position: Value(position),
+      title: Value(title),
       body: Value(body),
     );
   }
@@ -1579,6 +1608,7 @@ class StepRow extends DataClass implements Insertable<StepRow> {
       id: serializer.fromJson<String>(json['id']),
       recipeId: serializer.fromJson<String>(json['recipeId']),
       position: serializer.fromJson<int>(json['position']),
+      title: serializer.fromJson<String>(json['title']),
       body: serializer.fromJson<String>(json['body']),
     );
   }
@@ -1589,6 +1619,7 @@ class StepRow extends DataClass implements Insertable<StepRow> {
       'id': serializer.toJson<String>(id),
       'recipeId': serializer.toJson<String>(recipeId),
       'position': serializer.toJson<int>(position),
+      'title': serializer.toJson<String>(title),
       'body': serializer.toJson<String>(body),
     };
   }
@@ -1597,11 +1628,13 @@ class StepRow extends DataClass implements Insertable<StepRow> {
     String? id,
     String? recipeId,
     int? position,
+    String? title,
     String? body,
   }) => StepRow(
     id: id ?? this.id,
     recipeId: recipeId ?? this.recipeId,
     position: position ?? this.position,
+    title: title ?? this.title,
     body: body ?? this.body,
   );
   StepRow copyWithCompanion(RecipeStepsCompanion data) {
@@ -1609,6 +1642,7 @@ class StepRow extends DataClass implements Insertable<StepRow> {
       id: data.id.present ? data.id.value : this.id,
       recipeId: data.recipeId.present ? data.recipeId.value : this.recipeId,
       position: data.position.present ? data.position.value : this.position,
+      title: data.title.present ? data.title.value : this.title,
       body: data.body.present ? data.body.value : this.body,
     );
   }
@@ -1619,13 +1653,14 @@ class StepRow extends DataClass implements Insertable<StepRow> {
           ..write('id: $id, ')
           ..write('recipeId: $recipeId, ')
           ..write('position: $position, ')
+          ..write('title: $title, ')
           ..write('body: $body')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, recipeId, position, body);
+  int get hashCode => Object.hash(id, recipeId, position, title, body);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1633,6 +1668,7 @@ class StepRow extends DataClass implements Insertable<StepRow> {
           other.id == this.id &&
           other.recipeId == this.recipeId &&
           other.position == this.position &&
+          other.title == this.title &&
           other.body == this.body);
 }
 
@@ -1640,12 +1676,14 @@ class RecipeStepsCompanion extends UpdateCompanion<StepRow> {
   final Value<String> id;
   final Value<String> recipeId;
   final Value<int> position;
+  final Value<String> title;
   final Value<String> body;
   final Value<int> rowid;
   const RecipeStepsCompanion({
     this.id = const Value.absent(),
     this.recipeId = const Value.absent(),
     this.position = const Value.absent(),
+    this.title = const Value.absent(),
     this.body = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1653,6 +1691,7 @@ class RecipeStepsCompanion extends UpdateCompanion<StepRow> {
     required String id,
     required String recipeId,
     required int position,
+    this.title = const Value.absent(),
     this.body = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1662,6 +1701,7 @@ class RecipeStepsCompanion extends UpdateCompanion<StepRow> {
     Expression<String>? id,
     Expression<String>? recipeId,
     Expression<int>? position,
+    Expression<String>? title,
     Expression<String>? body,
     Expression<int>? rowid,
   }) {
@@ -1669,6 +1709,7 @@ class RecipeStepsCompanion extends UpdateCompanion<StepRow> {
       if (id != null) 'id': id,
       if (recipeId != null) 'recipe_id': recipeId,
       if (position != null) 'position': position,
+      if (title != null) 'title': title,
       if (body != null) 'body': body,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1678,6 +1719,7 @@ class RecipeStepsCompanion extends UpdateCompanion<StepRow> {
     Value<String>? id,
     Value<String>? recipeId,
     Value<int>? position,
+    Value<String>? title,
     Value<String>? body,
     Value<int>? rowid,
   }) {
@@ -1685,6 +1727,7 @@ class RecipeStepsCompanion extends UpdateCompanion<StepRow> {
       id: id ?? this.id,
       recipeId: recipeId ?? this.recipeId,
       position: position ?? this.position,
+      title: title ?? this.title,
       body: body ?? this.body,
       rowid: rowid ?? this.rowid,
     );
@@ -1702,6 +1745,9 @@ class RecipeStepsCompanion extends UpdateCompanion<StepRow> {
     if (position.present) {
       map['position'] = Variable<int>(position.value);
     }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
     if (body.present) {
       map['body'] = Variable<String>(body.value);
     }
@@ -1717,6 +1763,7 @@ class RecipeStepsCompanion extends UpdateCompanion<StepRow> {
           ..write('id: $id, ')
           ..write('recipeId: $recipeId, ')
           ..write('position: $position, ')
+          ..write('title: $title, ')
           ..write('body: $body, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2749,6 +2796,7 @@ typedef $$RecipeStepsTableCreateCompanionBuilder =
       required String id,
       required String recipeId,
       required int position,
+      Value<String> title,
       Value<String> body,
       Value<int> rowid,
     });
@@ -2757,6 +2805,7 @@ typedef $$RecipeStepsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> recipeId,
       Value<int> position,
+      Value<String> title,
       Value<String> body,
       Value<int> rowid,
     });
@@ -2799,6 +2848,11 @@ class $$RecipeStepsTableFilterComposer
 
   ColumnFilters<int> get position => $composableBuilder(
     column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2850,6 +2904,11 @@ class $$RecipeStepsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get body => $composableBuilder(
     column: $table.body,
     builder: (column) => ColumnOrderings(column),
@@ -2893,6 +2952,9 @@ class $$RecipeStepsTableAnnotationComposer
 
   GeneratedColumn<int> get position =>
       $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
 
   GeneratedColumn<String> get body =>
       $composableBuilder(column: $table.body, builder: (column) => column);
@@ -2952,12 +3014,14 @@ class $$RecipeStepsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> recipeId = const Value.absent(),
                 Value<int> position = const Value.absent(),
+                Value<String> title = const Value.absent(),
                 Value<String> body = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RecipeStepsCompanion(
                 id: id,
                 recipeId: recipeId,
                 position: position,
+                title: title,
                 body: body,
                 rowid: rowid,
               ),
@@ -2966,12 +3030,14 @@ class $$RecipeStepsTableTableManager
                 required String id,
                 required String recipeId,
                 required int position,
+                Value<String> title = const Value.absent(),
                 Value<String> body = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RecipeStepsCompanion.insert(
                 id: id,
                 recipeId: recipeId,
                 position: position,
+                title: title,
                 body: body,
                 rowid: rowid,
               ),
