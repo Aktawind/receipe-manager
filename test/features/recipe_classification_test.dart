@@ -54,4 +54,41 @@ void main() {
     expect(favorite, isTrue);
     expect(find.byTooltip('Retirer des favoris'), findsOneWidget);
   });
+
+  testWidgets('quantité en unités (12 blinis), statut modifiable d’un geste', (
+    tester,
+  ) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(TestApp.create))!;
+    final repo = app.services.recipes;
+    final id = (await tester.runAsync(() async {
+      final created = await repo.create();
+      final saved = await repo.save(
+        created.copyWith(
+          title: 'Blinis',
+          servings: () => 12,
+          servingsUnit: 'blinis',
+        ),
+      );
+      return saved.id;
+    }))!;
+    await app.pump(tester);
+    // La liste annonce « 12 blinis », pas « 12 portions ».
+    expect(find.textContaining('12 blinis'), findsOneWidget);
+
+    await tester.tap(find.text('Blinis'));
+    await settle(tester);
+    expect(find.text('Quantité'), findsOneWidget);
+    expect(find.text('12 blinis'), findsOneWidget);
+
+    await tester.tap(find.text('Statut'));
+    await settle(tester);
+    await tester.tap(find.text('Validée'), warnIfMissed: false);
+    await settle(tester);
+    final status = (await tester.runAsync(
+      () async => (await repo.getRecipe(id))!.status,
+    ))!;
+    expect(status, RecipeStatus.validated);
+    expect(find.text('Validée'), findsOneWidget);
+  });
 }

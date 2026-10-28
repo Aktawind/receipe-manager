@@ -30,6 +30,7 @@ class Recipe {
     this.source = '',
     this.notes = '',
     this.servings,
+    this.servingsUnit = '',
     this.prepMinutes,
     this.cookMinutes,
     this.restMinutes,
@@ -56,6 +57,10 @@ class Recipe {
   final String source;
   final String notes;
   final int? servings;
+
+  /// Ce que compte [servings] quand ce ne sont pas des personnes : « blinis »,
+  /// « ramequins ». Vide = des personnes.
+  final String servingsUnit;
   final int? prepMinutes;
   final int? cookMinutes;
   final int? restMinutes;
@@ -103,6 +108,7 @@ class Recipe {
       source.trim().isEmpty &&
       notes.trim().isEmpty &&
       servings == null &&
+      servingsUnit.trim().isEmpty &&
       prepMinutes == null &&
       cookMinutes == null &&
       restMinutes == null &&
@@ -117,6 +123,7 @@ class Recipe {
     String? source,
     String? notes,
     ValueGetter<int?>? servings,
+    String? servingsUnit,
     ValueGetter<int?>? prepMinutes,
     ValueGetter<int?>? cookMinutes,
     ValueGetter<int?>? restMinutes,
@@ -143,6 +150,7 @@ class Recipe {
       source: source ?? this.source,
       notes: notes ?? this.notes,
       servings: servings != null ? servings() : this.servings,
+      servingsUnit: servingsUnit ?? this.servingsUnit,
       prepMinutes: prepMinutes != null ? prepMinutes() : this.prepMinutes,
       cookMinutes: cookMinutes != null ? cookMinutes() : this.cookMinutes,
       restMinutes: restMinutes != null ? restMinutes() : this.restMinutes,

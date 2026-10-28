@@ -273,7 +273,7 @@ abstract final class IngredientText {
       if (line.unit.isNotEmpty) {
         buffer.write(_unitFor(line.unit, line.quantity!));
         buffer.write(' ');
-        if (line.name.isNotEmpty) buffer.write(_partitive(line.name));
+        if (line.name.isNotEmpty) buffer.write(partitive(line.name));
       }
     }
     buffer.write(line.name);
@@ -404,7 +404,8 @@ abstract final class IngredientText {
     return _displayForm[unit] ?? unit;
   }
 
-  static String _partitive(String name) {
+  /// « de » ou « d' » devant un nom, pour « 200 g de farine », « 1 pot d'huile ».
+  static String partitive(String name) {
     final first = name[0].toLowerCase();
     return 'aeiouyhéèêàâîôû'.contains(first) ? "d'" : 'de ';
   }

@@ -80,6 +80,18 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeRow> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _servingsUnitMeta = const VerificationMeta(
+    'servingsUnit',
+  );
+  @override
+  late final GeneratedColumn<String> servingsUnit = GeneratedColumn<String>(
+    'servings_unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _prepMinutesMeta = const VerificationMeta(
     'prepMinutes',
   );
@@ -245,6 +257,7 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeRow> {
     notes,
     tips,
     servings,
+    servingsUnit,
     prepMinutes,
     cookMinutes,
     restMinutes,
@@ -314,6 +327,15 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeRow> {
       context.handle(
         _servingsMeta,
         servings.isAcceptableOrUnknown(data['servings']!, _servingsMeta),
+      );
+    }
+    if (data.containsKey('servings_unit')) {
+      context.handle(
+        _servingsUnitMeta,
+        servingsUnit.isAcceptableOrUnknown(
+          data['servings_unit']!,
+          _servingsUnitMeta,
+        ),
       );
     }
     if (data.containsKey('prep_minutes')) {
@@ -456,6 +478,10 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeRow> {
         DriftSqlType.int,
         data['${effectivePrefix}servings'],
       ),
+      servingsUnit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}servings_unit'],
+      )!,
       prepMinutes: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}prep_minutes'],
@@ -532,6 +558,9 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
   /// Toujours vide : la colonne reste pour ne pas reconstruire la table.
   final String tips;
   final int? servings;
+
+  /// « blinis », « ramequins »… ; vide = des personnes. Ajouté en v4.
+  final String servingsUnit;
   final int? prepMinutes;
   final int? cookMinutes;
   final int? restMinutes;
@@ -563,6 +592,7 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     required this.notes,
     required this.tips,
     this.servings,
+    required this.servingsUnit,
     this.prepMinutes,
     this.cookMinutes,
     this.restMinutes,
@@ -590,6 +620,7 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     if (!nullToAbsent || servings != null) {
       map['servings'] = Variable<int>(servings);
     }
+    map['servings_unit'] = Variable<String>(servingsUnit);
     if (!nullToAbsent || prepMinutes != null) {
       map['prep_minutes'] = Variable<int>(prepMinutes);
     }
@@ -632,6 +663,7 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
       servings: servings == null && nullToAbsent
           ? const Value.absent()
           : Value(servings),
+      servingsUnit: Value(servingsUnit),
       prepMinutes: prepMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(prepMinutes),
@@ -676,6 +708,7 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
       notes: serializer.fromJson<String>(json['notes']),
       tips: serializer.fromJson<String>(json['tips']),
       servings: serializer.fromJson<int?>(json['servings']),
+      servingsUnit: serializer.fromJson<String>(json['servingsUnit']),
       prepMinutes: serializer.fromJson<int?>(json['prepMinutes']),
       cookMinutes: serializer.fromJson<int?>(json['cookMinutes']),
       restMinutes: serializer.fromJson<int?>(json['restMinutes']),
@@ -703,6 +736,7 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
       'notes': serializer.toJson<String>(notes),
       'tips': serializer.toJson<String>(tips),
       'servings': serializer.toJson<int?>(servings),
+      'servingsUnit': serializer.toJson<String>(servingsUnit),
       'prepMinutes': serializer.toJson<int?>(prepMinutes),
       'cookMinutes': serializer.toJson<int?>(cookMinutes),
       'restMinutes': serializer.toJson<int?>(restMinutes),
@@ -728,6 +762,7 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     String? notes,
     String? tips,
     Value<int?> servings = const Value.absent(),
+    String? servingsUnit,
     Value<int?> prepMinutes = const Value.absent(),
     Value<int?> cookMinutes = const Value.absent(),
     Value<int?> restMinutes = const Value.absent(),
@@ -750,6 +785,7 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     notes: notes ?? this.notes,
     tips: tips ?? this.tips,
     servings: servings.present ? servings.value : this.servings,
+    servingsUnit: servingsUnit ?? this.servingsUnit,
     prepMinutes: prepMinutes.present ? prepMinutes.value : this.prepMinutes,
     cookMinutes: cookMinutes.present ? cookMinutes.value : this.cookMinutes,
     restMinutes: restMinutes.present ? restMinutes.value : this.restMinutes,
@@ -776,6 +812,9 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
       notes: data.notes.present ? data.notes.value : this.notes,
       tips: data.tips.present ? data.tips.value : this.tips,
       servings: data.servings.present ? data.servings.value : this.servings,
+      servingsUnit: data.servingsUnit.present
+          ? data.servingsUnit.value
+          : this.servingsUnit,
       prepMinutes: data.prepMinutes.present
           ? data.prepMinutes.value
           : this.prepMinutes,
@@ -815,6 +854,7 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
           ..write('notes: $notes, ')
           ..write('tips: $tips, ')
           ..write('servings: $servings, ')
+          ..write('servingsUnit: $servingsUnit, ')
           ..write('prepMinutes: $prepMinutes, ')
           ..write('cookMinutes: $cookMinutes, ')
           ..write('restMinutes: $restMinutes, ')
@@ -842,6 +882,7 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     notes,
     tips,
     servings,
+    servingsUnit,
     prepMinutes,
     cookMinutes,
     restMinutes,
@@ -868,6 +909,7 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
           other.notes == this.notes &&
           other.tips == this.tips &&
           other.servings == this.servings &&
+          other.servingsUnit == this.servingsUnit &&
           other.prepMinutes == this.prepMinutes &&
           other.cookMinutes == this.cookMinutes &&
           other.restMinutes == this.restMinutes &&
@@ -892,6 +934,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
   final Value<String> notes;
   final Value<String> tips;
   final Value<int?> servings;
+  final Value<String> servingsUnit;
   final Value<int?> prepMinutes;
   final Value<int?> cookMinutes;
   final Value<int?> restMinutes;
@@ -915,6 +958,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     this.notes = const Value.absent(),
     this.tips = const Value.absent(),
     this.servings = const Value.absent(),
+    this.servingsUnit = const Value.absent(),
     this.prepMinutes = const Value.absent(),
     this.cookMinutes = const Value.absent(),
     this.restMinutes = const Value.absent(),
@@ -939,6 +983,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     this.notes = const Value.absent(),
     this.tips = const Value.absent(),
     this.servings = const Value.absent(),
+    this.servingsUnit = const Value.absent(),
     this.prepMinutes = const Value.absent(),
     this.cookMinutes = const Value.absent(),
     this.restMinutes = const Value.absent(),
@@ -965,6 +1010,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     Expression<String>? notes,
     Expression<String>? tips,
     Expression<int>? servings,
+    Expression<String>? servingsUnit,
     Expression<int>? prepMinutes,
     Expression<int>? cookMinutes,
     Expression<int>? restMinutes,
@@ -989,6 +1035,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
       if (notes != null) 'notes': notes,
       if (tips != null) 'tips': tips,
       if (servings != null) 'servings': servings,
+      if (servingsUnit != null) 'servings_unit': servingsUnit,
       if (prepMinutes != null) 'prep_minutes': prepMinutes,
       if (cookMinutes != null) 'cook_minutes': cookMinutes,
       if (restMinutes != null) 'rest_minutes': restMinutes,
@@ -1015,6 +1062,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     Value<String>? notes,
     Value<String>? tips,
     Value<int?>? servings,
+    Value<String>? servingsUnit,
     Value<int?>? prepMinutes,
     Value<int?>? cookMinutes,
     Value<int?>? restMinutes,
@@ -1039,6 +1087,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
       notes: notes ?? this.notes,
       tips: tips ?? this.tips,
       servings: servings ?? this.servings,
+      servingsUnit: servingsUnit ?? this.servingsUnit,
       prepMinutes: prepMinutes ?? this.prepMinutes,
       cookMinutes: cookMinutes ?? this.cookMinutes,
       restMinutes: restMinutes ?? this.restMinutes,
@@ -1080,6 +1129,9 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     }
     if (servings.present) {
       map['servings'] = Variable<int>(servings.value);
+    }
+    if (servingsUnit.present) {
+      map['servings_unit'] = Variable<String>(servingsUnit.value);
     }
     if (prepMinutes.present) {
       map['prep_minutes'] = Variable<int>(prepMinutes.value);
@@ -1139,6 +1191,7 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
           ..write('notes: $notes, ')
           ..write('tips: $tips, ')
           ..write('servings: $servings, ')
+          ..write('servingsUnit: $servingsUnit, ')
           ..write('prepMinutes: $prepMinutes, ')
           ..write('cookMinutes: $cookMinutes, ')
           ..write('restMinutes: $restMinutes, ')
@@ -2673,6 +2726,7 @@ typedef $$RecipesTableCreateCompanionBuilder = RecipesCompanion Function({
   Value<String> notes,
   Value<String> tips,
   Value<int?> servings,
+  Value<String> servingsUnit,
   Value<int?> prepMinutes,
   Value<int?> cookMinutes,
   Value<int?> restMinutes,
@@ -2697,6 +2751,7 @@ typedef $$RecipesTableUpdateCompanionBuilder = RecipesCompanion Function({
   Value<String> notes,
   Value<String> tips,
   Value<int?> servings,
+  Value<String> servingsUnit,
   Value<int?> prepMinutes,
   Value<int?> cookMinutes,
   Value<int?> restMinutes,
@@ -2832,6 +2887,11 @@ class $$RecipesTableFilterComposer
 
   ColumnFilters<int> get servings => $composableBuilder(
     column: $table.servings,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get servingsUnit => $composableBuilder(
+    column: $table.servingsUnit,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3050,6 +3110,11 @@ class $$RecipesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get servingsUnit => $composableBuilder(
+    column: $table.servingsUnit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get prepMinutes => $composableBuilder(
     column: $table.prepMinutes,
     builder: (column) => ColumnOrderings(column),
@@ -3152,6 +3217,11 @@ class $$RecipesTableAnnotationComposer
 
   GeneratedColumn<int> get servings =>
       $composableBuilder(column: $table.servings, builder: (column) => column);
+
+  GeneratedColumn<String> get servingsUnit => $composableBuilder(
+    column: $table.servingsUnit,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get prepMinutes => $composableBuilder(
     column: $table.prepMinutes,
@@ -3348,6 +3418,7 @@ class $$RecipesTableTableManager
                 Value<String> notes = const Value.absent(),
                 Value<String> tips = const Value.absent(),
                 Value<int?> servings = const Value.absent(),
+                Value<String> servingsUnit = const Value.absent(),
                 Value<int?> prepMinutes = const Value.absent(),
                 Value<int?> cookMinutes = const Value.absent(),
                 Value<int?> restMinutes = const Value.absent(),
@@ -3371,6 +3442,7 @@ class $$RecipesTableTableManager
                 notes: notes,
                 tips: tips,
                 servings: servings,
+                servingsUnit: servingsUnit,
                 prepMinutes: prepMinutes,
                 cookMinutes: cookMinutes,
                 restMinutes: restMinutes,
@@ -3396,6 +3468,7 @@ class $$RecipesTableTableManager
                 Value<String> notes = const Value.absent(),
                 Value<String> tips = const Value.absent(),
                 Value<int?> servings = const Value.absent(),
+                Value<String> servingsUnit = const Value.absent(),
                 Value<int?> prepMinutes = const Value.absent(),
                 Value<int?> cookMinutes = const Value.absent(),
                 Value<int?> restMinutes = const Value.absent(),
@@ -3419,6 +3492,7 @@ class $$RecipesTableTableManager
                 notes: notes,
                 tips: tips,
                 servings: servings,
+                servingsUnit: servingsUnit,
                 prepMinutes: prepMinutes,
                 cookMinutes: cookMinutes,
                 restMinutes: restMinutes,

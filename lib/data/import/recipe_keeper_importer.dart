@@ -138,7 +138,7 @@ abstract final class RecipeKeeperImporter {
     final toTest = categories.contains(toTestCategory);
     final category = categories.where((c) => c != toTestCategory).join(', ');
 
-    final (servings, yieldNote) = _yield(
+    final (servings, servingsUnit, yieldNote) = _yield(
       _text(node.querySelector('[itemprop=recipeYield]')),
     );
     final nutrition = _nutrition(node);
@@ -164,6 +164,7 @@ abstract final class RecipeKeeperImporter {
       source: _text(node.querySelector('[itemprop=recipeSource]')),
       notes: notes,
       servings: servings,
+      servingsUnit: servingsUnit,
       prepMinutes: _minutes(_meta(node, 'prepTime').firstOrNull),
       cookMinutes: _minutes(_meta(node, 'cookTime').firstOrNull),
       mainPhoto: kept.firstOrNull,
@@ -222,19 +223,19 @@ abstract final class RecipeKeeperImporter {
     return lines.join('\n');
   }
 
-  /// « 4 personnes » → 4 portions. Une autre unité (« 15 biscuits ») ne peut
-  /// pas être une portion : le texte d'origine est gardé dans les notes.
-  static (int?, String?) _yield(String text) {
-    if (text.isEmpty) return (null, null);
+  /// « 4 personnes » → 4 ; « 12 blinis » → 12 avec l'unité « blinis ». Un texte
+  /// sans nombre (« Une dizaine ») est gardé dans les notes.
+  static (int?, String, String?) _yield(String text) {
+    if (text.isEmpty) return (null, '', null);
     final match = RegExp(r'^(\d+)\s*(.*)$').firstMatch(text);
-    if (match == null) return (null, 'Quantité : $text');
+    if (match == null) return (null, '', 'Quantité : $text');
     final count = int.parse(match.group(1)!);
-    final unit = match.group(2)!.trim().toLowerCase();
-    if (unit.isEmpty ||
-        RegExp(r'^(personne|portion|part|pers)').hasMatch(unit)) {
-      return (count, null);
-    }
-    return (null, 'Quantité : $text');
+    final unit = match.group(2)!.trim();
+    final people = RegExp(
+      r'^(personne|portion|part|pers)',
+      caseSensitive: false,
+    );
+    return (count, people.hasMatch(unit) ? '' : unit, null);
   }
 
   /// « PT1H15M » → 75 ; « PT0S » → `null`.

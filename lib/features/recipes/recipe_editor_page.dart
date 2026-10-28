@@ -44,6 +44,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
   final _title = TextEditingController();
   final _description = TextEditingController();
   final _servings = TextEditingController();
+  final _servingsUnit = TextEditingController();
   final _prep = TextEditingController();
   final _cook = TextEditingController();
   final _rest = TextEditingController();
@@ -64,6 +65,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _title,
     _description,
     _servings,
+    _servingsUnit,
     _prep,
     _cook,
     _rest,
@@ -89,6 +91,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _title.text = recipe.title;
     _description.text = recipe.description;
     _servings.text = number(recipe.servings);
+    _servingsUnit.text = recipe.servingsUnit;
     _prep.text = number(recipe.prepMinutes);
     _cook.text = number(recipe.cookMinutes);
     _rest.text = number(recipe.restMinutes);
@@ -131,6 +134,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
       title: _title.text.trim(),
       description: _description.text.trim(),
       servings: () => number(_servings),
+      servingsUnit: _servingsUnit.text.trim(),
       prepMinutes: () => number(_prep),
       cookMinutes: () => number(_cook),
       restMinutes: () => number(_rest),
@@ -319,8 +323,25 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
+                      child: TextField(
+                        key: const ValueKey('field-servings-unit'),
+                        controller: _servingsUnit,
+                        decoration: InputDecoration(
+                          labelText: l10n.fieldServingsUnit,
+                          hintText: l10n.fieldServingsUnitHint,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
                       child: _NumberField(_timesCooked, l10n.fieldTimesCooked),
                     ),
+                    const SizedBox(width: 12),
+                    const Expanded(child: SizedBox.shrink()),
                   ],
                 ),
                 const SizedBox(height: 12),
