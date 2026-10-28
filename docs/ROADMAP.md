@@ -108,11 +108,11 @@ Objectif : retrouver toute ta bibliothèque et pouvoir lâcher Recipe Keeper pou
 - Statut : à tester / validée / à améliorer
 
 *Avancement* : la 0.2 se livre en deux étapes de test.
-- **Étape 1 (en test)** : import Recipe Keeper (ton export : 327 recettes, 348 photos) ; les
+- **Étape 1** : import Recipe Keeper (ton export : 327 recettes, 348 photos) ; les
   champs sont repris tels quels (favori, statut « à tester », type de plat, catégorie,
   collections, photos supplémentaires, recettes liées) et s'affichent sur la fiche. Les notes
-  en étoiles de Recipe Keeper ne sont pas reprises (décision du 2026-10-28).
-- **Étape 1** : validée par la personne qui teste (2026-10-28).
+  en étoiles de Recipe Keeper ne sont pas reprises (décision du 2026-10-28). Validée le
+  2026-10-28.
 - **Étape 2 (en test)** : tout ce qui se saisit à la main (étoiles, statut, plusieurs photos, liens
   vidéo, étapes mises en forme, matériel, substitutions, choix des recettes liées). Les
   « conseils » restent dans les Notes (champ unique, décision de la 0.1).
