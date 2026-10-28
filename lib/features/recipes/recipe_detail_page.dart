@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/format/durations.dart';
+import '../../core/widgets/formatted_text.dart';
 import '../../core/widgets/linked_text.dart';
 import '../../data/app_services.dart';
 import '../../domain/ingredient_text.dart';
@@ -223,8 +224,12 @@ class _RecipeDetail extends ConsumerWidget {
                     onStatus: (status) => ref
                         .read(recipeRepositoryProvider)
                         .setStatus(recipe.id, status),
+                    onRating: (rating) => ref
+                        .read(recipeRepositoryProvider)
+                        .setRating(recipe.id, rating),
                   ),
                   _IngredientsSection(recipe: recipe),
+                  _EquipmentSection(recipe: recipe),
                   _StepsSection(recipe: recipe),
                   ..._secondarySections(context, ref),
                 ],
@@ -283,8 +288,12 @@ class _RecipeDetail extends ConsumerWidget {
                         onStatus: (status) => ref
                             .read(recipeRepositoryProvider)
                             .setStatus(recipe.id, status),
+                        onRating: (rating) => ref
+                            .read(recipeRepositoryProvider)
+                            .setRating(recipe.id, rating),
                       ),
                       _IngredientsSection(recipe: recipe),
+                      _EquipmentSection(recipe: recipe),
                     ],
                   ),
                 ),
@@ -409,11 +418,13 @@ class _Header extends StatelessWidget {
     required this.recipe,
     required this.onCooked,
     required this.onStatus,
+    required this.onRating,
   });
 
   final Recipe recipe;
   final VoidCallback onCooked;
   final ValueChanged<RecipeStatus?> onStatus;
+  final ValueChanged<int?> onRating;
 
   @override
   Widget build(BuildContext context) {
@@ -456,6 +467,8 @@ class _Header extends StatelessWidget {
         ],
         const SizedBox(height: 14),
         _StatusRow(recipe: recipe, onCooked: onCooked, onStatus: onStatus),
+        const SizedBox(height: 8),
+        _StarRating(rating: recipe.rating, onChanged: onRating),
         if (labels.isNotEmpty) ...[
           const SizedBox(height: 12),
           Wrap(
@@ -638,7 +651,11 @@ class _IngredientsSection extends StatelessWidget {
         continue;
       }
       children.add(
-        _IngredientRow(line: line, optionalLabel: l10n.optionalIngredient),
+        _IngredientRow(
+          line: line,
+          optionalLabel: l10n.optionalIngredient,
+          substitutesPrefix: l10n.substitutesPrefix,
+        ),
       );
     }
     return Column(
@@ -649,10 +666,15 @@ class _IngredientsSection extends StatelessWidget {
 }
 
 class _IngredientRow extends StatelessWidget {
-  const _IngredientRow({required this.line, required this.optionalLabel});
+  const _IngredientRow({
+    required this.line,
+    required this.optionalLabel,
+    required this.substitutesPrefix,
+  });
 
   final IngredientLine line;
   final String optionalLabel;
+  final String substitutesPrefix;
 
   @override
   Widget build(BuildContext context) {
@@ -668,27 +690,40 @@ class _IngredientRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 9),
-      child: Text.rich(
-        TextSpan(
-          children: [
-            if (amount.isNotEmpty)
-              TextSpan(
-                text: '$amount ',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text.rich(
             TextSpan(
-              text: amount.isEmpty ? _capitalize(name) : '$connector$name',
+              children: [
+                if (amount.isNotEmpty)
+                  TextSpan(
+                    text: '$amount ',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                TextSpan(
+                  text: amount.isEmpty ? _capitalize(name) : '$connector$name',
+                ),
+                if (line.note.isNotEmpty)
+                  TextSpan(text: ', ${line.note}', style: muted),
+                if (line.optional)
+                  TextSpan(
+                    text: ' · $optionalLabel',
+                    style: muted.copyWith(fontStyle: FontStyle.italic),
+                  ),
+              ],
             ),
-            if (line.note.isNotEmpty)
-              TextSpan(text: ', ${line.note}', style: muted),
-            if (line.optional)
-              TextSpan(
-                text: ' · $optionalLabel',
-                style: muted.copyWith(fontStyle: FontStyle.italic),
+            style: theme.textTheme.bodyLarge,
+          ),
+          if (line.substitutes.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                '$substitutesPrefix\u00a0: ${line.substitutes}',
+                style: theme.textTheme.bodySmall?.merge(muted),
               ),
-          ],
-        ),
-        style: theme.textTheme.bodyLarge,
+            ),
+        ],
       ),
     );
   }
@@ -745,7 +780,7 @@ class _StepsSection extends StatelessWidget {
                             ),
                           ),
                         ),
-                      Text(
+                      FormattedText(
                         step.text,
                         style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
                       ),
@@ -900,6 +935,29 @@ class _AboutSection extends StatelessWidget {
             '${l10n.collectionsLabel} : ${recipe.collections.join(' · ')}',
             style: theme.textTheme.bodyMedium,
           ),
+        ],
+        if (recipe.videoLinks.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(l10n.videosLabel, style: theme.textTheme.titleSmall),
+          const SizedBox(height: 4),
+          for (final link in recipe.videoLinks)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.play_circle_outline,
+                    size: 20,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: LinkedText(link, style: theme.textTheme.bodyMedium),
+                  ),
+                ],
+              ),
+            ),
         ],
         if (recipe.linkedRecipeIds.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -1060,6 +1118,80 @@ class _StatusRow extends StatelessWidget {
           onPressed: onCooked,
           visualDensity: VisualDensity.compact,
         ),
+      ],
+    );
+  }
+}
+
+class _EquipmentSection extends StatelessWidget {
+  const _EquipmentSection({required this.recipe});
+
+  final Recipe recipe;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = recipe.equipment.where((e) => e.trim().isNotEmpty).toList();
+    if (items.isEmpty) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionTitle(l10n.equipment),
+        for (final item in items)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.kitchen_outlined,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(item.trim(), style: theme.textTheme.bodyLarge),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Cinq étoiles : un appui note de 1 à 5, un appui sur l'étoile déjà choisie
+/// retire la note.
+class _StarRating extends StatelessWidget {
+  const _StarRating({required this.rating, required this.onChanged});
+
+  final int? rating;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var star = 1; star <= 5; star++)
+          InkResponse(
+            radius: 20,
+            onTap: () => onChanged(rating == star ? null : star),
+            child: Tooltip(
+              message: rating == star ? l10n.clearRating : l10n.rateStars(star),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: Icon(
+                  star <= (rating ?? 0) ? Icons.star : Icons.star_border,
+                  size: 26,
+                  color: scheme.tertiary,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

@@ -12,9 +12,10 @@ import '../photo_store.dart';
 /// - v3 : favori, note, statut, type de plat, catégorie, collections, photos
 ///   supplémentaires et recettes liées.
 /// - v4 : `servingsUnit` (« 12 blinis »).
+/// - v5 : `equipment`, `videoLinks` et `substitutes` des ingrédients.
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 4;
+  static const currentVersion = 5;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 
@@ -53,6 +54,8 @@ abstract final class BackupFormat {
     'category': r.category,
     'collections': r.collections,
     'linkedRecipes': r.linkedRecipeIds,
+    'equipment': r.equipment,
+    'videoLinks': r.videoLinks,
     'createdAt': r.createdAt.toUtc().toIso8601String(),
     'updatedAt': r.updatedAt.toUtc().toIso8601String(),
     'deletedAt': r.deletedAt?.toUtc().toIso8601String(),
@@ -66,6 +69,7 @@ abstract final class BackupFormat {
           'unit': i.unit,
           'note': i.note,
           'optional': i.optional,
+          'substitutes': i.substitutes,
         },
     ],
     'steps': [
@@ -144,6 +148,8 @@ abstract final class BackupFormat {
       category: _string(m, 'category'),
       collections: _strings(m, 'collections'),
       linkedRecipeIds: _strings(m, 'linkedRecipes'),
+      equipment: _strings(m, 'equipment'),
+      videoLinks: _strings(m, 'videoLinks'),
       createdAt: _date(m, 'createdAt')!,
       updatedAt: _date(m, 'updatedAt')!,
       deletedAt: _date(m, 'deletedAt', required: false),
@@ -159,6 +165,7 @@ abstract final class BackupFormat {
               unit: _string(i, 'unit'),
               note: _string(i, 'note'),
               optional: i['optional'] == true,
+              substitutes: _string(i, 'substitutes'),
             );
           }(),
       ],

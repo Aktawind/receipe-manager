@@ -215,6 +215,30 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeRow> {
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _equipmentMeta = const VerificationMeta(
+    'equipment',
+  );
+  @override
+  late final GeneratedColumn<String> equipment = GeneratedColumn<String>(
+    'equipment',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _videoLinksMeta = const VerificationMeta(
+    'videoLinks',
+  );
+  @override
+  late final GeneratedColumn<String> videoLinks = GeneratedColumn<String>(
+    'video_links',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -269,6 +293,8 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeRow> {
     course,
     category,
     collections,
+    equipment,
+    videoLinks,
     createdAt,
     updatedAt,
     deletedAt,
@@ -419,6 +445,18 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeRow> {
         ),
       );
     }
+    if (data.containsKey('equipment')) {
+      context.handle(
+        _equipmentMeta,
+        equipment.isAcceptableOrUnknown(data['equipment']!, _equipmentMeta),
+      );
+    }
+    if (data.containsKey('video_links')) {
+      context.handle(
+        _videoLinksMeta,
+        videoLinks.isAcceptableOrUnknown(data['video_links']!, _videoLinksMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -526,6 +564,14 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeRow> {
         DriftSqlType.string,
         data['${effectivePrefix}collections'],
       )!,
+      equipment: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}equipment'],
+      )!,
+      videoLinks: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_links'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -581,6 +627,10 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
   final String course;
   final String category;
   final String collections;
+
+  /// Matériel nécessaire et liens vidéo, un par ligne ; ajoutés en v5.
+  final String equipment;
+  final String videoLinks;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -604,6 +654,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     required this.course,
     required this.category,
     required this.collections,
+    required this.equipment,
+    required this.videoLinks,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -644,6 +696,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     map['course'] = Variable<String>(course);
     map['category'] = Variable<String>(category);
     map['collections'] = Variable<String>(collections);
+    map['equipment'] = Variable<String>(equipment);
+    map['video_links'] = Variable<String>(videoLinks);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
@@ -687,6 +741,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
       course: Value(course),
       category: Value(category),
       collections: Value(collections),
+      equipment: Value(equipment),
+      videoLinks: Value(videoLinks),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
@@ -720,6 +776,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
       course: serializer.fromJson<String>(json['course']),
       category: serializer.fromJson<String>(json['category']),
       collections: serializer.fromJson<String>(json['collections']),
+      equipment: serializer.fromJson<String>(json['equipment']),
+      videoLinks: serializer.fromJson<String>(json['videoLinks']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
@@ -748,6 +806,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
       'course': serializer.toJson<String>(course),
       'category': serializer.toJson<String>(category),
       'collections': serializer.toJson<String>(collections),
+      'equipment': serializer.toJson<String>(equipment),
+      'videoLinks': serializer.toJson<String>(videoLinks),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
@@ -774,6 +834,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     String? course,
     String? category,
     String? collections,
+    String? equipment,
+    String? videoLinks,
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
@@ -797,6 +859,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     course: course ?? this.course,
     category: category ?? this.category,
     collections: collections ?? this.collections,
+    equipment: equipment ?? this.equipment,
+    videoLinks: videoLinks ?? this.videoLinks,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
@@ -838,6 +902,10 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
       collections: data.collections.present
           ? data.collections.value
           : this.collections,
+      equipment: data.equipment.present ? data.equipment.value : this.equipment,
+      videoLinks: data.videoLinks.present
+          ? data.videoLinks.value
+          : this.videoLinks,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
@@ -866,6 +934,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
           ..write('course: $course, ')
           ..write('category: $category, ')
           ..write('collections: $collections, ')
+          ..write('equipment: $equipment, ')
+          ..write('videoLinks: $videoLinks, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt')
@@ -894,6 +964,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     course,
     category,
     collections,
+    equipment,
+    videoLinks,
     createdAt,
     updatedAt,
     deletedAt,
@@ -921,6 +993,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
           other.course == this.course &&
           other.category == this.category &&
           other.collections == this.collections &&
+          other.equipment == this.equipment &&
+          other.videoLinks == this.videoLinks &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt);
@@ -946,6 +1020,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
   final Value<String> course;
   final Value<String> category;
   final Value<String> collections;
+  final Value<String> equipment;
+  final Value<String> videoLinks;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
@@ -970,6 +1046,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     this.course = const Value.absent(),
     this.category = const Value.absent(),
     this.collections = const Value.absent(),
+    this.equipment = const Value.absent(),
+    this.videoLinks = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -995,6 +1073,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     this.course = const Value.absent(),
     this.category = const Value.absent(),
     this.collections = const Value.absent(),
+    this.equipment = const Value.absent(),
+    this.videoLinks = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
@@ -1022,6 +1102,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     Expression<String>? course,
     Expression<String>? category,
     Expression<String>? collections,
+    Expression<String>? equipment,
+    Expression<String>? videoLinks,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
@@ -1047,6 +1129,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
       if (course != null) 'course': course,
       if (category != null) 'category': category,
       if (collections != null) 'collections': collections,
+      if (equipment != null) 'equipment': equipment,
+      if (videoLinks != null) 'video_links': videoLinks,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
@@ -1074,6 +1158,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     Value<String>? course,
     Value<String>? category,
     Value<String>? collections,
+    Value<String>? equipment,
+    Value<String>? videoLinks,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
@@ -1099,6 +1185,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
       course: course ?? this.course,
       category: category ?? this.category,
       collections: collections ?? this.collections,
+      equipment: equipment ?? this.equipment,
+      videoLinks: videoLinks ?? this.videoLinks,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -1166,6 +1254,12 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     if (collections.present) {
       map['collections'] = Variable<String>(collections.value);
     }
+    if (equipment.present) {
+      map['equipment'] = Variable<String>(equipment.value);
+    }
+    if (videoLinks.present) {
+      map['video_links'] = Variable<String>(videoLinks.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1203,6 +1297,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
           ..write('course: $course, ')
           ..write('category: $category, ')
           ..write('collections: $collections, ')
+          ..write('equipment: $equipment, ')
+          ..write('videoLinks: $videoLinks, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -1323,6 +1419,18 @@ class $IngredientsTable extends Ingredients
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _substitutesMeta = const VerificationMeta(
+    'substitutes',
+  );
+  @override
+  late final GeneratedColumn<String> substitutes = GeneratedColumn<String>(
+    'substitutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1334,6 +1442,7 @@ class $IngredientsTable extends Ingredients
     unit,
     note,
     optional,
+    substitutes,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1404,6 +1513,15 @@ class $IngredientsTable extends Ingredients
         optional.isAcceptableOrUnknown(data['optional']!, _optionalMeta),
       );
     }
+    if (data.containsKey('substitutes')) {
+      context.handle(
+        _substitutesMeta,
+        substitutes.isAcceptableOrUnknown(
+          data['substitutes']!,
+          _substitutesMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1449,6 +1567,10 @@ class $IngredientsTable extends Ingredients
         DriftSqlType.bool,
         data['${effectivePrefix}optional'],
       )!,
+      substitutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}substitutes'],
+      )!,
     );
   }
 
@@ -1468,6 +1590,9 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
   final String unit;
   final String note;
   final bool optional;
+
+  /// Remplaçants possibles de l'ingrédient ; ajouté en v5.
+  final String substitutes;
   const IngredientRow({
     required this.id,
     required this.recipeId,
@@ -1478,6 +1603,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     required this.unit,
     required this.note,
     required this.optional,
+    required this.substitutes,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1493,6 +1619,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     map['unit'] = Variable<String>(unit);
     map['note'] = Variable<String>(note);
     map['optional'] = Variable<bool>(optional);
+    map['substitutes'] = Variable<String>(substitutes);
     return map;
   }
 
@@ -1509,6 +1636,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
       unit: Value(unit),
       note: Value(note),
       optional: Value(optional),
+      substitutes: Value(substitutes),
     );
   }
 
@@ -1527,6 +1655,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
       unit: serializer.fromJson<String>(json['unit']),
       note: serializer.fromJson<String>(json['note']),
       optional: serializer.fromJson<bool>(json['optional']),
+      substitutes: serializer.fromJson<String>(json['substitutes']),
     );
   }
   @override
@@ -1542,6 +1671,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
       'unit': serializer.toJson<String>(unit),
       'note': serializer.toJson<String>(note),
       'optional': serializer.toJson<bool>(optional),
+      'substitutes': serializer.toJson<String>(substitutes),
     };
   }
 
@@ -1555,6 +1685,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     String? unit,
     String? note,
     bool? optional,
+    String? substitutes,
   }) => IngredientRow(
     id: id ?? this.id,
     recipeId: recipeId ?? this.recipeId,
@@ -1565,6 +1696,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     unit: unit ?? this.unit,
     note: note ?? this.note,
     optional: optional ?? this.optional,
+    substitutes: substitutes ?? this.substitutes,
   );
   IngredientRow copyWithCompanion(IngredientsCompanion data) {
     return IngredientRow(
@@ -1577,6 +1709,9 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
       unit: data.unit.present ? data.unit.value : this.unit,
       note: data.note.present ? data.note.value : this.note,
       optional: data.optional.present ? data.optional.value : this.optional,
+      substitutes: data.substitutes.present
+          ? data.substitutes.value
+          : this.substitutes,
     );
   }
 
@@ -1591,7 +1726,8 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
           ..write('quantity: $quantity, ')
           ..write('unit: $unit, ')
           ..write('note: $note, ')
-          ..write('optional: $optional')
+          ..write('optional: $optional, ')
+          ..write('substitutes: $substitutes')
           ..write(')'))
         .toString();
   }
@@ -1607,6 +1743,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     unit,
     note,
     optional,
+    substitutes,
   );
   @override
   bool operator ==(Object other) =>
@@ -1620,7 +1757,8 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
           other.quantity == this.quantity &&
           other.unit == this.unit &&
           other.note == this.note &&
-          other.optional == this.optional);
+          other.optional == this.optional &&
+          other.substitutes == this.substitutes);
 }
 
 class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
@@ -1633,6 +1771,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
   final Value<String> unit;
   final Value<String> note;
   final Value<bool> optional;
+  final Value<String> substitutes;
   final Value<int> rowid;
   const IngredientsCompanion({
     this.id = const Value.absent(),
@@ -1644,6 +1783,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     this.unit = const Value.absent(),
     this.note = const Value.absent(),
     this.optional = const Value.absent(),
+    this.substitutes = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   IngredientsCompanion.insert({
@@ -1656,6 +1796,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     this.unit = const Value.absent(),
     this.note = const Value.absent(),
     this.optional = const Value.absent(),
+    this.substitutes = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        recipeId = Value(recipeId),
@@ -1670,6 +1811,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     Expression<String>? unit,
     Expression<String>? note,
     Expression<bool>? optional,
+    Expression<String>? substitutes,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1682,6 +1824,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
       if (unit != null) 'unit': unit,
       if (note != null) 'note': note,
       if (optional != null) 'optional': optional,
+      if (substitutes != null) 'substitutes': substitutes,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1696,6 +1839,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     Value<String>? unit,
     Value<String>? note,
     Value<bool>? optional,
+    Value<String>? substitutes,
     Value<int>? rowid,
   }) {
     return IngredientsCompanion(
@@ -1708,6 +1852,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
       unit: unit ?? this.unit,
       note: note ?? this.note,
       optional: optional ?? this.optional,
+      substitutes: substitutes ?? this.substitutes,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1742,6 +1887,9 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     if (optional.present) {
       map['optional'] = Variable<bool>(optional.value);
     }
+    if (substitutes.present) {
+      map['substitutes'] = Variable<String>(substitutes.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1760,6 +1908,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
           ..write('unit: $unit, ')
           ..write('note: $note, ')
           ..write('optional: $optional, ')
+          ..write('substitutes: $substitutes, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2738,6 +2887,8 @@ typedef $$RecipesTableCreateCompanionBuilder = RecipesCompanion Function({
   Value<String> course,
   Value<String> category,
   Value<String> collections,
+  Value<String> equipment,
+  Value<String> videoLinks,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<DateTime?> deletedAt,
@@ -2763,6 +2914,8 @@ typedef $$RecipesTableUpdateCompanionBuilder = RecipesCompanion Function({
   Value<String> course,
   Value<String> category,
   Value<String> collections,
+  Value<String> equipment,
+  Value<String> videoLinks,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<DateTime?> deletedAt,
@@ -2947,6 +3100,16 @@ class $$RecipesTableFilterComposer
 
   ColumnFilters<String> get collections => $composableBuilder(
     column: $table.collections,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get equipment => $composableBuilder(
+    column: $table.equipment,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoLinks => $composableBuilder(
+    column: $table.videoLinks,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3170,6 +3333,16 @@ class $$RecipesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get equipment => $composableBuilder(
+    column: $table.equipment,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get videoLinks => $composableBuilder(
+    column: $table.videoLinks,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -3265,6 +3438,14 @@ class $$RecipesTableAnnotationComposer
 
   GeneratedColumn<String> get collections => $composableBuilder(
     column: $table.collections,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get equipment =>
+      $composableBuilder(column: $table.equipment, builder: (column) => column);
+
+  GeneratedColumn<String> get videoLinks => $composableBuilder(
+    column: $table.videoLinks,
     builder: (column) => column,
   );
 
@@ -3430,6 +3611,8 @@ class $$RecipesTableTableManager
                 Value<String> course = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<String> collections = const Value.absent(),
+                Value<String> equipment = const Value.absent(),
+                Value<String> videoLinks = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -3454,6 +3637,8 @@ class $$RecipesTableTableManager
                 course: course,
                 category: category,
                 collections: collections,
+                equipment: equipment,
+                videoLinks: videoLinks,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -3480,6 +3665,8 @@ class $$RecipesTableTableManager
                 Value<String> course = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<String> collections = const Value.absent(),
+                Value<String> equipment = const Value.absent(),
+                Value<String> videoLinks = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -3504,6 +3691,8 @@ class $$RecipesTableTableManager
                 course: course,
                 category: category,
                 collections: collections,
+                equipment: equipment,
+                videoLinks: videoLinks,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -3653,6 +3842,7 @@ typedef $$IngredientsTableCreateCompanionBuilder =
       Value<String> unit,
       Value<String> note,
       Value<bool> optional,
+      Value<String> substitutes,
       Value<int> rowid,
     });
 typedef $$IngredientsTableUpdateCompanionBuilder =
@@ -3666,6 +3856,7 @@ typedef $$IngredientsTableUpdateCompanionBuilder =
       Value<String> unit,
       Value<String> note,
       Value<bool> optional,
+      Value<String> substitutes,
       Value<int> rowid,
     });
 
@@ -3737,6 +3928,11 @@ class $$IngredientsTableFilterComposer
 
   ColumnFilters<bool> get optional => $composableBuilder(
     column: $table.optional,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get substitutes => $composableBuilder(
+    column: $table.substitutes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3813,6 +4009,11 @@ class $$IngredientsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get substitutes => $composableBuilder(
+    column: $table.substitutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$RecipesTableOrderingComposer get recipeId {
     final $$RecipesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3869,6 +4070,11 @@ class $$IngredientsTableAnnotationComposer
 
   GeneratedColumn<bool> get optional =>
       $composableBuilder(column: $table.optional, builder: (column) => column);
+
+  GeneratedColumn<String> get substitutes => $composableBuilder(
+    column: $table.substitutes,
+    builder: (column) => column,
+  );
 
   $$RecipesTableAnnotationComposer get recipeId {
     final $$RecipesTableAnnotationComposer composer = $composerBuilder(
@@ -3931,6 +4137,7 @@ class $$IngredientsTableTableManager
                 Value<String> unit = const Value.absent(),
                 Value<String> note = const Value.absent(),
                 Value<bool> optional = const Value.absent(),
+                Value<String> substitutes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IngredientsCompanion(
                 id: id,
@@ -3942,6 +4149,7 @@ class $$IngredientsTableTableManager
                 unit: unit,
                 note: note,
                 optional: optional,
+                substitutes: substitutes,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3955,6 +4163,7 @@ class $$IngredientsTableTableManager
                 Value<String> unit = const Value.absent(),
                 Value<String> note = const Value.absent(),
                 Value<bool> optional = const Value.absent(),
+                Value<String> substitutes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IngredientsCompanion.insert(
                 id: id,
@@ -3966,6 +4175,7 @@ class $$IngredientsTableTableManager
                 unit: unit,
                 note: note,
                 optional: optional,
+                substitutes: substitutes,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

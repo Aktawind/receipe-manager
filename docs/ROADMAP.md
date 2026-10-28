@@ -9,7 +9,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 |---|---|---|
 | [0.0](#00--fondations) | Fondations | ✅ |
 | [0.1](#01--saisir-ses-recettes-et-les-sauvegarder) | Saisir ses recettes et les sauvegarder | ✅ |
-| [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | 🟨 |
+| [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | 🟦 |
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ⬜ |
 | [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ⬜ |
 | [0.5](#05--recherche-et-filtres) | Recherche et filtres | ⬜ |
@@ -108,12 +108,14 @@ Objectif : retrouver toute ta bibliothèque et pouvoir lâcher Recipe Keeper pou
 - Statut : à tester / validée / à améliorer
 
 *Avancement* : la 0.2 se livre en deux étapes de test.
-- **Étape 1 (en test)** : import Recipe Keeper (ton export : 327 recettes, 348 photos) ; les
+- **Étape 1** : import Recipe Keeper (ton export : 327 recettes, 348 photos) ; les
   champs sont repris tels quels (favori, statut « à tester », type de plat, catégorie,
   collections, photos supplémentaires, recettes liées) et s'affichent sur la fiche. Les notes
-  en étoiles de Recipe Keeper ne sont pas reprises (décision du 2026-10-28).
-- **Étape 2** : tout ce qui se saisit à la main (étoiles, statut, plusieurs photos, liens
-  vidéo, étapes mises en forme, matériel, conseils, substitutions, choix des recettes liées).
+  en étoiles de Recipe Keeper ne sont pas reprises (décision du 2026-10-28). Validée le
+  2026-10-28.
+- **Étape 2 (en test)** : tout ce qui se saisit à la main (étoiles, statut, plusieurs photos, liens
+  vidéo, étapes mises en forme, matériel, substitutions, choix des recettes liées). Les
+  « conseils » restent dans les Notes (champ unique, décision de la 0.1).
 
 **À tester** : importer toute ta bibliothèque Recipe Keeper et vérifier un échantillon de recettes.
 

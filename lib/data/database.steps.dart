@@ -744,10 +744,219 @@ i1.GeneratedColumn<String> _column_32(String aliasedName) =>
       $customConstraints: 'NOT NULL DEFAULT \'\'',
       defaultValue: const i1.CustomExpression('\'\''),
     );
+
+final class Schema5 extends i0.VersionedSchema {
+  Schema5({required super.database}) : super(version: 5);
+  @override
+  late final List<i1.DatabaseSchemaEntity> entities = [
+    recipes,
+    ingredients,
+    recipeSteps,
+    recipePhotos,
+    recipeLinks,
+  ];
+  late final Shape7 recipes = Shape7(
+    source: i0.VersionedTable(
+      entityName: 'recipes',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_4,
+        _column_5,
+        _column_6,
+        _column_32,
+        _column_7,
+        _column_8,
+        _column_9,
+        _column_10,
+        _column_11,
+        _column_24,
+        _column_25,
+        _column_26,
+        _column_27,
+        _column_28,
+        _column_29,
+        _column_33,
+        _column_34,
+        _column_12,
+        _column_13,
+        _column_14,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape8 ingredients = Shape8(
+    source: i0.VersionedTable(
+      entityName: 'ingredients',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_15,
+        _column_16,
+        _column_17,
+        _column_18,
+        _column_19,
+        _column_20,
+        _column_21,
+        _column_22,
+        _column_35,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape2 recipeSteps = Shape2(
+    source: i0.VersionedTable(
+      entityName: 'recipe_steps',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [_column_0, _column_15, _column_16, _column_1, _column_23],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape4 recipePhotos = Shape4(
+    source: i0.VersionedTable(
+      entityName: 'recipe_photos',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(recipe_id, position)'],
+      columns: [_column_15, _column_16, _column_30],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape5 recipeLinks = Shape5(
+    source: i0.VersionedTable(
+      entityName: 'recipe_links',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(recipe_id, position)'],
+      columns: [_column_15, _column_16, _column_31],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+}
+
+class Shape7 extends i0.VersionedTable {
+  Shape7({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get title =>
+      columnsByName['title']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get description =>
+      columnsByName['description']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get source =>
+      columnsByName['source']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get notes =>
+      columnsByName['notes']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get tips =>
+      columnsByName['tips']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get servings =>
+      columnsByName['servings']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get servingsUnit =>
+      columnsByName['servings_unit']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get prepMinutes =>
+      columnsByName['prep_minutes']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get cookMinutes =>
+      columnsByName['cook_minutes']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get restMinutes =>
+      columnsByName['rest_minutes']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get timesCooked =>
+      columnsByName['times_cooked']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get mainPhoto =>
+      columnsByName['main_photo']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get isFavorite =>
+      columnsByName['is_favorite']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get rating =>
+      columnsByName['rating']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get status =>
+      columnsByName['status']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get course =>
+      columnsByName['course']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get category =>
+      columnsByName['category']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get collections =>
+      columnsByName['collections']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get equipment =>
+      columnsByName['equipment']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get videoLinks =>
+      columnsByName['video_links']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get createdAt =>
+      columnsByName['created_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get updatedAt =>
+      columnsByName['updated_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get deletedAt =>
+      columnsByName['deleted_at']! as i1.GeneratedColumn<String>;
+}
+
+i1.GeneratedColumn<String> _column_33(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'equipment',
+      aliasedName,
+      false,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NOT NULL DEFAULT \'\'',
+      defaultValue: const i1.CustomExpression('\'\''),
+    );
+i1.GeneratedColumn<String> _column_34(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'video_links',
+      aliasedName,
+      false,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NOT NULL DEFAULT \'\'',
+      defaultValue: const i1.CustomExpression('\'\''),
+    );
+
+class Shape8 extends i0.VersionedTable {
+  Shape8({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get recipeId =>
+      columnsByName['recipe_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get position =>
+      columnsByName['position']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get isSection =>
+      columnsByName['is_section']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get name =>
+      columnsByName['name']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<double> get quantity =>
+      columnsByName['quantity']! as i1.GeneratedColumn<double>;
+  i1.GeneratedColumn<String> get unit =>
+      columnsByName['unit']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get note =>
+      columnsByName['note']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get optional =>
+      columnsByName['optional']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get substitutes =>
+      columnsByName['substitutes']! as i1.GeneratedColumn<String>;
+}
+
+i1.GeneratedColumn<String> _column_35(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'substitutes',
+      aliasedName,
+      false,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NOT NULL DEFAULT \'\'',
+      defaultValue: const i1.CustomExpression('\'\''),
+    );
 i0.MigrationStepWithVersion migrationSteps({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
   required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
   required Future<void> Function(i1.Migrator m, Schema4 schema) from3To4,
+  required Future<void> Function(i1.Migrator m, Schema5 schema) from4To5,
 }) {
   return (currentVersion, database) async {
     switch (currentVersion) {
@@ -766,6 +975,11 @@ i0.MigrationStepWithVersion migrationSteps({
         final migrator = i1.Migrator(database, schema);
         await from3To4(migrator, schema);
         return 4;
+      case 4:
+        final schema = Schema5(database: database);
+        final migrator = i1.Migrator(database, schema);
+        await from4To5(migrator, schema);
+        return 5;
       default:
         throw ArgumentError.value('Unknown migration from $currentVersion');
     }
@@ -776,10 +990,12 @@ i1.OnUpgrade stepByStep({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
   required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
   required Future<void> Function(i1.Migrator m, Schema4 schema) from3To4,
+  required Future<void> Function(i1.Migrator m, Schema5 schema) from4To5,
 }) => i0.VersionedSchema.stepByStepHelper(
   step: migrationSteps(
     from1To2: from1To2,
     from2To3: from2To3,
     from3To4: from3To4,
+    from4To5: from4To5,
   ),
 );

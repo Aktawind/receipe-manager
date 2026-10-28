@@ -365,5 +365,30 @@
   "quantityLabel": "Quantité",
   "statusNone": "Aucun statut",
   "statusLabel": "Statut",
-  "neverCooked": "Jamais réalisée"
+  "neverCooked": "Jamais réalisée",
+  "equipment": "Matériel",
+  "fieldEquipment": "Matériel nécessaire (un par ligne)",
+  "fieldVideos": "Liens vidéo (un par ligne)",
+  "videosLabel": "Vidéos",
+  "substitutesPrefix": "Ou",
+  "ratingLabel": "Note",
+  "rateStars": "Noter {count} sur 5",
+  "clearRating": "Retirer la note",
+  "morePhotosEdit": "Autres photos",
+  "addMorePhoto": "Ajouter une photo",
+  "removeThisPhoto": "Retirer cette photo",
+  "linkedRecipesEdit": "Recettes utilisées (pâte, sauce…)",
+  "addLinkedRecipe": "Ajouter une recette",
+  "removeLinkedRecipe": "Retirer",
+  "chooseRecipe": "Choisir une recette",
+  "noRecipeToLink": "Aucune autre recette",
+  "formatBold": "Gras",
+  "formatItalic": "Italique",
+  "@rateStars": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

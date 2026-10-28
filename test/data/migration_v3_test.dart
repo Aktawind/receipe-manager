@@ -66,7 +66,7 @@ void main() {
     await oldDb.close();
 
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 4);
+    await verifier.migrateAndValidate(db, 5);
 
     final repo = RecipeRepository(db);
     final recipe = (await repo.getRecipe('r1'))!;

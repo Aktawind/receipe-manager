@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/format/text_search.dart';
 import '../../data/app_services.dart';
 import '../../data/photo_store.dart';
 import '../../data/recipe_repository.dart';
@@ -14,6 +15,7 @@ import '../../domain/recipe.dart';
 import '../../domain/step_text.dart';
 import '../../l10n/app_localizations.dart';
 import 'recipe_photo.dart';
+import 'recipe_providers.dart';
 
 /// Délai entre la dernière frappe et l'enregistrement automatique.
 const autosaveDelay = Duration(milliseconds: 800);
@@ -53,7 +55,11 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
   final _notes = TextEditingController();
   final _ingredients = TextEditingController();
   final _steps = TextEditingController();
+  final _equipment = TextEditingController();
+  final _videos = TextEditingController();
   String? _photo;
+  var _extraPhotos = <String>[];
+  var _linkedRecipes = <String>[];
   final _replacedPhotos = <String>{};
 
   Timer? _saveTimer;
@@ -74,6 +80,8 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _notes,
     _ingredients,
     _steps,
+    _equipment,
+    _videos,
   ];
 
   @override
@@ -101,6 +109,10 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _photo = recipe.mainPhoto;
     _ingredients.text = IngredientText.formatList(recipe.ingredients);
     _steps.text = StepText.format(recipe.steps);
+    _equipment.text = recipe.equipment.join('\n');
+    _videos.text = recipe.videoLinks.join('\n');
+    _extraPhotos = [...recipe.extraPhotos];
+    _linkedRecipes = [...recipe.linkedRecipeIds];
     for (final controller in _fieldControllers) {
       controller.addListener(_scheduleSave);
     }
@@ -128,6 +140,11 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     return future;
   }
 
+  List<String> _lines(TextEditingController controller) => [
+    for (final line in controller.text.split('\n'))
+      if (line.trim().isNotEmpty) line.trim(),
+  ];
+
   Recipe _build(Recipe base) {
     int? number(TextEditingController c) => int.tryParse(c.text.trim());
     return base.copyWith(
@@ -142,6 +159,10 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
       source: _source.text.trim(),
       notes: _notes.text.trim(),
       mainPhoto: () => _photo,
+      extraPhotos: _extraPhotos,
+      linkedRecipeIds: _linkedRecipes,
+      equipment: _lines(_equipment),
+      videoLinks: _lines(_videos),
       ingredients: IngredientText.parseList(
         _ingredients.text,
         previousIds: [for (final line in base.ingredients) line.id],
@@ -204,6 +225,99 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l10n.photoError('$error'))));
     }
+  }
+
+  Future<void> _addExtraPhoto() async {
+    final l10n = AppLocalizations.of(context);
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: Text(l10n.takePhoto),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: Text(l10n.chooseFromGallery),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      final name = await _photos.add(File(picked.path));
+      setState(() => _extraPhotos = [..._extraPhotos, name]);
+      _scheduleSave();
+    } on Object catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.photoError('$error'))));
+    }
+  }
+
+  void _removeExtraPhoto(String name) {
+    setState(() {
+      _extraPhotos = [..._extraPhotos]..remove(name);
+      _replacedPhotos.add(name);
+    });
+    _scheduleSave();
+  }
+
+  Future<void> _addLinkedRecipe() async {
+    final all = ref.read(recipesProvider).value ?? const <Recipe>[];
+    final candidates = [
+      for (final r in all)
+        if (r.id != widget.recipeId && !_linkedRecipes.contains(r.id)) r,
+    ];
+    final chosen = await showDialog<Recipe>(
+      context: context,
+      builder: (context) => _RecipePickerDialog(candidates: candidates),
+    );
+    if (chosen == null) return;
+    setState(() => _linkedRecipes = [..._linkedRecipes, chosen.id]);
+    _scheduleSave();
+  }
+
+  void _removeLinkedRecipe(String id) {
+    setState(() => _linkedRecipes = [..._linkedRecipes]..remove(id));
+    _scheduleSave();
+  }
+
+  /// Entoure le texte sélectionné de [marker] (« ** » gras, « * » italique) ;
+  /// sans sélection, pose les deux marqueurs et place le curseur entre eux.
+  void _wrapSelection(String marker) {
+    final value = _steps.value;
+    final selection = value.selection;
+    if (!selection.isValid) return;
+    final text = value.text;
+    final selected = selection.textInside(text);
+    final replacement = '$marker$selected$marker';
+    final updated = text.replaceRange(
+      selection.start,
+      selection.end,
+      replacement,
+    );
+    final caret = selection.isCollapsed
+        ? selection.start + marker.length
+        : selection.start + replacement.length;
+    _steps.value = TextEditingValue(
+      text: updated,
+      selection: TextSelection.collapsed(offset: caret),
+    );
   }
 
   void _removePhoto() {
@@ -297,6 +411,11 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                   onTap: _showPhotoMenu,
                   label: _photo == null ? l10n.addPhoto : l10n.changePhoto,
                 ),
+                _ExtraPhotosField(
+                  photos: _extraPhotos,
+                  onAdd: _addExtraPhoto,
+                  onRemove: _removeExtraPhoto,
+                ),
                 const SizedBox(height: 20),
                 TextField(
                   controller: _title,
@@ -380,12 +499,40 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                   minLines: 8,
                   capitalization: TextCapitalization.none,
                 ),
+                _Heading(l10n.fieldEquipment),
+                _BigField(
+                  key: const ValueKey('field-equipment'),
+                  controller: _equipment,
+                  minLines: 2,
+                ),
                 _Heading(l10n.fieldSteps),
+                Row(
+                  children: [
+                    IconButton.outlined(
+                      tooltip: l10n.formatBold,
+                      icon: const Icon(Icons.format_bold),
+                      onPressed: () => _wrapSelection('**'),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.outlined(
+                      tooltip: l10n.formatItalic,
+                      icon: const Icon(Icons.format_italic),
+                      onPressed: () => _wrapSelection('*'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 _BigField(
                   key: const ValueKey('field-steps'),
                   controller: _steps,
                   hint: l10n.stepsHint,
                   minLines: 8,
+                ),
+                _Heading(l10n.linkedRecipesEdit),
+                _LinkedRecipesField(
+                  ids: _linkedRecipes,
+                  onAdd: _addLinkedRecipe,
+                  onRemove: _removeLinkedRecipe,
                 ),
                 _Heading(l10n.fieldNotes),
                 _BigField(
@@ -400,6 +547,14 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                   controller: _source,
                   keyboardType: TextInputType.url,
                   decoration: InputDecoration(labelText: l10n.fieldSource),
+                ),
+                const SizedBox(height: 12),
+                _BigField(
+                  key: const ValueKey('field-videos'),
+                  controller: _videos,
+                  label: l10n.fieldVideos,
+                  minLines: 2,
+                  capitalization: TextCapitalization.none,
                 ),
               ],
             ),
@@ -533,6 +688,198 @@ class _PhotoField extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Les photos en plus de la principale : vignettes carrées, à retirer d'un
+/// appui sur la croix, et une tuile pour en ajouter.
+class _ExtraPhotosField extends ConsumerWidget {
+  const _ExtraPhotosField({
+    required this.photos,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final List<String> photos;
+  final VoidCallback onAdd;
+  final ValueChanged<String> onRemove;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: SizedBox(
+        height: 88,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            for (final name in photos)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: SizedBox.square(
+                  dimension: 88,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: RecipePhoto(photo: name, decodeWidth: 264),
+                      ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: IconButton.filled(
+                          tooltip: l10n.removeThisPhoto,
+                          visualDensity: VisualDensity.compact,
+                          iconSize: 16,
+                          icon: const Icon(Icons.close),
+                          onPressed: () => onRemove(name),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            InkWell(
+              onTap: onAdd,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 88,
+                decoration: BoxDecoration(
+                  border: Border.all(color: theme.colorScheme.outline),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.add_a_photo_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.addMorePhoto,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.labelSmall,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Les recettes utilisées (pâte, sauce) : une pastille par recette, et un
+/// bouton pour en ajouter.
+class _LinkedRecipesField extends ConsumerWidget {
+  const _LinkedRecipesField({
+    required this.ids,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final List<String> ids;
+  final VoidCallback onAdd;
+  final ValueChanged<String> onRemove;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final recipes = {
+      for (final r in ref.watch(recipesProvider).value ?? const <Recipe>[])
+        r.id: r,
+    };
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (final id in ids)
+          if (recipes[id] case final recipe?)
+            InputChip(
+              label: Text(
+                recipe.title.isEmpty ? l10n.untitledRecipe : recipe.title,
+              ),
+              deleteButtonTooltipMessage: l10n.removeLinkedRecipe,
+              onDeleted: () => onRemove(id),
+            ),
+        ActionChip(
+          avatar: const Icon(Icons.add, size: 18),
+          label: Text(l10n.addLinkedRecipe),
+          onPressed: onAdd,
+        ),
+      ],
+    );
+  }
+}
+
+class _RecipePickerDialog extends StatefulWidget {
+  const _RecipePickerDialog({required this.candidates});
+
+  final List<Recipe> candidates;
+
+  @override
+  State<_RecipePickerDialog> createState() => _RecipePickerDialogState();
+}
+
+class _RecipePickerDialogState extends State<_RecipePickerDialog> {
+  var _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final query = normalizeForSearch(_query.trim());
+    final shown = [
+      for (final r in widget.candidates)
+        if (query.isEmpty || normalizeForSearch(r.title).contains(query)) r,
+    ];
+    return AlertDialog(
+      title: Text(l10n.chooseRecipe),
+      content: SizedBox(
+        width: 400,
+        height: 420,
+        child: Column(
+          children: [
+            TextField(
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: l10n.searchRecipes,
+                prefixIcon: const Icon(Icons.search),
+              ),
+              onChanged: (value) => setState(() => _query = value),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: shown.isEmpty
+                  ? Center(child: Text(l10n.noRecipeToLink))
+                  : ListView.builder(
+                      itemCount: shown.length,
+                      itemBuilder: (context, index) => ListTile(
+                        title: Text(
+                          shown[index].title.isEmpty
+                              ? l10n.untitledRecipe
+                              : shown[index].title,
+                        ),
+                        onTap: () => Navigator.pop(context, shown[index]),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+      ],
     );
   }
 }
