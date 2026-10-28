@@ -133,6 +133,20 @@ void main() {
       }
     });
 
+    test('remplaçants : ce qui suit « | »', () {
+      final line = parse('100 g de beurre | huile de coco, margarine');
+      expect(line.name, 'beurre');
+      expect(line.quantity, 100);
+      expect(line.unit, 'g');
+      expect(line.substitutes, 'huile de coco, margarine');
+      expect(
+        IngredientText.format(line),
+        '100 g de beurre | huile de coco, margarine',
+      );
+      expect(parse('sel | fleur de sel').substitutes, 'fleur de sel');
+      expect(parse('2 œufs').substitutes, '');
+    });
+
     test('« Pour 4 personnes » et « pour le service, 2 c. » ne sont pas des titres', () {
       expect(parse('Pour 4 personnes').isSection, isFalse);
       expect(parse('Pour le service, 2 citrons').isSection, isFalse);

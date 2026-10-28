@@ -175,6 +175,13 @@ abstract final class IngredientText {
   /// titre en gras ou « ## », ou « Pour la pâte » devient un titre de groupe.
   static IngredientLine parse(String input, {required String id}) {
     var (text, heading) = _clean(input);
+    // « beurre | huile de coco, margarine » : ce qui suit « | » peut le remplacer.
+    var substitutes = '';
+    final pipe = text.indexOf('|');
+    if (pipe >= 0) {
+      substitutes = text.substring(pipe + 1).trim();
+      text = text.substring(0, pipe).trim();
+    }
     final words = text.split(' ').length;
     final looksLikeFor =
         _forPattern.hasMatch(text) &&
@@ -260,6 +267,7 @@ abstract final class IngredientText {
       unit: unit,
       note: notes.where((n) => n.isNotEmpty).join(', '),
       optional: optional,
+      substitutes: substitutes,
     );
   }
 
@@ -279,6 +287,7 @@ abstract final class IngredientText {
     buffer.write(line.name);
     if (line.note.isNotEmpty) buffer.write(', ${line.note}');
     if (line.optional) buffer.write(' (facultatif)');
+    if (line.substitutes.isNotEmpty) buffer.write(' | ${line.substitutes}');
     return buffer.toString().trim();
   }
 

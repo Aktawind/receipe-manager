@@ -41,6 +41,10 @@ class Recipes extends Table {
   TextColumn get course => text().withDefault(const Constant(''))();
   TextColumn get category => text().withDefault(const Constant(''))();
   TextColumn get collections => text().withDefault(const Constant(''))();
+
+  /// Matériel nécessaire et liens vidéo, un par ligne ; ajoutés en v5.
+  TextColumn get equipment => text().withDefault(const Constant(''))();
+  TextColumn get videoLinks => text().withDefault(const Constant(''))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -61,6 +65,9 @@ class Ingredients extends Table {
   TextColumn get unit => text().withDefault(const Constant(''))();
   TextColumn get note => text().withDefault(const Constant(''))();
   BoolColumn get optional => boolean().withDefault(const Constant(false))();
+
+  /// Remplaçants possibles de l'ingrédient ; ajouté en v5.
+  TextColumn get substitutes => text().withDefault(const Constant(''))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -115,7 +122,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 4;
+  static const latestSchemaVersion = 5;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -182,6 +189,12 @@ UPDATE recipes SET
             ],
           );
         }
+      },
+      // v5 : matériel, liens vidéo et remplaçants d'ingrédients.
+      from4To5: (m, schema) async {
+        await m.addColumn(schema.recipes, schema.recipes.equipment);
+        await m.addColumn(schema.recipes, schema.recipes.videoLinks);
+        await m.addColumn(schema.ingredients, schema.ingredients.substitutes);
       },
     ),
     beforeOpen: (details) async {

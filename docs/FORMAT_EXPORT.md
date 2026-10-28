@@ -12,7 +12,7 @@ recettes-2026-10-27-1430.zip
 
 ## Règles de compatibilité
 
-- Le champ `version` indique la version du format (actuellement **4**).
+- Le champ `version` indique la version du format (actuellement **5**).
 - Toute version de l'application sait lire **toutes les versions précédentes** du format.
 - Une sauvegarde d'une version **plus récente** que l'application est refusée, sans rien
   modifier (message : « Mets l'application à jour »).
@@ -27,6 +27,9 @@ recettes-2026-10-27-1430.zip
 | 2 | 0.1.0 (corrigée) | `tips` supprimé ; son contenu est fusionné dans `notes`. Titre optionnel `title` sur les étapes |
 | 3 | 0.2.0 | Ajout de `favorite`, `rating`, `status`, `course`, `category`, `collections`, `extraPhotos`, `linkedRecipes` |
 | 4 | 0.2.0 | Ajout de `servingsUnit` (« 12 blinis ») |
+| 5 | 0.2.0 | Ajout de `equipment`, `videoLinks` et `ingredients[].substitutes` |
+
+Lecture d'une version 4 : `equipment`, `videoLinks` et `substitutes` sont vides.
 
 Lecture d'une version 3 : `servingsUnit` est vide (des personnes).
 
@@ -36,12 +39,12 @@ Lecture d'une version 2 : les champs ajoutés par la version 3 prennent leur val
 Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une ligne vide) ; les
 étapes n'ont pas de titre.
 
-## `recettes.json` — version 4
+## `recettes.json` — version 5
 
 ```json
 {
   "format": "recettes-backup",
-  "version": 4,
+  "version": 5,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
   "recipes": [
@@ -66,6 +69,8 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
       "category": "Tartes",
       "collections": ["Hiver"],
       "linkedRecipes": ["<id de la pâte brisée>"],
+      "equipment": ["moule à tarte"],
+      "videoLinks": ["https://youtu.be/…"],
       "createdAt": "2026-10-20T08:00:00.000Z",
       "updatedAt": "2026-10-27T12:00:00.000Z",
       "deletedAt": null,
@@ -101,8 +106,11 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
 | `course`, `category` | texte | type de plat et catégorie, texte libre en attendant la 0.3 |
 | `collections` | liste de textes | |
 | `linkedRecipes` | liste d'`id` | recettes utilisées par celle-ci (pâte, sauce) ; une recette supprimée depuis n'est simplement plus affichée |
+| `equipment`, `videoLinks` | liste de textes | matériel nécessaire et liens vidéo, un élément par ligne à la saisie |
+| `ingredients[].substitutes` | texte | remplaçants possibles (« huile de coco, margarine ») |
 | `ingredients[].section` | booléen | vrai = titre de groupe (« Pour la pâte ») |
 | `ingredients[].quantity` | nombre ou `null` | `null` = sans quantité précise |
+| `steps[].text` | texte | `**gras**` et `*italique*` sont des marqueurs de mise en forme |
 | `steps[].title` | texte | titre de la partie (« Biscuit »), vide le plus souvent ; porté par la première étape de la partie |
 | `ingredients[].unit` | texte | forme canonique : `g`, `kg`, `ml`, `cl`, `L`, `c. à s.`, `c. à c.`, `pincée`… |
 

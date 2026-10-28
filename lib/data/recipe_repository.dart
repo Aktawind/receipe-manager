@@ -93,6 +93,8 @@ class RecipeRepository {
       category: original.category,
       collections: original.collections,
       linkedRecipeIds: original.linkedRecipeIds,
+      equipment: original.equipment,
+      videoLinks: original.videoLinks,
       createdAt: now,
       updatedAt: now,
       ingredients: [
@@ -105,6 +107,7 @@ class RecipeRepository {
             unit: line.unit,
             note: line.note,
             optional: line.optional,
+            substitutes: line.substitutes,
           ),
       ],
       steps: [
@@ -132,6 +135,12 @@ class RecipeRepository {
   Future<void> setFavorite(String id, bool value) {
     return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
       RecipesCompanion(isFavorite: Value(value), updatedAt: Value(_clock())),
+    );
+  }
+
+  Future<void> setRating(String id, int? rating) {
+    return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
+      RecipesCompanion(rating: Value(rating), updatedAt: Value(_clock())),
     );
   }
 
@@ -228,6 +237,8 @@ class RecipeRepository {
             course: Value(recipe.course),
             category: Value(recipe.category),
             collections: Value(recipe.collections.join('\n')),
+            equipment: Value(recipe.equipment.join('\n')),
+            videoLinks: Value(recipe.videoLinks.join('\n')),
             createdAt: recipe.createdAt,
             updatedAt: recipe.updatedAt,
             deletedAt: Value(recipe.deletedAt),
@@ -274,6 +285,7 @@ class RecipeRepository {
             unit: Value(line.unit),
             note: Value(line.note),
             optional: Value(line.optional),
+            substitutes: Value(line.substitutes),
           ),
       ]);
       batch.insertAll(_db.recipeSteps, [
@@ -323,6 +335,7 @@ class RecipeRepository {
             unit: i.unit,
             note: i.note,
             optional: i.optional,
+            substitutes: i.substitutes,
           ),
       ],
       steps: [
@@ -331,6 +344,9 @@ class RecipeRepository {
       ],
     );
   }
+
+  static List<String> _lines(String text) =>
+      text.isEmpty ? const [] : text.split('\n');
 
   static Recipe _fromRow(RecipeRow row) => Recipe(
     id: row.id,
@@ -350,9 +366,9 @@ class RecipeRepository {
     status: RecipeStatus.fromCode(row.status),
     course: row.course,
     category: row.category,
-    collections: row.collections.isEmpty
-        ? const []
-        : row.collections.split('\n'),
+    collections: _lines(row.collections),
+    equipment: _lines(row.equipment),
+    videoLinks: _lines(row.videoLinks),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,

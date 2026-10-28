@@ -44,6 +44,8 @@ class Recipe {
     this.category = '',
     this.collections = const [],
     this.linkedRecipeIds = const [],
+    this.equipment = const [],
+    this.videoLinks = const [],
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -85,6 +87,12 @@ class Recipe {
 
   /// Recettes utilisées par celle-ci (pâte, sauce préparée à l'avance).
   final List<String> linkedRecipeIds;
+
+  /// Matériel nécessaire (« moule à cake », « robot »), un élément par ligne.
+  final List<String> equipment;
+
+  /// Liens vers des vidéos de la recette, un par ligne.
+  final List<String> videoLinks;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -114,6 +122,8 @@ class Recipe {
       restMinutes == null &&
       mainPhoto == null &&
       extraPhotos.isEmpty &&
+      equipment.isEmpty &&
+      videoLinks.isEmpty &&
       ingredients.every((i) => i.isBlank) &&
       steps.every((s) => s.text.trim().isEmpty);
 
@@ -137,6 +147,8 @@ class Recipe {
     String? category,
     List<String>? collections,
     List<String>? linkedRecipeIds,
+    List<String>? equipment,
+    List<String>? videoLinks,
     DateTime? createdAt,
     DateTime? updatedAt,
     ValueGetter<DateTime?>? deletedAt,
@@ -164,6 +176,8 @@ class Recipe {
       category: category ?? this.category,
       collections: collections ?? this.collections,
       linkedRecipeIds: linkedRecipeIds ?? this.linkedRecipeIds,
+      equipment: equipment ?? this.equipment,
+      videoLinks: videoLinks ?? this.videoLinks,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt != null ? deletedAt() : this.deletedAt,
@@ -185,6 +199,7 @@ class IngredientLine {
     this.unit = '',
     this.note = '',
     this.optional = false,
+    this.substitutes = '',
   });
 
   final String id;
@@ -199,11 +214,15 @@ class IngredientLine {
   final String note;
   final bool optional;
 
+  /// Ce qui peut le remplacer (« huile de coco, margarine »).
+  final String substitutes;
+
   bool get isBlank =>
       name.trim().isEmpty &&
       quantity == null &&
       unit.isEmpty &&
-      note.trim().isEmpty;
+      note.trim().isEmpty &&
+      substitutes.trim().isEmpty;
 
   @override
   bool operator ==(Object other) =>
@@ -214,11 +233,20 @@ class IngredientLine {
       other.quantity == quantity &&
       other.unit == unit &&
       other.note == note &&
-      other.optional == optional;
+      other.optional == optional &&
+      other.substitutes == substitutes;
 
   @override
-  int get hashCode =>
-      Object.hash(id, isSection, name, quantity, unit, note, optional);
+  int get hashCode => Object.hash(
+    id,
+    isSection,
+    name,
+    quantity,
+    unit,
+    note,
+    optional,
+    substitutes,
+  );
 }
 
 @immutable

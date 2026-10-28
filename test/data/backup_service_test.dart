@@ -194,13 +194,13 @@ void main() {
     expect((await target.repo.getRecipe('old-1'))!.notes, contains('Précuire'));
   });
 
-  test('l’export est en version 4, sans champ « tips »', () async {
+  test('l’export est en version 5, sans champ « tips »', () async {
     await addRecipe(source, 'Tarte');
     final archive = ZipDecoder().decodeBytes(await source.service.exportZip());
     final json = jsonDecode(
       utf8.decode(archive.findFile(BackupFormat.dataFile)!.content),
     ) as Map<String, Object?>;
-    expect(json['version'], 4);
+    expect(json['version'], 5);
     final recipe = (json['recipes'] as List).single as Map<String, Object?>;
     expect(recipe.containsKey('tips'), isFalse);
   });
@@ -222,6 +222,17 @@ void main() {
           mainPhoto: () => 'a.jpg',
           extraPhotos: ['b.jpg'],
           linkedRecipeIds: ['pate'],
+          equipment: ['moule à tarte', 'rouleau'],
+          videoLinks: ['https://youtu.be/abc'],
+          ingredients: [
+            const IngredientLine(
+              id: 'i-sub',
+              name: 'beurre',
+              quantity: 100,
+              unit: 'g',
+              substitutes: 'huile de coco',
+            ),
+          ],
         ),
       );
 
@@ -237,6 +248,9 @@ void main() {
       expect(imported.collections, ['Hiver', 'Été']);
       expect(imported.extraPhotos, ['b.jpg']);
       expect(imported.linkedRecipeIds, ['pate']);
+      expect(imported.equipment, ['moule à tarte', 'rouleau']);
+      expect(imported.videoLinks, ['https://youtu.be/abc']);
+      expect(imported.ingredients.single.substitutes, 'huile de coco');
       expect(await target.photos.file('b.jpg').readAsString(), 'b');
     },
   );
