@@ -128,6 +128,12 @@ class RecipeRepository {
     );
   }
 
+  Future<void> setFavorite(String id, bool value) {
+    return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
+      RecipesCompanion(isFavorite: Value(value), updatedAt: Value(_clock())),
+    );
+  }
+
   /// Met la recette à la corbeille.
   Future<void> moveToTrash(String id) => _setDeletedAt(id, _clock());
 
