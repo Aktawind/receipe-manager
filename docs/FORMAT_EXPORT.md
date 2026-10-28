@@ -12,7 +12,7 @@ recettes-2026-10-27-1430.zip
 
 ## Règles de compatibilité
 
-- Le champ `version` indique la version du format (actuellement **2**).
+- Le champ `version` indique la version du format (actuellement **3**).
 - Toute version de l'application sait lire **toutes les versions précédentes** du format.
 - Une sauvegarde d'une version **plus récente** que l'application est refusée, sans rien
   modifier (message : « Mets l'application à jour »).
@@ -25,16 +25,20 @@ recettes-2026-10-27-1430.zip
 |---|---|---|
 | 1 | 0.1.0 | Première version : champs `notes` et `tips` (« Astuces ») |
 | 2 | 0.1.0 (corrigée) | `tips` supprimé ; son contenu est fusionné dans `notes`. Titre optionnel `title` sur les étapes |
+| 3 | 0.2.0 | Ajout de `favorite`, `rating`, `status`, `course`, `category`, `collections`, `extraPhotos`, `linkedRecipes` |
+
+Lecture d'une version 2 : les champs ajoutés par la version 3 prennent leur valeur neutre
+(pas favori, pas de note, pas de statut, classement vide, aucune photo supplémentaire).
 
 Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une ligne vide) ; les
 étapes n'ont pas de titre.
 
-## `recettes.json` — version 2
+## `recettes.json` — version 3
 
 ```json
 {
   "format": "recettes-backup",
-  "version": 2,
+  "version": 3,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
   "recipes": [
@@ -50,6 +54,14 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
       "restMinutes": null,
       "timesCooked": 3,
       "mainPhoto": "8a1b….jpg",
+      "extraPhotos": ["c04d….jpg"],
+      "favorite": true,
+      "rating": 4,
+      "status": "validated",
+      "course": "Plat",
+      "category": "Tartes",
+      "collections": ["Hiver"],
+      "linkedRecipes": ["<id de la pâte brisée>"],
       "createdAt": "2026-10-20T08:00:00.000Z",
       "updatedAt": "2026-10-27T12:00:00.000Z",
       "deletedAt": null,
@@ -77,6 +89,13 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
 | `timesCooked` | entier | 0 par défaut |
 | `mainPhoto` | texte ou `null` | nom d'un fichier de `photos/`, sans dossier |
 | `createdAt`, `updatedAt`, `deletedAt` | date ISO 8601 UTC | `deletedAt` non nul = dans la corbeille |
+| `extraPhotos` | liste de textes | photos après la principale, noms de fichiers de `photos/` |
+| `favorite` | booléen | |
+| `rating` | entier 1 à 5 ou `null` | `null` = pas noté |
+| `status` | `toTest`, `validated`, `toImprove` ou `null` | |
+| `course`, `category` | texte | type de plat et catégorie, texte libre en attendant la 0.3 |
+| `collections` | liste de textes | |
+| `linkedRecipes` | liste d'`id` | recettes utilisées par celle-ci (pâte, sauce) ; une recette supprimée depuis n'est simplement plus affichée |
 | `ingredients[].section` | booléen | vrai = titre de groupe (« Pour la pâte ») |
 | `ingredients[].quantity` | nombre ou `null` | `null` = sans quantité précise |
 | `steps[].title` | texte | titre de la partie (« Biscuit »), vide le plus souvent ; porté par la première étape de la partie |
@@ -92,3 +111,26 @@ L'ordre des listes `ingredients` et `steps` est l'ordre d'affichage.
 - Dans les deux cas, une **sauvegarde automatique** est écrite juste avant dans le dossier
   interne de l'app (les 5 dernières sont gardées), et l'écriture se fait en une seule
   transaction.
+- **Ajouter les absentes** (import Recipe Keeper) : seules les recettes dont l'`id` est inconnu
+  sont ajoutées, celles qui existent déjà ne sont jamais modifiées.
+
+## Import depuis Recipe Keeper
+
+Réglages → Importer depuis Recipe Keeper, avec le ZIP produit par Recipe Keeper
+(Paramètres → Exporter les recettes). Ce ZIP contient `recipes.html` et un dossier `images/`.
+
+| Recipe Keeper | Recettes |
+|---|---|
+| `recipeId` | `id` (conservé : réimporter le même fichier n'ajoute rien) |
+| nom, source, notes | `title`, `source`, `notes` |
+| ingrédients (un paragraphe par ligne) | analysés par `IngredientText` ; un paragraphe en gras ou en majuscules est un titre de groupe |
+| préparation | analysée par `StepText` |
+| taille de portion | `servings` si « N personnes » ; sinon le texte (« 15 biscuits ») est ajouté en tête des notes (« Quantité : … ») |
+| temps de préparation, de cuisson | `prepMinutes`, `cookMinutes` (0 = absent) |
+| favori | `favorite` |
+| note en étoiles | **non reprise** (choix de la personne qui utilise l'app) |
+| catégorie `_A tester` | `status` = `toTest` (et pas une catégorie) |
+| autres catégories, plat, collections | `category`, `course`, `collections` |
+| photos | `mainPhoto` (la première) et `extraPhotos` |
+| recettes liées | `linkedRecipes` ; les renvois `[recipe:Nom]` du texte deviennent le simple nom |
+| valeurs nutritionnelles | ajoutées en texte à la fin des notes |

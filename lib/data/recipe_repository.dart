@@ -84,6 +84,14 @@ class RecipeRepository {
       cookMinutes: original.cookMinutes,
       restMinutes: original.restMinutes,
       mainPhoto: original.mainPhoto,
+      extraPhotos: original.extraPhotos,
+      isFavorite: original.isFavorite,
+      rating: original.rating,
+      status: original.status,
+      course: original.course,
+      category: original.category,
+      collections: original.collections,
+      linkedRecipeIds: original.linkedRecipeIds,
       createdAt: now,
       updatedAt: now,
       ingredients: [
@@ -120,6 +128,12 @@ class RecipeRepository {
     );
   }
 
+  Future<void> setFavorite(String id, bool value) {
+    return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
+      RecipesCompanion(isFavorite: Value(value), updatedAt: Value(_clock())),
+    );
+  }
+
   /// Met la recette à la corbeille.
   Future<void> moveToTrash(String id) => _setDeletedAt(id, _clock());
 
@@ -137,14 +151,19 @@ class RecipeRepository {
     final idList = ids.toList();
     if (idList.isEmpty) return {};
     return _db.transaction(() async {
-      final photos =
-          await (_db.selectOnly(_db.recipes)
-                ..addColumns([_db.recipes.mainPhoto])
-                ..where(_db.recipes.id.isIn(idList)))
-              .map((row) => row.read(_db.recipes.mainPhoto))
-              .get();
+      final photos = <String>{
+        ...(await (_db.selectOnly(_db.recipes)
+                  ..addColumns([_db.recipes.mainPhoto])
+                  ..where(_db.recipes.id.isIn(idList)))
+                .map((row) => row.read(_db.recipes.mainPhoto))
+                .get())
+            .nonNulls,
+        ...(await (_db.select(
+          _db.recipePhotos,
+        )..where((p) => p.recipeId.isIn(idList))).get()).map((p) => p.file),
+      };
       await (_db.delete(_db.recipes)..where((r) => r.id.isIn(idList))).go();
-      return _unusedPhotos(photos.nonNulls.toSet());
+      return _unusedPhotos(photos);
     });
   }
 
@@ -166,11 +185,12 @@ class RecipeRepository {
       _db.transaction(action);
 
   Future<Set<String>> usedPhotos() async {
-    final photos =
+    final main =
         await (_db.selectOnly(_db.recipes)..addColumns([_db.recipes.mainPhoto]))
             .map((row) => row.read(_db.recipes.mainPhoto))
             .get();
-    return photos.nonNulls.toSet();
+    final extra = await _db.select(_db.recipePhotos).get();
+    return {...main.nonNulls, ...extra.map((p) => p.file)};
   }
 
   Future<Set<String>> _unusedPhotos(Set<String> candidates) async {
@@ -194,6 +214,12 @@ class RecipeRepository {
             restMinutes: Value(recipe.restMinutes),
             timesCooked: Value(recipe.timesCooked),
             mainPhoto: Value(recipe.mainPhoto),
+            isFavorite: Value(recipe.isFavorite),
+            rating: Value(recipe.rating),
+            status: Value(recipe.status?.code),
+            course: Value(recipe.course),
+            category: Value(recipe.category),
+            collections: Value(recipe.collections.join('\n')),
             createdAt: recipe.createdAt,
             updatedAt: recipe.updatedAt,
             deletedAt: Value(recipe.deletedAt),
@@ -205,7 +231,29 @@ class RecipeRepository {
     await (_db.delete(
       _db.recipeSteps,
     )..where((s) => s.recipeId.equals(recipe.id))).go();
+    await (_db.delete(
+      _db.recipePhotos,
+    )..where((p) => p.recipeId.equals(recipe.id))).go();
+    await (_db.delete(
+      _db.recipeLinks,
+    )..where((l) => l.recipeId.equals(recipe.id))).go();
     await _db.batch((batch) {
+      batch.insertAll(_db.recipePhotos, [
+        for (final (index, file) in recipe.extraPhotos.indexed)
+          RecipePhotosCompanion.insert(
+            recipeId: recipe.id,
+            position: index,
+            file: file,
+          ),
+      ]);
+      batch.insertAll(_db.recipeLinks, [
+        for (final (index, linked) in recipe.linkedRecipeIds.indexed)
+          RecipeLinksCompanion.insert(
+            recipeId: recipe.id,
+            position: index,
+            linkedRecipeId: linked,
+          ),
+      ]);
       batch.insertAll(_db.ingredients, [
         for (final (index, line) in recipe.ingredients.indexed)
           IngredientsCompanion.insert(
@@ -244,7 +292,19 @@ class RecipeRepository {
               ..where((s) => s.recipeId.equals(row.id))
               ..orderBy([(s) => OrderingTerm.asc(s.position)]))
             .get();
+    final photos =
+        await (_db.select(_db.recipePhotos)
+              ..where((p) => p.recipeId.equals(row.id))
+              ..orderBy([(p) => OrderingTerm.asc(p.position)]))
+            .get();
+    final links =
+        await (_db.select(_db.recipeLinks)
+              ..where((l) => l.recipeId.equals(row.id))
+              ..orderBy([(l) => OrderingTerm.asc(l.position)]))
+            .get();
     return _fromRow(row).copyWith(
+      extraPhotos: [for (final p in photos) p.file],
+      linkedRecipeIds: [for (final l in links) l.linkedRecipeId],
       ingredients: [
         for (final i in ingredients)
           IngredientLine(
@@ -276,6 +336,14 @@ class RecipeRepository {
     restMinutes: row.restMinutes,
     timesCooked: row.timesCooked,
     mainPhoto: row.mainPhoto,
+    isFavorite: row.isFavorite,
+    rating: row.rating,
+    status: RecipeStatus.fromCode(row.status),
+    course: row.course,
+    category: row.category,
+    collections: row.collections.isEmpty
+        ? const []
+        : row.collections.split('\n'),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,

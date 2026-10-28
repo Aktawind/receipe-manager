@@ -121,6 +121,16 @@ class _RecipeDetail extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _CircleButton(
+          icon: recipe.isFavorite ? Icons.favorite : Icons.favorite_border,
+          tooltip: recipe.isFavorite
+              ? l10n.removeFromFavorites
+              : l10n.addToFavorites,
+          onPressed: () => ref
+              .read(recipeRepositoryProvider)
+              .setFavorite(recipe.id, !recipe.isFavorite),
+        ),
+        const SizedBox(width: 8),
+        _CircleButton(
           icon: Icons.edit_outlined,
           tooltip: l10n.edit,
           onPressed: () => _edit(context),
@@ -400,6 +410,17 @@ class _Header extends StatelessWidget {
       (Icons.bedtime_outlined, l10n.restTime, recipe.restMinutes),
     ].where((t) => t.$3 != null).toList();
 
+    final labels = [
+      if (recipe.status case final status?)
+        switch (status) {
+          RecipeStatus.toTest => l10n.statusToTest,
+          RecipeStatus.validated => l10n.statusValidated,
+          RecipeStatus.toImprove => l10n.statusToImprove,
+        },
+      if (recipe.course.isNotEmpty) recipe.course,
+      if (recipe.category.isNotEmpty) recipe.category,
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -419,6 +440,27 @@ class _Header extends StatelessWidget {
               height: 1.4,
               color: theme.colorScheme.onSurfaceVariant,
             ),
+          ),
+        ],
+        if (labels.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final label in labels)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _tint(context),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(label, style: theme.textTheme.labelMedium),
+                ),
+            ],
           ),
         ],
         if (times.isNotEmpty) ...[
@@ -857,6 +899,45 @@ class _AboutSection extends StatelessWidget {
               ],
             ),
           ),
+        if (recipe.collections.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(
+            '${l10n.collectionsLabel} : ${recipe.collections.join(' · ')}',
+            style: theme.textTheme.bodyMedium,
+          ),
+        ],
+        if (recipe.linkedRecipeIds.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(l10n.linkedRecipesLabel, style: theme.textTheme.titleSmall),
+          for (final id in recipe.linkedRecipeIds) _LinkedRecipeTile(id: id),
+        ],
+        if (recipe.extraPhotos.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(l10n.morePhotos, style: theme.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 110,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (final name in recipe.extraPhotos)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SizedBox.square(
+                        dimension: 110,
+                        child: InkWell(
+                          onTap: () => _showPhoto(context, name),
+                          child: RecipePhoto(photo: name, decodeWidth: 330),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         Wrap(
           alignment: WrapAlignment.spaceBetween,
@@ -884,6 +965,40 @@ class _AboutSection extends StatelessWidget {
           style: theme.textTheme.bodySmall,
         ),
       ],
+    );
+  }
+}
+
+void _showPhoto(BuildContext context, String name) {
+  showDialog<void>(
+    context: context,
+    builder: (context) => Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      clipBehavior: Clip.antiAlias,
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: InteractiveViewer(child: RecipePhoto(photo: name)),
+      ),
+    ),
+  );
+}
+
+/// Une recette utilisée par celle-ci (pâte, sauce) ; touche pour l'ouvrir.
+class _LinkedRecipeTile extends ConsumerWidget {
+  const _LinkedRecipeTile({required this.id});
+
+  final String id;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recipe = ref.watch(recipeProvider(id)).value;
+    if (recipe == null || recipe.isDeleted) return const SizedBox.shrink();
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      leading: const Icon(Icons.link),
+      title: Text(recipe.title),
+      onTap: () => context.push('/recettes/$id'),
     );
   }
 }

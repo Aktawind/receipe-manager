@@ -1,5 +1,22 @@
 import 'package:flutter/foundation.dart';
 
+/// Où en est la recette : à essayer, adoptée, ou à revoir.
+enum RecipeStatus {
+  toTest,
+  validated,
+  toImprove;
+
+  /// Valeur enregistrée en base et dans les sauvegardes.
+  String get code => name;
+
+  static RecipeStatus? fromCode(String? code) {
+    for (final status in values) {
+      if (status.name == code) return status;
+    }
+    return null;
+  }
+}
+
 /// Une recette complète : informations, ingrédients et étapes.
 ///
 /// La recette est l'unité d'enregistrement, d'export et (plus tard) de
@@ -18,6 +35,14 @@ class Recipe {
     this.restMinutes,
     this.timesCooked = 0,
     this.mainPhoto,
+    this.extraPhotos = const [],
+    this.isFavorite = false,
+    this.rating,
+    this.status,
+    this.course = '',
+    this.category = '',
+    this.collections = const [],
+    this.linkedRecipeIds = const [],
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -38,6 +63,23 @@ class Recipe {
 
   /// Nom du fichier de la photo principale dans le dossier des photos.
   final String? mainPhoto;
+
+  /// Photos supplémentaires, après la principale.
+  final List<String> extraPhotos;
+  final bool isFavorite;
+
+  /// Note de 1 à 5 étoiles ; `null` tant que la recette n'est pas notée.
+  final int? rating;
+  final RecipeStatus? status;
+
+  /// Type de plat (« Plat », « Dessert », « Goûter »…), texte libre pour
+  /// l'instant : le classement complet arrive en 0.3.
+  final String course;
+  final String category;
+  final List<String> collections;
+
+  /// Recettes utilisées par celle-ci (pâte, sauce préparée à l'avance).
+  final List<String> linkedRecipeIds;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -45,6 +87,9 @@ class Recipe {
   final List<RecipeStep> steps;
 
   bool get isDeleted => deletedAt != null;
+
+  /// Toutes les photos, la principale en premier.
+  List<String> get allPhotos => [?mainPhoto, ...extraPhotos];
 
   int? get totalMinutes {
     final parts = [prepMinutes, cookMinutes, restMinutes].nonNulls;
@@ -62,6 +107,7 @@ class Recipe {
       cookMinutes == null &&
       restMinutes == null &&
       mainPhoto == null &&
+      extraPhotos.isEmpty &&
       ingredients.every((i) => i.isBlank) &&
       steps.every((s) => s.text.trim().isEmpty);
 
@@ -76,6 +122,14 @@ class Recipe {
     ValueGetter<int?>? restMinutes,
     int? timesCooked,
     ValueGetter<String?>? mainPhoto,
+    List<String>? extraPhotos,
+    bool? isFavorite,
+    ValueGetter<int?>? rating,
+    ValueGetter<RecipeStatus?>? status,
+    String? course,
+    String? category,
+    List<String>? collections,
+    List<String>? linkedRecipeIds,
     DateTime? createdAt,
     DateTime? updatedAt,
     ValueGetter<DateTime?>? deletedAt,
@@ -94,6 +148,14 @@ class Recipe {
       restMinutes: restMinutes != null ? restMinutes() : this.restMinutes,
       timesCooked: timesCooked ?? this.timesCooked,
       mainPhoto: mainPhoto != null ? mainPhoto() : this.mainPhoto,
+      extraPhotos: extraPhotos ?? this.extraPhotos,
+      isFavorite: isFavorite ?? this.isFavorite,
+      rating: rating != null ? rating() : this.rating,
+      status: status != null ? status() : this.status,
+      course: course ?? this.course,
+      category: category ?? this.category,
+      collections: collections ?? this.collections,
+      linkedRecipeIds: linkedRecipeIds ?? this.linkedRecipeIds,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt != null ? deletedAt() : this.deletedAt,

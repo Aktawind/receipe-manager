@@ -122,6 +122,17 @@ void main() {
       }
     });
 
+    test('titre en majuscules, avec ou sans emoji (export Recipe Keeper)', () {
+      for (final text in ['🍐 INSERT POIRE', 'MOUSSE CHOCOLAT AU LAIT']) {
+        expect(parse(text).isSection, isTrue, reason: text);
+      }
+      expect(parse('🍐 INSERT POIRE').name, '🍐 INSERT POIRE');
+      // Un seul mot, un chiffre ou une phrase ne sont pas des titres.
+      for (final text in ['SEL', '2 ŒUFS', 'SEL ET POIVRE.', 'Sel et poivre']) {
+        expect(parse(text).isSection, isFalse, reason: text);
+      }
+    });
+
     test('« Pour 4 personnes » et « pour le service, 2 c. » ne sont pas des titres', () {
       expect(parse('Pour 4 personnes').isSection, isFalse);
       expect(parse('Pour le service, 2 citrons').isSection, isFalse);
@@ -145,6 +156,8 @@ void main() {
         '2 c. à soupe de sucre',
         '2 cuillères à soupe de sucre',
         '2 c.à.s. de sucre',
+        '2 c.s. de sucre',
+        '2 c.s de sucre',
         '2 cs de sucre',
       ]) {
         final line = parse(text);

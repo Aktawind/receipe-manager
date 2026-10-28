@@ -189,6 +189,7 @@ Pour la pâte :
 
     await tester.tap(find.text('Réglages').last);
     await settle(tester);
+    await scrollTo(tester, find.text('Corbeille'));
     await tester.tap(find.text('Corbeille'));
     await settle(tester);
     await tester.tap(find.byTooltip('Restaurer'));

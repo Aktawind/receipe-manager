@@ -23,6 +23,21 @@ class Recipes extends Table {
   IntColumn get restMinutes => integer().nullable()();
   IntColumn get timesCooked => integer().withDefault(const Constant(0))();
   TextColumn get mainPhoto => text().nullable()();
+
+  /// Favori ; ajouté en v3.
+  BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
+
+  /// Note de 1 à 5, `null` si non notée ; ajouté en v3.
+  IntColumn get rating => integer().nullable()();
+
+  /// `toTest`, `validated`, `toImprove` ou `null` ; ajouté en v3.
+  TextColumn get status => text().nullable()();
+
+  /// Type de plat, catégorie et collections (une par ligne) en texte libre
+  /// en attendant le classement complet de la 0.3 ; ajoutés en v3.
+  TextColumn get course => text().withDefault(const Constant(''))();
+  TextColumn get category => text().withDefault(const Constant(''))();
+  TextColumn get collections => text().withDefault(const Constant(''))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -63,13 +78,41 @@ class RecipeSteps extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [Recipes, Ingredients, RecipeSteps])
+/// Photos d'une recette en plus de la principale ([Recipes.mainPhoto]) ; v3.
+@DataClassName('ExtraPhotoRow')
+class RecipePhotos extends Table {
+  TextColumn get recipeId =>
+      text().references(Recipes, #id, onDelete: KeyAction.cascade)();
+  IntColumn get position => integer()();
+  TextColumn get file => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {recipeId, position};
+}
+
+/// Recettes utilisées par une autre (pâte, sauce) ; v3. [linkedRecipeId] n'est
+/// pas une clé étrangère : la recette liée peut être supprimée sans perdre
+/// celle qui l'utilise.
+@DataClassName('RecipeLinkRow')
+class RecipeLinks extends Table {
+  TextColumn get recipeId =>
+      text().references(Recipes, #id, onDelete: KeyAction.cascade)();
+  IntColumn get position => integer()();
+  TextColumn get linkedRecipeId => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {recipeId, position};
+}
+
+@DriftDatabase(
+  tables: [Recipes, Ingredients, RecipeSteps, RecipePhotos, RecipeLinks],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 2;
+  static const latestSchemaVersion = 3;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -92,6 +135,18 @@ UPDATE recipes SET
   END,
   tips = ''
 ''');
+      },
+      // v3 : favoris, note, statut, classement libre, photos supplémentaires
+      // et recettes liées.
+      from2To3: (m, schema) async {
+        await m.addColumn(schema.recipes, schema.recipes.isFavorite);
+        await m.addColumn(schema.recipes, schema.recipes.rating);
+        await m.addColumn(schema.recipes, schema.recipes.status);
+        await m.addColumn(schema.recipes, schema.recipes.course);
+        await m.addColumn(schema.recipes, schema.recipes.category);
+        await m.addColumn(schema.recipes, schema.recipes.collections);
+        await m.createTable(schema.recipePhotos);
+        await m.createTable(schema.recipeLinks);
       },
     ),
     beforeOpen: (details) async {

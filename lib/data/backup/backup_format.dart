@@ -9,9 +9,11 @@ import '../photo_store.dart';
 ///
 /// - v1 : première version (champ `tips` « Astuces »).
 /// - v2 : `tips` supprimé (fusionné dans `notes`), titre optionnel des étapes.
+/// - v3 : favori, note, statut, type de plat, catégorie, collections, photos
+///   supplémentaires et recettes liées.
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 2;
+  static const currentVersion = 3;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 
@@ -41,6 +43,14 @@ abstract final class BackupFormat {
     'restMinutes': r.restMinutes,
     'timesCooked': r.timesCooked,
     'mainPhoto': r.mainPhoto,
+    'extraPhotos': r.extraPhotos,
+    'favorite': r.isFavorite,
+    'rating': r.rating,
+    'status': r.status?.code,
+    'course': r.course,
+    'category': r.category,
+    'collections': r.collections,
+    'linkedRecipes': r.linkedRecipeIds,
     'createdAt': r.createdAt.toUtc().toIso8601String(),
     'updatedAt': r.updatedAt.toUtc().toIso8601String(),
     'deletedAt': r.deletedAt?.toUtc().toIso8601String(),
@@ -99,6 +109,14 @@ abstract final class BackupFormat {
     if (photo != null && (photo is! String || !PhotoStore.isValidName(photo))) {
       throw BackupFormatException(BackupError.invalid, 'mainPhoto $id');
     }
+    final extraPhotos = _strings(m, 'extraPhotos');
+    if (!extraPhotos.every(PhotoStore.isValidName)) {
+      throw BackupFormatException(BackupError.invalid, 'extraPhotos $id');
+    }
+    final rating = _int(m, 'rating');
+    if (rating != null && (rating < 1 || rating > 5)) {
+      throw BackupFormatException(BackupError.invalid, 'rating $id');
+    }
     return Recipe(
       id: id,
       title: _string(m, 'title'),
@@ -113,6 +131,16 @@ abstract final class BackupFormat {
       restMinutes: _int(m, 'restMinutes'),
       timesCooked: _int(m, 'timesCooked') ?? 0,
       mainPhoto: photo as String?,
+      extraPhotos: extraPhotos,
+      isFavorite: m['favorite'] == true,
+      rating: rating,
+      status: RecipeStatus.fromCode(
+        m['status'] is String ? m['status'] as String : null,
+      ),
+      course: _string(m, 'course'),
+      category: _string(m, 'category'),
+      collections: _strings(m, 'collections'),
+      linkedRecipeIds: _strings(m, 'linkedRecipes'),
       createdAt: _date(m, 'createdAt')!,
       updatedAt: _date(m, 'updatedAt')!,
       deletedAt: _date(m, 'deletedAt', required: false),
@@ -162,6 +190,12 @@ abstract final class BackupFormat {
     final value = m[key];
     if (value == null) return const [];
     if (value is List) return value;
+    throw BackupFormatException(BackupError.invalid, key);
+  }
+
+  static List<String> _strings(Map<String, Object?> m, String key) {
+    final list = _list(m, key);
+    if (list.every((item) => item is String)) return list.cast<String>();
     throw BackupFormatException(BackupError.invalid, key);
   }
 

@@ -194,15 +194,134 @@ void main() {
     expect((await target.repo.getRecipe('old-1'))!.notes, contains('Précuire'));
   });
 
-  test('l’export est en version 2, sans champ « tips »', () async {
+  test('l’export est en version 3, sans champ « tips »', () async {
     await addRecipe(source, 'Tarte');
     final archive = ZipDecoder().decodeBytes(await source.service.exportZip());
     final json = jsonDecode(
       utf8.decode(archive.findFile(BackupFormat.dataFile)!.content),
     ) as Map<String, Object?>;
-    expect(json['version'], 2);
+    expect(json['version'], 3);
     final recipe = (json['recipes'] as List).single as Map<String, Object?>;
     expect(recipe.containsKey('tips'), isFalse);
+  });
+
+  test(
+    'aller-retour des champs de la 0.2 (favori, statut, classement…)',
+    () async {
+      await source.photos.write('a.jpg', utf8.encode('a'));
+      await source.photos.write('b.jpg', utf8.encode('b'));
+      final base = await addRecipe(source, 'Quiche');
+      final full = await source.repo.save(
+        base.copyWith(
+          isFavorite: true,
+          rating: () => 4,
+          status: () => RecipeStatus.validated,
+          course: 'Plat',
+          category: 'Tartes',
+          collections: ['Hiver', 'Été'],
+          mainPhoto: () => 'a.jpg',
+          extraPhotos: ['b.jpg'],
+          linkedRecipeIds: ['pate'],
+        ),
+      );
+
+      final contents = target.service.readZip(await source.service.exportZip());
+      await target.service.import(contents, ImportMode.merge);
+
+      final imported = (await target.repo.getRecipe(full.id))!;
+      expect(imported.isFavorite, isTrue);
+      expect(imported.rating, 4);
+      expect(imported.status, RecipeStatus.validated);
+      expect(imported.course, 'Plat');
+      expect(imported.category, 'Tartes');
+      expect(imported.collections, ['Hiver', 'Été']);
+      expect(imported.extraPhotos, ['b.jpg']);
+      expect(imported.linkedRecipeIds, ['pate']);
+      expect(await target.photos.file('b.jpg').readAsString(), 'b');
+    },
+  );
+
+  test(
+    'une sauvegarde v2 (0.1.0) se lit encore : champs 0.2 neutres',
+    () async {
+      final archive = Archive()
+        ..addFile(
+          ArchiveFile.string(
+            BackupFormat.dataFile,
+            jsonEncode({
+              'format': 'recettes-backup',
+              'version': 2,
+              'recipes': [
+                {
+                  'id': 'v2-1',
+                  'title': 'Ancienne',
+                  'notes': 'Une note',
+                  'createdAt': '2026-10-20T08:00:00Z',
+                  'updatedAt': '2026-10-21T08:00:00Z',
+                  'ingredients': [],
+                  'steps': [],
+                },
+              ],
+            }),
+          ),
+        );
+      final contents = target.service.readZip(ZipEncoder().encode(archive));
+      await target.service.import(contents, ImportMode.merge);
+      final recipe = (await target.repo.getRecipe('v2-1'))!;
+      expect(recipe.title, 'Ancienne');
+      expect(recipe.isFavorite, isFalse);
+      expect(recipe.rating, isNull);
+      expect(recipe.collections, isEmpty);
+      expect(recipe.extraPhotos, isEmpty);
+    },
+  );
+
+  test('« addMissing » n’écrase jamais une recette déjà présente', () async {
+    final mine = await addRecipe(target, 'Retouchée à la main');
+    final incoming = mine.copyWith(
+      title: 'Version du fichier',
+      updatedAt: mine.updatedAt.add(const Duration(days: 30)),
+    );
+    final fresh = incoming.copyWith(title: 'Nouvelle');
+    final result = await target.service.import(
+      BackupContents([
+        incoming,
+        Recipe(
+          id: 'new',
+          title: 'Nouvelle',
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        ),
+      ], const {}),
+      ImportMode.addMissing,
+    );
+    expect(fresh.title, 'Nouvelle');
+    expect(result.added, 1);
+    expect(result.unchanged, 1);
+    expect(
+      (await target.repo.getRecipe(mine.id))!.title,
+      'Retouchée à la main',
+    );
+  });
+
+  test('aperçu Recipe Keeper : déjà présentes et titres semblables', () async {
+    final known = await addRecipe(target, 'Banana Bread');
+    await addRecipe(target, 'Crème brûlée');
+    Recipe incoming(String id, String title) => Recipe(
+      id: id,
+      title: title,
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+    final preview = await target.service.previewRecipeKeeper([
+      incoming(known.id, 'Banana Bread'),
+      incoming('x1', 'Creme brulee'),
+      incoming('x2', 'Autre'),
+    ]);
+    expect(preview.found, 3);
+    expect(preview.alreadyPresent, 1);
+    expect(preview.toAdd, 2);
+    expect(preview.sameTitle, ['Creme brulee']);
   });
 
   group('fichiers refusés', () {
