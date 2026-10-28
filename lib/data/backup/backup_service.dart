@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 
+import '../../core/format/text_search.dart';
 import '../../domain/recipe.dart';
 import '../photo_store.dart';
 import '../recipe_repository.dart';
@@ -16,6 +17,11 @@ enum ImportMode {
 
   /// Remplace toutes les recettes par celles de la sauvegarde.
   replace,
+
+  /// N'ajoute que les recettes absentes : celles qui existent déjà (même
+  /// identifiant) ne sont jamais modifiées. Sert à l'import Recipe Keeper, qui
+  /// peut être refait sans écraser ce qu'on a retouché depuis.
+  addMissing,
 }
 
 /// Contenu d'une sauvegarde lue et validée, prête à être importée.
@@ -40,6 +46,26 @@ class ImportResult {
 
   /// Sauvegarde automatique faite juste avant l'import.
   final File safetyBackup;
+}
+
+/// Ce que l'import Recipe Keeper va faire, avant d'écrire quoi que ce soit.
+class RecipeKeeperPreview {
+  const RecipeKeeperPreview({
+    required this.found,
+    required this.alreadyPresent,
+    required this.sameTitle,
+  });
+
+  final int found;
+
+  /// Recettes déjà importées (même identifiant) : elles seront ignorées.
+  final int alreadyPresent;
+
+  /// Titres des recettes du fichier qui ressemblent à une recette déjà
+  /// présente sous un autre identifiant (saisie à la main, par exemple).
+  final List<String> sameTitle;
+
+  int get toAdd => found - alreadyPresent;
 }
 
 /// Export et import des sauvegardes complètes (ZIP : JSON + photos).
@@ -73,7 +99,7 @@ class BackupService {
       ),
     );
     archive.addFile(ArchiveFile.string(BackupFormat.dataFile, json));
-    for (final name in recipes.map((r) => r.mainPhoto).nonNulls.toSet()) {
+    for (final name in recipes.expand((r) => r.allPhotos).toSet()) {
       final file = photos.file(name);
       if (await file.exists()) {
         final bytes = await file.readAsBytes();
@@ -120,12 +146,39 @@ class BackupService {
         if (PhotoStore.isValidName(name)) photoFiles[name] = file.content;
       }
     }
-    for (final name in recipes.map((r) => r.mainPhoto).nonNulls) {
+    for (final name in recipes.expand((r) => r.allPhotos)) {
       if (!photoFiles.containsKey(name) && !photos.file(name).existsSync()) {
         throw BackupFormatException(BackupError.missingPhoto, name);
       }
     }
     return BackupContents(recipes, photoFiles);
+  }
+
+  /// Compare un export Recipe Keeper avec les recettes de l'application.
+  Future<RecipeKeeperPreview> previewRecipeKeeper(
+    Iterable<Recipe> incoming,
+  ) async {
+    final existing = await repository.getAllWithDetails();
+    final ids = {for (final r in existing) r.id};
+    final titles = {
+      for (final r in existing)
+        if (r.title.trim().isNotEmpty) normalizeForSearch(r.title.trim()),
+    };
+    var found = 0, present = 0;
+    final sameTitle = <String>[];
+    for (final recipe in incoming) {
+      found++;
+      if (ids.contains(recipe.id)) {
+        present++;
+      } else if (titles.contains(normalizeForSearch(recipe.title.trim()))) {
+        sameTitle.add(recipe.title);
+      }
+    }
+    return RecipeKeeperPreview(
+      found: found,
+      alreadyPresent: present,
+      sameTitle: sameTitle,
+    );
   }
 
   /// Importe une sauvegarde validée. Une sauvegarde automatique est faite
@@ -154,6 +207,8 @@ class BackupService {
         } else if (current == null) {
           await repository.put(recipe);
           added++;
+        } else if (mode == ImportMode.addMissing) {
+          unchanged++;
         } else if (recipe.updatedAt.isAfter(current.updatedAt)) {
           await repository.put(recipe);
           updated++;

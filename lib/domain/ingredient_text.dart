@@ -22,6 +22,9 @@ abstract final class IngredientText {
       'c. à s.',
       'c.à.s.',
       'c.à.s',
+      'c.s.',
+      'c.s',
+      'c/s',
       'c. à s',
       'cas',
       'càs',
@@ -39,6 +42,9 @@ abstract final class IngredientText {
       'c. à c.',
       'c.à.c.',
       'c.à.c',
+      'c.c.',
+      'c.c',
+      'c/c',
       'c. à c',
       'cac',
       'càc',
@@ -174,7 +180,15 @@ abstract final class IngredientText {
         _forPattern.hasMatch(text) &&
         !RegExp(r'[\d,]').hasMatch(text) &&
         words <= 6;
-    if (text.endsWith(':') || heading || looksLikeFor) {
+    // « 🍐 INSERT POIRE » : quelques mots en majuscules, sans chiffre.
+    final isCapitals =
+        words >= 2 &&
+        words <= 5 &&
+        text.length <= 40 &&
+        text == text.toUpperCase() &&
+        RegExp(r'\p{L}', unicode: true).hasMatch(text) &&
+        !RegExp(r'\d|[.!?]$').hasMatch(text);
+    if (text.endsWith(':') || heading || looksLikeFor || isCapitals) {
       return IngredientLine(
         id: id,
         isSection: true,
