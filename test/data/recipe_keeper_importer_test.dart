@@ -192,22 +192,27 @@ void main() {
     expect(c.status, isNull);
   });
 
-  test('portions : « 15 biscuits » est gardé dans les notes', () {
+  test('portions : « 12 blinis » est un nombre avec son unité', () {
     final export = read([
       block(id: 'a', yieldText: '15 biscuits', notes: ps(['Délicieux'])),
       block(id: 'b', yieldText: '4'),
       block(id: 'c', yieldText: ''),
       block(id: 'd', yieldText: '6 portions'),
       block(id: 'e', yieldText: 'Une dizaine'),
+      block(id: 'f', yieldText: '4 personnes '),
+      block(id: 'g', yieldText: '1 cake'),
     ]);
-    final [a, b, c, d, e] = export.recipes;
-    expect(a.servings, isNull);
-    expect(a.notes, 'Quantité : 15 biscuits\n\nDélicieux');
-    expect(b.servings, 4);
+    final [a, b, c, d, e, f, g] = export.recipes;
+    expect((a.servings, a.servingsUnit), (15, 'biscuits'));
+    expect(a.notes, 'Délicieux');
+    expect((b.servings, b.servingsUnit), (4, ''));
     expect(c.servings, isNull);
     expect(c.notes, '');
-    expect(d.servings, 6);
+    expect((d.servings, d.servingsUnit), (6, ''));
+    expect(e.servings, isNull);
     expect(e.notes, 'Quantité : Une dizaine');
+    expect((f.servings, f.servingsUnit), (4, ''));
+    expect((g.servings, g.servingsUnit), (1, 'cake'));
   });
 
   test('temps : PT0S est absent, PT2H vaut 120 minutes', () {

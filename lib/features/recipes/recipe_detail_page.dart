@@ -217,7 +217,13 @@ class _RecipeDetail extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Header(recipe: recipe),
+                  _Header(
+                    recipe: recipe,
+                    onCooked: () => _markCooked(context, ref),
+                    onStatus: (status) => ref
+                        .read(recipeRepositoryProvider)
+                        .setStatus(recipe.id, status),
+                  ),
                   _IngredientsSection(recipe: recipe),
                   _StepsSection(recipe: recipe),
                   ..._secondarySections(context, ref),
@@ -271,7 +277,13 @@ class _RecipeDetail extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _Header(recipe: recipe),
+                      _Header(
+                        recipe: recipe,
+                        onCooked: () => _markCooked(context, ref),
+                        onStatus: (status) => ref
+                            .read(recipeRepositoryProvider)
+                            .setStatus(recipe.id, status),
+                      ),
                       _IngredientsSection(recipe: recipe),
                     ],
                   ),
@@ -306,7 +318,7 @@ class _RecipeDetail extends ConsumerWidget {
   List<Widget> _secondarySections(BuildContext context, WidgetRef ref) {
     return [
       _NotesSection(recipe: recipe, onEdit: () => _edit(context)),
-      _AboutSection(recipe: recipe, onCooked: () => _markCooked(context, ref)),
+      _AboutSection(recipe: recipe),
     ];
   }
 }
@@ -393,9 +405,15 @@ Color _tint(BuildContext context) =>
     Theme.of(context).colorScheme.primary.withValues(alpha: 0.08);
 
 class _Header extends StatelessWidget {
-  const _Header({required this.recipe});
+  const _Header({
+    required this.recipe,
+    required this.onCooked,
+    required this.onStatus,
+  });
 
   final Recipe recipe;
+  final VoidCallback onCooked;
+  final ValueChanged<RecipeStatus?> onStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -411,12 +429,6 @@ class _Header extends StatelessWidget {
     ].where((t) => t.$3 != null).toList();
 
     final labels = [
-      if (recipe.status case final status?)
-        switch (status) {
-          RecipeStatus.toTest => l10n.statusToTest,
-          RecipeStatus.validated => l10n.statusValidated,
-          RecipeStatus.toImprove => l10n.statusToImprove,
-        },
       if (recipe.course.isNotEmpty) recipe.course,
       if (recipe.category.isNotEmpty) recipe.category,
     ];
@@ -442,6 +454,8 @@ class _Header extends StatelessWidget {
             ),
           ),
         ],
+        const SizedBox(height: 14),
+        _StatusRow(recipe: recipe, onCooked: onCooked, onStatus: onStatus),
         if (labels.isNotEmpty) ...[
           const SizedBox(height: 12),
           Wrap(
@@ -486,7 +500,9 @@ class _Header extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  l10n.servingsLabel,
+                  recipe.servingsUnit.isEmpty
+                      ? l10n.servingsLabel
+                      : l10n.quantityLabel,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -502,7 +518,9 @@ class _Header extends StatelessWidget {
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Text(
-                  l10n.personsShort(servings),
+                  recipe.servingsUnit.isEmpty
+                      ? l10n.personsShort(servings)
+                      : '$servings ${recipe.servingsUnit}',
                   style: theme.textTheme.titleSmall,
                 ),
               ),
@@ -641,58 +659,36 @@ class _IngredientRow extends StatelessWidget {
     final theme = Theme.of(context);
     final muted = TextStyle(color: theme.colorScheme.onSurfaceVariant);
     final amount = IngredientText.formatAmount(line);
-    // Sans quantité (« sel, selon le goût »), la précision passe à droite.
-    final noteOnRight = amount.isEmpty && line.note.isNotEmpty;
+    final name = line.name.trim();
+    // « 200 g de farine », « 1 yaourt nature », « Sel, selon le goût » : une
+    // seule phrase, la quantité juste avant l'ingrédient.
+    final connector = line.unit.isNotEmpty && name.isNotEmpty
+        ? IngredientText.partitive(name)
+        : '';
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 9),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    text: _capitalize(line.name),
-                    children: [
-                      if (line.optional)
-                        TextSpan(
-                          text: ' · $optionalLabel',
-                          style: muted.copyWith(fontStyle: FontStyle.italic),
-                        ),
-                    ],
-                  ),
-                  style: theme.textTheme.bodyLarge,
-                ),
-                if (!noteOnRight && line.note.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      line.note,
-                      style: theme.textTheme.bodySmall?.merge(muted),
-                    ),
-                  ),
-              ],
+      child: Text.rich(
+        TextSpan(
+          children: [
+            if (amount.isNotEmpty)
+              TextSpan(
+                text: '$amount ',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            TextSpan(
+              text: amount.isEmpty ? _capitalize(name) : '$connector$name',
             ),
-          ),
-          const SizedBox(width: 16),
-          // Quantité alignée au bord droit ; plafonnée pour qu'une longue
-          // précision n'écrase pas le nom.
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width * 0.4,
-            ),
-            child: Text(
-              noteOnRight ? line.note : amount,
-              textAlign: TextAlign.right,
-              style: noteOnRight
-                  ? theme.textTheme.bodyMedium?.merge(muted)
-                  : theme.textTheme.bodyLarge,
-            ),
-          ),
-        ],
+            if (line.note.isNotEmpty)
+              TextSpan(text: ', ${line.note}', style: muted),
+            if (line.optional)
+              TextSpan(
+                text: ' · $optionalLabel',
+                style: muted.copyWith(fontStyle: FontStyle.italic),
+              ),
+          ],
+        ),
+        style: theme.textTheme.bodyLarge,
       ),
     );
   }
@@ -831,10 +827,9 @@ class _NotesSection extends StatelessWidget {
 }
 
 class _AboutSection extends StatelessWidget {
-  const _AboutSection({required this.recipe, required this.onCooked});
+  const _AboutSection({required this.recipe});
 
   final Recipe recipe;
-  final VoidCallback onCooked;
 
   @override
   Widget build(BuildContext context) {
@@ -938,24 +933,6 @@ class _AboutSection extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 16),
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 12,
-          runSpacing: 8,
-          children: [
-            Text(
-              l10n.timesCooked(recipe.timesCooked),
-              style: theme.textTheme.bodyMedium,
-            ),
-            FilledButton.tonalIcon(
-              onPressed: onCooked,
-              icon: const Icon(Icons.check),
-              label: Text(l10n.iCookedThis),
-            ),
-          ],
-        ),
         const SizedBox(height: 12),
         Text(
           l10n.addedOn(
@@ -999,6 +976,91 @@ class _LinkedRecipeTile extends ConsumerWidget {
       leading: const Icon(Icons.link),
       title: Text(recipe.title),
       onTap: () => context.push('/recettes/$id'),
+    );
+  }
+}
+
+/// Où en est la recette : son statut (qu'on change d'un geste) et le nombre de
+/// fois où elle a été réalisée (un geste pour ajouter une fois).
+class _StatusRow extends StatelessWidget {
+  const _StatusRow({
+    required this.recipe,
+    required this.onCooked,
+    required this.onStatus,
+  });
+
+  final Recipe recipe;
+  final VoidCallback onCooked;
+  final ValueChanged<RecipeStatus?> onStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    String statusLabel(RecipeStatus status) => switch (status) {
+      RecipeStatus.toTest => l10n.statusToTest,
+      RecipeStatus.validated => l10n.statusValidated,
+      RecipeStatus.toImprove => l10n.statusToImprove,
+    };
+    final status = recipe.status;
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        PopupMenuButton<int>(
+          tooltip: l10n.statusLabel,
+          onSelected: (index) => onStatus(
+            index < RecipeStatus.values.length
+                ? RecipeStatus.values[index]
+                : null,
+          ),
+          itemBuilder: (context) => [
+            for (final (index, value) in RecipeStatus.values.indexed)
+              CheckedPopupMenuItem(
+                value: index,
+                checked: value == status,
+                child: Text(statusLabel(value)),
+              ),
+            PopupMenuItem(
+              value: RecipeStatus.values.length,
+              child: Text(l10n.statusNone),
+            ),
+          ],
+          child: Chip(
+            avatar: Icon(
+              status == null ? Icons.flag_outlined : Icons.flag,
+              size: 18,
+              color: theme.colorScheme.primary,
+            ),
+            label: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(status == null ? l10n.statusLabel : statusLabel(status)),
+                const Icon(Icons.arrow_drop_down, size: 20),
+              ],
+            ),
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+        ActionChip(
+          avatar: Icon(
+            recipe.timesCooked > 0
+                ? Icons.check_circle
+                : Icons.check_circle_outline,
+            size: 18,
+            color: theme.colorScheme.primary,
+          ),
+          label: Text(
+            recipe.timesCooked > 0
+                ? l10n.timesCooked(recipe.timesCooked)
+                : l10n.neverCooked,
+          ),
+          tooltip: l10n.iCookedThis,
+          onPressed: onCooked,
+          visualDensity: VisualDensity.compact,
+        ),
+      ],
     );
   }
 }

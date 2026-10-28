@@ -18,6 +18,9 @@ class Recipes extends Table {
   /// Toujours vide : la colonne reste pour ne pas reconstruire la table.
   TextColumn get tips => text().withDefault(const Constant(''))();
   IntColumn get servings => integer().nullable()();
+
+  /// « blinis », « ramequins »… ; vide = des personnes. Ajouté en v4.
+  TextColumn get servingsUnit => text().withDefault(const Constant(''))();
   IntColumn get prepMinutes => integer().nullable()();
   IntColumn get cookMinutes => integer().nullable()();
   IntColumn get restMinutes => integer().nullable()();
@@ -112,7 +115,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 3;
+  static const latestSchemaVersion = 4;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -147,6 +150,38 @@ UPDATE recipes SET
         await m.addColumn(schema.recipes, schema.recipes.collections);
         await m.createTable(schema.recipePhotos);
         await m.createTable(schema.recipeLinks);
+      },
+      // v4 : ce que comptent les portions (« 12 blinis »). L'import de la
+      // 0.2 de test avait gardé ces quantités en tête des notes
+      // (« Quantité : 12 blinis ») : elles redeviennent des portions.
+      from3To4: (m, schema) async {
+        await m.addColumn(schema.recipes, schema.recipes.servingsUnit);
+        final rows = await m.database
+            .customSelect(
+              'SELECT id, notes FROM recipes '
+              "WHERE servings IS NULL AND notes LIKE 'Quantité : %'",
+            )
+            .get();
+        for (final row in rows) {
+          final notes = row.read<String>('notes');
+          final newline = notes.indexOf('\n');
+          final first = newline < 0 ? notes : notes.substring(0, newline);
+          final match = RegExp(r'^Quantité : (\d+)\s+(\S.*)$')
+              .firstMatch(first.trim());
+          if (match == null) continue;
+          await m.database.customUpdate(
+            'UPDATE recipes SET servings = ?, servings_unit = ?, notes = ? '
+            'WHERE id = ?',
+            variables: [
+              Variable.withInt(int.parse(match.group(1)!)),
+              Variable.withString(match.group(2)!.trim()),
+              Variable.withString(
+                newline < 0 ? '' : notes.substring(newline + 1).trim(),
+              ),
+              Variable.withString(row.read<String>('id')),
+            ],
+          );
+        }
       },
     ),
     beforeOpen: (details) async {

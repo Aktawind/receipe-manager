@@ -119,7 +119,10 @@ String _recipeTitle(AppLocalizations l10n, Recipe recipe) =>
 String? _recipeSummary(AppLocalizations l10n, Recipe recipe) {
   final parts = [
     if (recipe.totalMinutes case final total?) formatMinutes(l10n, total),
-    if (recipe.servings case final servings?) l10n.servingsCount(servings),
+    if (recipe.servings case final servings?)
+      recipe.servingsUnit.isEmpty
+          ? l10n.servingsCount(servings)
+          : '$servings ${recipe.servingsUnit}',
   ];
   return parts.isEmpty ? null : parts.join(' · ');
 }

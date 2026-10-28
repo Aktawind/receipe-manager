@@ -12,7 +12,7 @@ recettes-2026-10-27-1430.zip
 
 ## Règles de compatibilité
 
-- Le champ `version` indique la version du format (actuellement **3**).
+- Le champ `version` indique la version du format (actuellement **4**).
 - Toute version de l'application sait lire **toutes les versions précédentes** du format.
 - Une sauvegarde d'une version **plus récente** que l'application est refusée, sans rien
   modifier (message : « Mets l'application à jour »).
@@ -26,6 +26,9 @@ recettes-2026-10-27-1430.zip
 | 1 | 0.1.0 | Première version : champs `notes` et `tips` (« Astuces ») |
 | 2 | 0.1.0 (corrigée) | `tips` supprimé ; son contenu est fusionné dans `notes`. Titre optionnel `title` sur les étapes |
 | 3 | 0.2.0 | Ajout de `favorite`, `rating`, `status`, `course`, `category`, `collections`, `extraPhotos`, `linkedRecipes` |
+| 4 | 0.2.0 | Ajout de `servingsUnit` (« 12 blinis ») |
+
+Lecture d'une version 3 : `servingsUnit` est vide (des personnes).
 
 Lecture d'une version 2 : les champs ajoutés par la version 3 prennent leur valeur neutre
 (pas favori, pas de note, pas de statut, classement vide, aucune photo supplémentaire).
@@ -33,12 +36,12 @@ Lecture d'une version 2 : les champs ajoutés par la version 3 prennent leur val
 Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une ligne vide) ; les
 étapes n'ont pas de titre.
 
-## `recettes.json` — version 3
+## `recettes.json` — version 4
 
 ```json
 {
   "format": "recettes-backup",
-  "version": 3,
+  "version": 4,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
   "recipes": [
@@ -49,6 +52,7 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
       "source": "Livre de mamie, p. 12",
       "notes": "Précuire la pâte 10 min.",
       "servings": 6,
+      "servingsUnit": "",
       "prepMinutes": 20,
       "cookMinutes": 35,
       "restMinutes": null,
@@ -86,6 +90,7 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
 |---|---|---|
 | `id` | texte | UUID, stable pour toujours (sert à fusionner et synchroniser) |
 | `servings`, `*Minutes` | entier ou `null` | |
+| `servingsUnit` | texte | ce que compte `servings` (« blinis », « ramequins »), vide = des personnes |
 | `timesCooked` | entier | 0 par défaut |
 | `mainPhoto` | texte ou `null` | nom d'un fichier de `photos/`, sans dossier |
 | `createdAt`, `updatedAt`, `deletedAt` | date ISO 8601 UTC | `deletedAt` non nul = dans la corbeille |
@@ -125,7 +130,7 @@ Réglages → Importer depuis Recipe Keeper, avec le ZIP produit par Recipe Keep
 | nom, source, notes | `title`, `source`, `notes` |
 | ingrédients (un paragraphe par ligne) | analysés par `IngredientText` ; un paragraphe en gras ou en majuscules est un titre de groupe |
 | préparation | analysée par `StepText` |
-| taille de portion | `servings` si « N personnes » ; sinon le texte (« 15 biscuits ») est ajouté en tête des notes (« Quantité : … ») |
+| taille de portion | `servings` et `servingsUnit` : « 4 personnes » → 4 ; « 12 blinis » → 12 et « blinis ». Sans nombre (« Une dizaine »), le texte est ajouté en tête des notes (« Quantité : … ») |
 | temps de préparation, de cuisson | `prepMinutes`, `cookMinutes` (0 = absent) |
 | favori | `favorite` |
 | note en étoiles | **non reprise** (choix de la personne qui utilise l'app) |

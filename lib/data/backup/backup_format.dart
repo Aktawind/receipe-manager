@@ -11,9 +11,10 @@ import '../photo_store.dart';
 /// - v2 : `tips` supprimé (fusionné dans `notes`), titre optionnel des étapes.
 /// - v3 : favori, note, statut, type de plat, catégorie, collections, photos
 ///   supplémentaires et recettes liées.
+/// - v4 : `servingsUnit` (« 12 blinis »).
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 3;
+  static const currentVersion = 4;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 
@@ -38,6 +39,7 @@ abstract final class BackupFormat {
     'source': r.source,
     'notes': r.notes,
     'servings': r.servings,
+    'servingsUnit': r.servingsUnit,
     'prepMinutes': r.prepMinutes,
     'cookMinutes': r.cookMinutes,
     'restMinutes': r.restMinutes,
@@ -126,6 +128,7 @@ abstract final class BackupFormat {
           ? _string(m, 'notes')
           : _mergeNotes(_string(m, 'notes'), _string(m, 'tips')),
       servings: _int(m, 'servings'),
+      servingsUnit: _string(m, 'servingsUnit'),
       prepMinutes: _int(m, 'prepMinutes'),
       cookMinutes: _int(m, 'cookMinutes'),
       restMinutes: _int(m, 'restMinutes'),

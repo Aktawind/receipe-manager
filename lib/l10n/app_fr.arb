@@ -359,5 +359,11 @@
   "removeFromFavorites": "Retirer des favoris",
   "collectionsLabel": "Collections",
   "linkedRecipesLabel": "Recettes utilisées",
-  "morePhotos": "Autres photos"
+  "morePhotos": "Autres photos",
+  "fieldServingsUnit": "Unité des portions",
+  "fieldServingsUnitHint": "personnes",
+  "quantityLabel": "Quantité",
+  "statusNone": "Aucun statut",
+  "statusLabel": "Statut",
+  "neverCooked": "Jamais réalisée"
 }

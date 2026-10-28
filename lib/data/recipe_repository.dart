@@ -80,6 +80,7 @@ class RecipeRepository {
       source: original.source,
       notes: original.notes,
       servings: original.servings,
+      servingsUnit: original.servingsUnit,
       prepMinutes: original.prepMinutes,
       cookMinutes: original.cookMinutes,
       restMinutes: original.restMinutes,
@@ -131,6 +132,12 @@ class RecipeRepository {
   Future<void> setFavorite(String id, bool value) {
     return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
       RecipesCompanion(isFavorite: Value(value), updatedAt: Value(_clock())),
+    );
+  }
+
+  Future<void> setStatus(String id, RecipeStatus? status) {
+    return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
+      RecipesCompanion(status: Value(status?.code), updatedAt: Value(_clock())),
     );
   }
 
@@ -209,6 +216,7 @@ class RecipeRepository {
             source: Value(recipe.source),
             notes: Value(recipe.notes),
             servings: Value(recipe.servings),
+            servingsUnit: Value(recipe.servingsUnit),
             prepMinutes: Value(recipe.prepMinutes),
             cookMinutes: Value(recipe.cookMinutes),
             restMinutes: Value(recipe.restMinutes),
@@ -331,6 +339,7 @@ class RecipeRepository {
     source: row.source,
     notes: row.notes,
     servings: row.servings,
+    servingsUnit: row.servingsUnit,
     prepMinutes: row.prepMinutes,
     cookMinutes: row.cookMinutes,
     restMinutes: row.restMinutes,

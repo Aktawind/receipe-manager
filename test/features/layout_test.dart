@@ -111,11 +111,13 @@ void main() {
     final title = height('Titre');
     for (final label in [
       'Portions',
+      'Unité des portions',
       'Fois réalisée',
       'Préparation',
       'Cuisson',
       'Repos',
     ]) {
+      await scrollTo(tester, find.widgetWithText(TextField, label));
       expect(
         height(label),
         moreOrLessEquals(title, epsilon: 24),
