@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/data/database.dart';
 import 'package:recettes/data/equipment_repository.dart';
 import 'package:recettes/data/recipe_repository.dart';
+import 'package:recettes/domain/equipment.dart';
 
 void main() {
   late AppDatabase db;
@@ -33,7 +34,7 @@ void main() {
       await equipment.findOrCreate(name);
     }
     expect((await equipment.watchAll().first).map((e) => e.name), [
-      'cocotte',
+      'Cocotte',
       'Écumoire',
       'Fouet',
       'Robot',
@@ -94,5 +95,34 @@ void main() {
     );
     await recipes.moveToTrash(recipe.id);
     expect(await equipment.watchUsage().first, isEmpty);
+  });
+
+  test('les noms commencent par une majuscule', () async {
+    final a = await equipment.findOrCreate('moule à cake');
+    expect(a.name, 'Moule à cake');
+    final b = await equipment.findOrCreate('écumoire');
+    expect(b.name, 'Écumoire');
+    final fouet = await equipment.findOrCreate('Fouet');
+    expect(await equipment.rename(fouet.id, 'fouet électrique'), isTrue);
+    expect((await equipment.watchAll().first).map((e) => e.name), [
+      'Écumoire',
+      'Fouet électrique',
+      'Moule à cake',
+    ]);
+  });
+
+  test('capitalizeNames corrige les anciens noms, une seule fois', () async {
+    final now = DateTime(2026, 10, 29);
+    await equipment.put(
+      EquipmentItem(id: 'old', name: 'robot', createdAt: now, updatedAt: now),
+    );
+    await equipment.put(
+      EquipmentItem(id: 'ok', name: 'Fouet', createdAt: now, updatedAt: now),
+    );
+    await equipment.capitalizeNames();
+    final items = {for (final e in await equipment.getAll()) e.id: e};
+    expect(items['old']!.name, 'Robot');
+    expect(items['old']!.updatedAt.isAfter(now), isTrue);
+    expect(items['ok']!.updatedAt, now, reason: 'déjà propre : inchangé');
   });
 }

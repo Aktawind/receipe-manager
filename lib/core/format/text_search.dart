@@ -18,3 +18,10 @@ String normalizeForSearch(String input) {
   }
   return buffer.toString();
 }
+
+/// Met la première lettre en majuscule : « moule à cake » → « Moule à cake ».
+String capitalizeFirst(String text) {
+  final trimmed = text.trim();
+  if (trimmed.isEmpty) return trimmed;
+  return trimmed[0].toUpperCase() + trimmed.substring(1);
+}

@@ -124,7 +124,9 @@ abstract final class BackupFormat {
       for (final item in _list(root, 'equipment')) {
         final m = _map(item, 'equipment');
         final id = _string(m, 'id', required: true);
-        final name = _string(m, 'name', required: true).trim();
+        final name = EquipmentItem.cleanName(
+          _string(m, 'name', required: true),
+        );
         if (id.isEmpty || name.isEmpty) {
           throw const BackupFormatException(BackupError.invalid, 'equipment');
         }
@@ -162,7 +164,7 @@ abstract final class BackupFormat {
             id,
             () => EquipmentItem(
               id: id,
-              name: name.trim(),
+              name: EquipmentItem.cleanName(name),
               createdAt: stamp,
               updatedAt: stamp,
             ),
