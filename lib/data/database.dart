@@ -2,7 +2,10 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/format/text_search.dart';
+import '../domain/default_labels.dart';
 import '../domain/equipment.dart';
+import '../domain/label.dart';
+import '../domain/legacy_classification.dart';
 
 import 'database.steps.dart';
 
@@ -45,6 +48,11 @@ class Recipes extends Table {
   TextColumn get course => text().withDefault(const Constant(''))();
   TextColumn get category => text().withDefault(const Constant(''))();
   TextColumn get collections => text().withDefault(const Constant(''))();
+
+  /// Dernière ouverture de la fiche (recettes récentes), propre à l'appareil ;
+  /// ajouté en v7. [course], [category] et [collections] (v3) sont vidés par
+  /// la migration v7 : le classement est dans [Labels] et [RecipeLabels].
+  DateTimeColumn get lastViewedAt => dateTime().nullable()();
 
   /// Liens vidéo, un par ligne ; ajouté en v5. [equipment] (matériel en texte,
   /// v5) est vidé par la migration v6 : le matériel est dans [RecipeEquipment].
@@ -133,6 +141,38 @@ class RecipeEquipment extends Table {
   Set<Column<Object>> get primaryKey => {recipeId, position};
 }
 
+/// Le classement commun : catégories, collections, étiquettes… ; v7. Suppression
+/// douce, identifiants déterministes pour les éléments par défaut.
+@DataClassName('LabelRow')
+class Labels extends Table {
+  TextColumn get id => text()();
+  TextColumn get kind => text()();
+  TextColumn get name => text()();
+  TextColumn get parentId => text().nullable()();
+  TextColumn get icon => text().withDefault(const Constant(''))();
+  TextColumn get color => text().withDefault(const Constant(''))();
+  IntColumn get position => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Le classement d'une recette ; [sortIndex] est le rang de la recette dans
+/// l'élément (ordre personnalisé d'une collection) ; v7.
+@DataClassName('RecipeLabelRow')
+class RecipeLabels extends Table {
+  TextColumn get recipeId =>
+      text().references(Recipes, #id, onDelete: KeyAction.cascade)();
+  TextColumn get labelId => text()();
+  IntColumn get sortIndex => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {recipeId, labelId};
+}
+
 @DriftDatabase(
   tables: [
     Recipes,
@@ -141,6 +181,8 @@ class RecipeEquipment extends Table {
     RecipePhotos,
     EquipmentItems,
     RecipeEquipment,
+    Labels,
+    RecipeLabels,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -148,7 +190,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 6;
+  static const latestSchemaVersion = 7;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -157,6 +199,7 @@ class AppDatabase extends _$AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
+      await _seedDefaultLabels(DateTime.now());
     },
     onUpgrade: stepByStep(
       // v2 : titres d'étapes, et « Astuces » fusionnées dans « Notes ».
@@ -234,6 +277,13 @@ UPDATE recipes SET
         await _equipmentTextToCatalog();
         await _linksToIngredients();
         await customStatement('DROP TABLE IF EXISTS recipe_links');
+      },
+      // v7 : classement commun (catégories, collections, étiquettes, saisons…).
+      from6To7: (m, schema) async {
+        await m.addColumn(schema.recipes, schema.recipes.lastViewedAt);
+        await m.createTable(schema.labels);
+        await m.createTable(schema.recipeLabels);
+        await _legacyClassificationToLabels();
       },
     ),
     beforeOpen: (details) async {
@@ -334,5 +384,66 @@ UPDATE recipes SET
         );
       }
     }
+  }
+
+  /// Les catégories, étiquettes et saisons fournies au départ.
+  Future<void> _seedDefaultLabels(DateTime now) async {
+    for (final label in DefaultLabels.build(now)) {
+      await _insertLabel(label);
+    }
+  }
+
+  Future<void> _insertLabel(Label label) {
+    return customStatement(
+      'INSERT OR IGNORE INTO labels (id, kind, name, parent_id, icon, color, '
+      'position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        label.id,
+        label.kind.code,
+        label.name,
+        label.parentId,
+        label.icon,
+        label.color,
+        label.position,
+        label.createdAt.toUtc().toIso8601String(),
+        label.updatedAt.toUtc().toIso8601String(),
+      ],
+    );
+  }
+
+  /// Type de plat, catégorie et collections en texte libre (v3 à v6) → classement
+  /// commun. Voir [LegacyClassification] pour les règles de conversion.
+  Future<void> _legacyClassificationToLabels() async {
+    final now = DateTime.now();
+    await _seedDefaultLabels(now);
+    final rows = await customSelect(
+      'SELECT id, course, category, collections FROM recipes ORDER BY created_at',
+    ).get();
+    final plan = LegacyClassification.plan([
+      for (final row in rows)
+        LegacyEntry(
+          recipeId: row.read<String>('id'),
+          course: row.read<String>('course'),
+          categories: [row.read<String>('category')],
+          collections: row.read<String>('collections').split('\n'),
+        ),
+    ], now);
+    for (final label in plan.labels) {
+      await _insertLabel(label);
+    }
+    final next = <String, int>{};
+    for (final entry in plan.byRecipe.entries) {
+      for (final labelId in entry.value) {
+        final index = next.update(labelId, (n) => n + 1, ifAbsent: () => 0);
+        await customStatement(
+          'INSERT INTO recipe_labels (recipe_id, label_id, sort_index) '
+          'VALUES (?, ?, ?)',
+          [entry.key, labelId, index],
+        );
+      }
+    }
+    await customStatement(
+      "UPDATE recipes SET course = '', category = '', collections = ''",
+    );
   }
 }

@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'backup/backup_service.dart';
 import 'database.dart';
 import 'equipment_repository.dart';
+import 'label_repository.dart';
 import 'photo_store.dart';
 import 'recipe_repository.dart';
 
@@ -18,6 +19,7 @@ class AppServices {
     required this.database,
     required this.recipes,
     required this.equipment,
+    required this.labels,
     required this.photos,
     required this.backups,
   });
@@ -25,6 +27,7 @@ class AppServices {
   final AppDatabase database;
   final RecipeRepository recipes;
   final EquipmentRepository equipment;
+  final LabelRepository labels;
   final PhotoStore photos;
   final BackupService backups;
 
@@ -77,15 +80,18 @@ class AppServices {
     );
     final recipes = RecipeRepository(database);
     final equipment = EquipmentRepository(database);
+    final labels = LabelRepository(database);
     final photos = PhotoStore(Directory(p.join(root.path, 'photos')));
     final services = AppServices(
       database: database,
       recipes: recipes,
       equipment: equipment,
+      labels: labels,
       photos: photos,
       backups: BackupService(
         repository: recipes,
         equipment: equipment,
+        labels: labels,
         photos: photos,
         backupsDirectory: backupsDir,
         appVersion: appVersion,
@@ -119,6 +125,10 @@ final recipeRepositoryProvider = Provider<RecipeRepository>(
 
 final equipmentRepositoryProvider = Provider<EquipmentRepository>(
   (ref) => ref.watch(appServicesProvider).equipment,
+);
+
+final labelRepositoryProvider = Provider<LabelRepository>(
+  (ref) => ref.watch(appServicesProvider).labels,
 );
 
 final photoStoreProvider = Provider<PhotoStore>(

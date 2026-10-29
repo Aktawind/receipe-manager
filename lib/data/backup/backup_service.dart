@@ -6,8 +6,10 @@ import 'package:path/path.dart' as p;
 
 import '../../core/format/text_search.dart';
 import '../../domain/equipment.dart';
+import '../../domain/label.dart';
 import '../../domain/recipe.dart';
 import '../equipment_repository.dart';
+import '../label_repository.dart';
 import '../photo_store.dart';
 import '../recipe_repository.dart';
 import 'backup_format.dart';
@@ -28,12 +30,20 @@ enum ImportMode {
 
 /// Contenu d'une sauvegarde lue et validée, prête à être importée.
 class BackupContents {
-  const BackupContents(this.recipes, this.photos, {this.equipment = const []});
+  const BackupContents(
+    this.recipes,
+    this.photos, {
+    this.equipment = const [],
+    this.labels = const [],
+  });
 
   final List<Recipe> recipes;
 
   /// La liste commune du matériel.
   final List<EquipmentItem> equipment;
+
+  /// Le classement commun (catégories, étiquettes, saisons…).
+  final List<Label> labels;
   final Map<String, List<int>> photos;
 }
 
@@ -78,6 +88,7 @@ class BackupService {
   BackupService({
     required this.repository,
     required this.equipment,
+    required this.labels,
     required this.photos,
     required this.backupsDirectory,
     required this.appVersion,
@@ -86,6 +97,7 @@ class BackupService {
 
   final RecipeRepository repository;
   final EquipmentRepository equipment;
+  final LabelRepository labels;
   final PhotoStore photos;
   final Directory backupsDirectory;
   final String appVersion;
@@ -102,6 +114,7 @@ class BackupService {
       BackupFormat.encode(
         recipes,
         equipment: await equipment.getAll(),
+        labels: await labels.getAll(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -160,7 +173,12 @@ class BackupService {
         throw BackupFormatException(BackupError.missingPhoto, name);
       }
     }
-    return BackupContents(recipes, photoFiles, equipment: decoded.equipment);
+    return BackupContents(
+      recipes,
+      photoFiles,
+      equipment: decoded.equipment,
+      labels: decoded.labels,
+    );
   }
 
   /// Compare un export Recipe Keeper avec les recettes de l'application.
@@ -207,6 +225,9 @@ class BackupService {
       final existing = {
         for (final r in await repository.getAllWithDetails()) r.id: r,
       };
+      final existingLabels = {
+        for (final item in await labels.getAll()) item.id: item,
+      };
       final existingEquipment = {
         for (final item in await equipment.getAll()) item.id: item,
       };
@@ -214,6 +235,16 @@ class BackupService {
         await repository.deleteAll();
         await equipment.deleteAll();
         existingEquipment.clear();
+        await labels.deleteAll();
+        existingLabels.clear();
+      }
+      for (final item in contents.labels) {
+        final current = existingLabels[item.id];
+        if (current == null ||
+            (mode != ImportMode.addMissing &&
+                item.updatedAt.isAfter(current.updatedAt))) {
+          await labels.put(item);
+        }
       }
       for (final item in contents.equipment) {
         final current = existingEquipment[item.id];
