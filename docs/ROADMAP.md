@@ -138,7 +138,7 @@ fusionnés ; Printemps, Été, Automne et Hiver deviennent des saisons, avec « 
 saison n'a pas d'importance (les quatre ensemble à l'import).
 
 *Avancement* : deux étapes de test.
-- **Étape 1** (validée à l'installation le 2026-10-29) : classement commun (catégories et sous-catégories, collections, étiquettes, origine,
+- **Étape 1** : classement commun (catégories et sous-catégories, collections, étiquettes, origine,
   type de repas, occasion, saison) géré dans Réglages → Classement, choisi dans le formulaire,
   affiché sur la fiche ; conversion de tes recettes et de l'import Recipe Keeper.
 - **Étape 2 (en test)** : filtrer la liste par classement, accès rapide aux favoris, récemment consultées et
