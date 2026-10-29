@@ -18,32 +18,23 @@ final labelUsageProvider = StreamProvider<Map<String, int>>(
 extension LabelKindText on LabelKind {
   String title(AppLocalizations l10n) => switch (this) {
     LabelKind.category => l10n.kindCategory,
-    LabelKind.collection => l10n.kindCollection,
-    LabelKind.tag => l10n.kindTag,
-    LabelKind.cuisine => l10n.kindCuisine,
-    LabelKind.meal => l10n.kindMeal,
-    LabelKind.occasion => l10n.kindOccasion,
     LabelKind.season => l10n.kindSeason,
+    LabelKind.collection => l10n.kindCollection,
+    LabelKind.cuisine => l10n.kindCuisine,
   };
 
   String singular(AppLocalizations l10n) => switch (this) {
     LabelKind.category => l10n.kindCategorySingular,
-    LabelKind.collection => l10n.kindCollectionSingular,
-    LabelKind.tag => l10n.kindTagSingular,
-    LabelKind.cuisine => l10n.kindCuisineSingular,
-    LabelKind.meal => l10n.kindMealSingular,
-    LabelKind.occasion => l10n.kindOccasionSingular,
     LabelKind.season => l10n.kindSeasonSingular,
+    LabelKind.collection => l10n.kindCollectionSingular,
+    LabelKind.cuisine => l10n.kindCuisineSingular,
   };
 
   IconData get icon => switch (this) {
     LabelKind.category => Icons.category_outlined,
-    LabelKind.collection => Icons.collections_bookmark_outlined,
-    LabelKind.tag => Icons.sell_outlined,
-    LabelKind.cuisine => Icons.public,
-    LabelKind.meal => Icons.schedule,
-    LabelKind.occasion => Icons.celebration_outlined,
     LabelKind.season => Icons.wb_sunny_outlined,
+    LabelKind.collection => Icons.collections_bookmark_outlined,
+    LabelKind.cuisine => Icons.public,
   };
 }
 

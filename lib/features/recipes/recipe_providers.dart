@@ -82,6 +82,9 @@ class RecipeFilter {
 
   bool get isActive => quick != QuickFilter.all || labelIds.isNotEmpty;
 
+  /// Nombre de critères actifs (pastille sur l'icône du filtre).
+  int get activeCount => labelIds.length + (quick == QuickFilter.all ? 0 : 1);
+
   RecipeFilter copyWith({
     QuickFilter? quick,
     Set<String>? labelIds,
@@ -113,6 +116,17 @@ class RecipeFilterController extends Notifier<RecipeFilter> {
   void setQuick(QuickFilter quick) => state = state.copyWith(quick: quick);
 
   void setLabels(Set<String> ids) => state = state.copyWith(labelIds: ids);
+
+  /// Remplace le choix d'une famille ([ofKind] : ses éléments) par [chosen].
+  void replaceLabels(Set<String> ofKind, Iterable<String> chosen) {
+    state = state.copyWith(
+      labelIds: {
+        for (final id in state.labelIds)
+          if (!ofKind.contains(id)) id,
+        ...chosen,
+      },
+    );
+  }
 
   void toggleLabel(String id) {
     final next = {...state.labelIds};
@@ -182,15 +196,25 @@ final visibleRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
       return true;
     }).toList();
 
-    // Même famille : l'un ou l'autre ; familles différentes : les deux.
+    // Catégories, saisons, origines : l'un ou l'autre ; collections : toutes
+    // celles qui sont choisies (« Végétarien » ET « Pâques ») ; familles
+    // différentes : les deux.
     final byKind = <LabelKind, List<Label>>{};
     for (final label in all) {
       if (filter.labelIds.contains(label.id)) {
         (byKind[label.kind] ??= []).add(label);
       }
     }
-    for (final selected in byKind.values) {
-      final wanted = _expanded(selected, all);
+    for (final entry in byKind.entries) {
+      if (entry.key == LabelKind.collection) {
+        for (final label in entry.value) {
+          shown = shown
+              .where((r) => links[r.id]?.containsKey(label.id) ?? false)
+              .toList();
+        }
+        continue;
+      }
+      final wanted = _expanded(entry.value, all);
       shown = shown
           .where((r) => (links[r.id]?.keys ?? const []).any(wanted.contains))
           .toList();
@@ -252,22 +276,5 @@ class RecipesViewController extends Notifier<RecipesView> {
   Future<void> set(RecipesView view) async {
     state = view;
     await ref.read(sharedPreferencesProvider).setString(_key, view.name);
-  }
-}
-
-/// Afficher ou non les photos dans la liste des recettes.
-final showPhotosProvider = NotifierProvider<ShowPhotosController, bool>(
-  ShowPhotosController.new,
-);
-
-class ShowPhotosController extends Notifier<bool> {
-  static const _key = 'recipes_show_photos';
-
-  @override
-  bool build() => ref.watch(sharedPreferencesProvider).getBool(_key) ?? true;
-
-  Future<void> set(bool value) async {
-    state = value;
-    await ref.read(sharedPreferencesProvider).setBool(_key, value);
   }
 }

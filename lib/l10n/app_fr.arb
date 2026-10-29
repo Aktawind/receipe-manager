@@ -425,17 +425,11 @@
   "classificationSubtitle": "Catégories, collections, étiquettes, saisons…",
   "kindCategory": "Catégories",
   "kindCollection": "Collections",
-  "kindTag": "Étiquettes",
   "kindCuisine": "Origine culinaire",
-  "kindMeal": "Type de repas",
-  "kindOccasion": "Occasion",
   "kindSeason": "Saison",
   "kindCategorySingular": "catégorie",
   "kindCollectionSingular": "collection",
-  "kindTagSingular": "étiquette",
   "kindCuisineSingular": "origine",
-  "kindMealSingular": "type de repas",
-  "kindOccasionSingular": "occasion",
   "kindSeasonSingular": "saison",
   "addLabel": "Ajouter",
   "addSubcategory": "Ajouter une sous-catégorie",
@@ -499,7 +493,6 @@
   "viewList": "Liste",
   "viewGrid": "Grille",
   "viewCards": "Cartes",
-  "showPhotos": "Afficher les photos",
   "sortBy": "Trier par",
   "sortTitle": "Titre",
   "sortAdded": "Ajout (récent d’abord)",
@@ -508,5 +501,15 @@
   "orderRecipes": "Ordonner les recettes",
   "orderRecipesHint": "Maintiens la poignée et glisse une recette pour la déplacer.",
   "orderEmpty": "Aucune recette dans cette collection",
-  "dragHandle": "Déplacer"
+  "dragHandle": "Déplacer",
+  "filterNone": "Pas de filtre",
+  "filterShow": "Afficher",
+  "filterSelected": "{count, plural, =1{1 choisi} other{{count} choisis}}",
+  "@filterSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -190,7 +190,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 7;
+  static const latestSchemaVersion = 8;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -284,6 +284,11 @@ UPDATE recipes SET
         await m.createTable(schema.labels);
         await m.createTable(schema.recipeLabels);
         await _legacyClassificationToLabels();
+      },
+      // v8 : le classement se limite à quatre familles ; étiquettes et
+      // occasions deviennent des collections, le type de repas disparaît.
+      from7To8: (m, schema) async {
+        await _foldRemovedLabelKinds();
       },
     ),
     beforeOpen: (details) async {
@@ -444,6 +449,61 @@ UPDATE recipes SET
     }
     await customStatement(
       "UPDATE recipes SET course = '', category = '', collections = ''",
+    );
+  }
+
+  /// Étiquettes et occasions utilisées → collections du même nom (les
+  /// recettes gardent leur classement) ; types de repas et éléments inutilisés
+  /// supprimés. Ces éléments n'ont jamais été synchronisés : suppression
+  /// définitive.
+  Future<void> _foldRemovedLabelKinds() async {
+    final now = DateTime.now().toUtc().toIso8601String();
+    final removed = await customSelect(
+      "SELECT id, kind, name FROM labels WHERE kind IN ('tag', 'occasion', 'meal')",
+    ).get();
+    for (final row in removed) {
+      final id = row.read<String>('id');
+      if (row.read<String>('kind') == 'meal') continue;
+      final links = await customSelect(
+        'SELECT recipe_id FROM recipe_labels WHERE label_id = ?',
+        variables: [Variable.withString(id)],
+      ).get();
+      if (links.isEmpty) continue;
+
+      final name = row.read<String>('name');
+      final target = Label.idFor(LabelKind.collection, name);
+      final position = await customSelect(
+        "SELECT COUNT(*) AS n FROM labels WHERE kind = 'collection'",
+      ).getSingle();
+      await customStatement(
+        'INSERT OR IGNORE INTO labels (id, kind, name, parent_id, icon, color, '
+        "position, created_at, updated_at) VALUES (?, 'collection', ?, NULL, '', '', ?, ?, ?)",
+        [target, name, position.read<int>('n'), now, now],
+      );
+      for (final link in links) {
+        final recipeId = link.read<String>('recipe_id');
+        final already = await customSelect(
+          'SELECT 1 FROM recipe_labels WHERE recipe_id = ? AND label_id = ?',
+          variables: [
+            Variable.withString(recipeId),
+            Variable.withString(target),
+          ],
+        ).get();
+        if (already.isNotEmpty) continue;
+        await customStatement(
+          'INSERT INTO recipe_labels (recipe_id, label_id, sort_index) VALUES '
+          '(?, ?, (SELECT COALESCE(MAX(sort_index), -1) + 1 FROM recipe_labels '
+          'WHERE label_id = ?))',
+          [recipeId, target, target],
+        );
+      }
+    }
+    await customStatement(
+      'DELETE FROM recipe_labels WHERE label_id IN '
+      "(SELECT id FROM labels WHERE kind IN ('tag', 'occasion', 'meal'))",
+    );
+    await customStatement(
+      "DELETE FROM labels WHERE kind IN ('tag', 'occasion', 'meal')",
     );
   }
 }

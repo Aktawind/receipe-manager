@@ -202,19 +202,30 @@ abstract final class BackupFormat {
 
     final labels = <Label>[];
     if (version >= 7) {
+      // Les étiquettes et occasions des versions de test sont devenues des
+      // collections, le type de repas a disparu : leurs liens suivent.
+      final remap = <String, String?>{};
       for (final item in _list(root, 'labels')) {
         final m = _map(item, 'label');
-        final kind = LabelKind.fromCode(
-          m['kind'] is String ? m['kind'] as String : null,
-        );
+        final code = m['kind'] is String ? m['kind'] as String : null;
         final id = _string(m, 'id', required: true);
         final name = Label.cleanName(_string(m, 'name', required: true));
-        if (kind == null || id.isEmpty || name.isEmpty) {
+        if (id.isEmpty || name.isEmpty) {
+          throw const BackupFormatException(BackupError.invalid, 'labels');
+        }
+        var kind = LabelKind.fromCode(code);
+        if (kind == null && (code == 'tag' || code == 'occasion')) {
+          kind = LabelKind.collection;
+          remap[id] = Label.idFor(LabelKind.collection, name);
+        } else if (kind == null && code == 'meal') {
+          remap[id] = null;
+          continue;
+        } else if (kind == null) {
           throw const BackupFormatException(BackupError.invalid, 'labels');
         }
         labels.add(
           Label(
-            id: id,
+            id: remap[id] ?? id,
             kind: kind,
             name: name,
             parentId: m['parentId'] is String ? m['parentId'] as String : null,
@@ -226,6 +237,17 @@ abstract final class BackupFormat {
             deletedAt: _date(m, 'deletedAt', required: false),
           ),
         );
+      }
+      if (remap.isNotEmpty) {
+        recipes = [
+          for (final recipe in recipes)
+            recipe.copyWith(
+              labelIds: {
+                for (final id in recipe.labelIds)
+                  if (!remap.containsKey(id)) id else ?remap[id],
+              }.toList(),
+            ),
+        ];
       }
     } else {
       // v3 à v6 : type de plat, catégorie et collections en texte libre.

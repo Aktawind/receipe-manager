@@ -4,27 +4,24 @@ import 'package:uuid/uuid.dart';
 import '../core/format/text_search.dart';
 
 /// Les familles de classement d'une recette.
+///
+/// Quatre familles suffisent : une collection peut recevoir ce que l'on veut
+/// (« Végétarien », « Pâques », « Rapide »…) et se combine avec les autres au
+/// moment de filtrer. Les étiquettes, occasions et types de repas des versions
+/// de test ont été fondus dans les collections (le type de repas relève du
+/// planning, version 0.11).
 enum LabelKind {
-  /// Entrées, Plats, Desserts… avec des sous-catégories.
+  /// Plats, Desserts, Goûters… avec des sous-catégories.
   category,
 
-  /// Collections personnalisées (Noël, Goûters de la famille…).
+  /// Printemps, été, automne, hiver, toute saison.
+  season,
+
+  /// Collections personnalisées (Noël, Végétarien, Goûters de la famille…).
   collection,
 
-  /// Étiquettes (Rapide, Végétarien…).
-  tag,
-
   /// Origine culinaire (Française, Italienne…).
-  cuisine,
-
-  /// Petit-déjeuner, déjeuner, goûter, dîner.
-  meal,
-
-  /// Noël, anniversaire…
-  occasion,
-
-  /// Printemps, été, automne, hiver, toute saison.
-  season;
+  cuisine;
 
   String get code => name;
 

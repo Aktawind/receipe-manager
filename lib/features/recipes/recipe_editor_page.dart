@@ -566,15 +566,6 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                     ),
                   ],
                 ),
-                _Heading(l10n.classificationTitle),
-                _ClassificationField(
-                  labelIds: _labelIds,
-                  onChoose: _chooseLabels,
-                  onRemove: (id) {
-                    setState(() => _labelIds = [..._labelIds]..remove(id));
-                    _scheduleSave();
-                  },
-                ),
                 _Heading(l10n.fieldIngredients),
                 _BigField(
                   key: const ValueKey('field-ingredients'),
@@ -646,6 +637,15 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                   label: l10n.fieldVideos,
                   minLines: 2,
                   capitalization: TextCapitalization.none,
+                ),
+                const SizedBox(height: 8),
+                _ClassificationField(
+                  labelIds: _labelIds,
+                  onChoose: _chooseLabels,
+                  onRemove: (id) {
+                    setState(() => _labelIds = [..._labelIds]..remove(id));
+                    _scheduleSave();
+                  },
                 ),
               ],
             ),
@@ -988,15 +988,7 @@ class _ClassificationField extends ConsumerWidget {
     final theme = Theme.of(context);
     final all = ref.watch(labelsProvider).value ?? const <Label>[];
     final byId = {for (final l in all) l.id: l};
-    const order = [
-      LabelKind.category,
-      LabelKind.season,
-      LabelKind.tag,
-      LabelKind.collection,
-      LabelKind.cuisine,
-      LabelKind.meal,
-      LabelKind.occasion,
-    ];
+    const order = LabelKind.values;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

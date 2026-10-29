@@ -288,7 +288,7 @@ class LabelRepository {
 
   static Label _fromRow(LabelRow row) => Label(
     id: row.id,
-    kind: LabelKind.fromCode(row.kind) ?? LabelKind.tag,
+    kind: LabelKind.fromCode(row.kind) ?? LabelKind.collection,
     name: row.name,
     parentId: row.parentId,
     icon: row.icon,
