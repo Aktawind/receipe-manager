@@ -485,5 +485,28 @@
         "type": "String"
       }
     }
-  }
+  },
+  "quickAll": "Toutes",
+  "quickFavorites": "Favoris",
+  "quickRecent": "Récemment consultées",
+  "quickAdded": "Récemment ajoutées",
+  "filterTitle": "Filtrer",
+  "filterClear": "Tout effacer",
+  "filterDone": "Terminé",
+  "filterNoRecipes": "Aucune recette ne correspond à ces filtres",
+  "displayOptions": "Affichage",
+  "viewMode": "Vue",
+  "viewList": "Liste",
+  "viewGrid": "Grille",
+  "viewCards": "Cartes",
+  "showPhotos": "Afficher les photos",
+  "sortBy": "Trier par",
+  "sortTitle": "Titre",
+  "sortAdded": "Ajout (récent d’abord)",
+  "sortViewed": "Consultation (récent d’abord)",
+  "sortManual": "Ordre de la collection",
+  "orderRecipes": "Ordonner les recettes",
+  "orderRecipesHint": "Maintiens la poignée et glisse une recette pour la déplacer.",
+  "orderEmpty": "Aucune recette dans cette collection",
+  "dragHandle": "Déplacer"
 }

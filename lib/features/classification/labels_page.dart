@@ -44,7 +44,7 @@ class ClassificationPage extends ConsumerWidget {
   }
 }
 
-enum _Action { rename, style, addChild, merge, delete }
+enum _Action { rename, style, addChild, order, merge, delete }
 
 /// Gestion d'une famille : ajouter, renommer, choisir icône et couleur,
 /// fusionner, supprimer.
@@ -225,6 +225,9 @@ class LabelsPage extends ConsumerWidget {
                 _Action.rename => _rename(context, ref, label),
                 _Action.style => _style(context, ref, label),
                 _Action.addChild => _add(context, ref, parent: label),
+                _Action.order => context.push(
+                  '/reglages/classement/ordre/${label.id}',
+                ),
                 _Action.merge => _merge(context, ref, label, all),
                 _Action.delete => _delete(context, ref, label, hasChildren),
               },
@@ -241,6 +244,11 @@ class LabelsPage extends ConsumerWidget {
                   PopupMenuItem(
                     value: _Action.addChild,
                     child: Text(l10n.addSubcategory),
+                  ),
+                if (kind == LabelKind.collection)
+                  PopupMenuItem(
+                    value: _Action.order,
+                    child: Text(l10n.orderRecipes),
                   ),
                 PopupMenuItem(
                   value: _Action.merge,
