@@ -50,7 +50,7 @@ void main() {
       await oldDb.close();
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 5);
+      await verifier.migrateAndValidate(db, 6);
       final repo = RecipeRepository(db);
 
       final blinis = (await repo.getRecipe('blinis'))!;

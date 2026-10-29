@@ -23,9 +23,14 @@ void main() {
           course: 'Plat',
           category: 'Tartes',
           collections: ['Hiver', 'Automne'],
-          linkedRecipeIds: [dough.id],
           ingredients: [
             IngredientLine(id: RecipeRepository.newId(), name: 'poireaux'),
+            IngredientLine(
+              id: RecipeRepository.newId(),
+              name: 'Pâte brisée',
+              quantity: 1,
+              linkedRecipeId: dough.id,
+            ),
           ],
         ),
       );
@@ -40,8 +45,6 @@ void main() {
     expect(find.text('Tartes'), findsOneWidget);
 
     await scrollTo(tester, find.text('Collections : Hiver · Automne'));
-    await scrollTo(tester, find.text('Pâte brisée'));
-    expect(find.text('Recettes utilisées'), findsOneWidget);
 
     // Le cœur de la barre du haut bascule le favori.
     await tester.drag(find.byType(Scrollable).first, const Offset(0, 3000));
@@ -53,6 +56,13 @@ void main() {
     ))!;
     expect(favorite, isTrue);
     expect(find.byTooltip('Retirer des favoris'), findsOneWidget);
+
+    // La pâte est une ligne des ingrédients : un appui ouvre sa fiche.
+    await scrollTo(tester, find.textContaining('Pâte brisée'));
+    await tester.tap(find.textContaining('Pâte brisée'));
+    await settle(tester);
+    expect(find.text('Pâte brisée'), findsOneWidget);
+    expect(find.text('Tarte aux poireaux'), findsNothing);
   });
 
   testWidgets('quantité en unités (12 blinis), statut modifiable d’un geste', (

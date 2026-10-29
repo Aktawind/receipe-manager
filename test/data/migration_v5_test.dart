@@ -8,7 +8,7 @@ import 'package:recettes/domain/recipe.dart';
 import 'generated_migrations/app/generated/schema.dart';
 import 'generated_migrations/app/generated/schema_v4.dart' as v4;
 
-/// Migration v4 → v5 avec des données de l'étape 1 de la 0.2 : tout est
+/// Migration v4 → v6 (en passant par v5) avec des données de l'étape 1 de la 0.2 : tout est
 /// conservé, matériel, vidéos et remplaçants sont vides.
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -62,7 +62,7 @@ void main() {
       await oldDb.close();
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 5);
+      await verifier.migrateAndValidate(db, 6);
       final repo = RecipeRepository(db);
 
       final recipe = (await repo.getRecipe('r1'))!;
@@ -75,12 +75,12 @@ void main() {
       expect(recipe.collections, ['Hiver', 'Été']);
       expect(recipe.ingredients.single.name, 'beurre');
       expect(recipe.ingredients.single.substitutes, '');
-      expect(recipe.equipment, isEmpty);
+      expect(recipe.equipmentIds, isEmpty);
       expect(recipe.videoLinks, isEmpty);
 
       await repo.put(
         recipe.copyWith(
-          equipment: ['poêle', 'batteur'],
+          equipmentIds: ['poele', 'batteur'],
           videoLinks: ['https://youtu.be/abc'],
           ingredients: [
             const IngredientLine(
@@ -94,7 +94,7 @@ void main() {
         ),
       );
       final again = (await repo.getRecipe('r1'))!;
-      expect(again.equipment, ['poêle', 'batteur']);
+      expect(again.equipmentIds, ['poele', 'batteur']);
       expect(again.videoLinks, ['https://youtu.be/abc']);
       expect(again.ingredients.single.substitutes, 'huile de coco');
       await db.close();

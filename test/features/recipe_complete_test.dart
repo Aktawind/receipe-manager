@@ -18,11 +18,13 @@ void main() {
     final app = (await tester.runAsync(TestApp.create))!;
     final repo = app.services.recipes;
     final id = (await tester.runAsync(() async {
+      final cake = await app.services.equipment.findOrCreate('Moule à cake');
+      final fouet = await app.services.equipment.findOrCreate('Fouet');
       final created = await repo.create();
       final saved = await repo.save(
         created.copyWith(
           title: 'Gâteau',
-          equipment: ['moule à cake', 'fouet'],
+          equipmentIds: [cake.id, fouet.id],
           videoLinks: ['https://youtu.be/abc'],
           ingredients: [
             IngredientLine(
@@ -50,7 +52,7 @@ void main() {
     expect(find.text('100 g de beurre'), findsOneWidget);
     expect(find.text('Ou : huile de coco'), findsOneWidget);
     expect(find.text('Matériel'), findsOneWidget);
-    expect(find.text('moule à cake'), findsOneWidget);
+    expect(find.text('Moule à cake'), findsOneWidget);
     // Le gras et l'italique ne laissent pas leurs astérisques à l'écran.
     expect(find.text('Cuire 40 minutes à feu doux.'), findsOneWidget);
     await scrollTo(tester, find.text('https://youtu.be/abc'));
@@ -77,6 +79,9 @@ void main() {
     usePhoneSize(tester);
     final app = (await tester.runAsync(TestApp.create))!;
     final repo = app.services.recipes;
+    final rouleau = (await tester.runAsync(
+      () => app.services.equipment.findOrCreate('Rouleau'),
+    ))!;
     final ids = (await tester.runAsync(() async {
       final dough = await repo.save(
         (await repo.create()).copyWith(title: 'Pâte brisée'),
@@ -96,26 +101,53 @@ void main() {
     await tester.tap(find.byTooltip('Modifier'));
     await settle(tester);
 
-    await scrollTo(tester, field('equipment'));
-    await tester.enterText(field('equipment'), 'moule\n\nrouleau ');
+    await scrollTo(tester, field('ingredients'));
+    await tester.enterText(field('ingredients'), '200 g de lardons');
+
+    // Recette liée, insérée proprement dans les ingrédients.
+    await tester.ensureVisible(find.text('Insérer une recette (pâte, sauce…)'));
+    await tester.pump();
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 200));
+    await tester.pump();
+    await tester.tap(find.text('Insérer une recette (pâte, sauce…)'));
+    await settle(tester);
+    await tester.tap(find.text('Pâte brisée'));
+    await settle(tester);
+    expect(
+      tester.widget<TextField>(field('ingredients')).controller!.text,
+      '200 g de lardons\n[[Pâte brisée]]',
+    );
+
+    // Matériel : on coche dans la liste commune, ou on ajoute ce qui manque.
+    await tester.ensureVisible(find.text('Choisir le matériel'));
+    await tester.pump();
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 200));
+    await tester.pump();
+    await tester.tap(find.text('Choisir le matériel'));
+    await settle(tester);
+    await tester.tap(find.text('Rouleau'));
+    await tester.enterText(
+      find.byKey(const ValueKey('equipment-search')),
+      'Moule',
+    );
+    await tester.pump();
+    await tester.tap(find.text('Ajouter « Moule »'));
+    await settle(tester);
+    await tester.tap(find.text('Valider'));
+    await settle(tester);
 
     // Gras : les marqueurs entourent le mot sélectionné.
     await scrollTo(tester, field('steps'));
     await tester.enterText(field('steps'), 'Cuire longtemps');
     final controller = tester.widget<TextField>(field('steps')).controller!;
     controller.selection = const TextSelection(baseOffset: 6, extentOffset: 15);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 300));
+    await tester.pump();
     await tester.ensureVisible(find.byTooltip('Gras'));
     await tester.pump();
     await tester.tap(find.byTooltip('Gras'));
     await tester.pump();
     expect(controller.text, 'Cuire **longtemps**');
-
-    // Recette utilisée, choisie dans la liste.
-    await scrollTo(tester, find.text('Ajouter une recette'));
-    await tester.tap(find.text('Ajouter une recette'));
-    await settle(tester);
-    await tester.tap(find.text('Pâte brisée'));
-    await settle(tester);
 
     await scrollTo(tester, field('videos'));
     await tester.enterText(field('videos'), 'https://youtu.be/xyz');
@@ -123,8 +155,14 @@ void main() {
 
     await goBack(tester);
     final saved = (await tester.runAsync(() => repo.getRecipe(ids.$2)))!;
-    expect(saved.equipment, ['moule', 'rouleau']);
+    final catalog = (await tester.runAsync(
+      () => app.services.equipment.getAll(),
+    ))!;
+    final moule = catalog.firstWhere((e) => e.name == 'Moule');
+    expect(saved.equipmentIds, [rouleau.id, moule.id]);
     expect(saved.steps.single.text, 'Cuire **longtemps**');
+    expect(saved.ingredients.map((i) => i.name), ['lardons', 'Pâte brisée']);
+    expect(saved.ingredients.last.linkedRecipeId, ids.$1);
     expect(saved.linkedRecipeIds, [ids.$1]);
     expect(saved.videoLinks, ['https://youtu.be/xyz']);
   });

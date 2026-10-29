@@ -66,7 +66,7 @@ void main() {
     await oldDb.close();
 
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 5);
+    await verifier.migrateAndValidate(db, 6);
 
     final repo = RecipeRepository(db);
     final recipe = (await repo.getRecipe('r1'))!;
@@ -86,6 +86,7 @@ void main() {
     expect(recipe.collections, isEmpty);
     expect(recipe.extraPhotos, isEmpty);
     expect(recipe.linkedRecipeIds, isEmpty);
+    expect(recipe.equipmentIds, isEmpty);
 
     // Les nouveaux champs s'écrivent et se relisent.
     await repo.put(
@@ -97,7 +98,14 @@ void main() {
         category: 'Tartes',
         collections: ['Hiver', 'Été'],
         extraPhotos: ['a.jpg', 'b.jpg'],
-        linkedRecipeIds: ['pate'],
+        equipmentIds: ['moule'],
+        ingredients: [
+          const IngredientLine(
+            id: 'i-pate',
+            name: 'Pâte brisée',
+            linkedRecipeId: 'pate',
+          ),
+        ],
       ),
     );
     final again = (await repo.getRecipe('r1'))!;
@@ -109,6 +117,7 @@ void main() {
     expect(again.collections, ['Hiver', 'Été']);
     expect(again.extraPhotos, ['a.jpg', 'b.jpg']);
     expect(again.linkedRecipeIds, ['pate']);
+    expect(again.equipmentIds, ['moule']);
     await db.close();
   });
 }

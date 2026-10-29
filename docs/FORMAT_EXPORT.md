@@ -12,7 +12,7 @@ recettes-2026-10-27-1430.zip
 
 ## Règles de compatibilité
 
-- Le champ `version` indique la version du format (actuellement **5**).
+- Le champ `version` indique la version du format (actuellement **6**).
 - Toute version de l'application sait lire **toutes les versions précédentes** du format.
 - Une sauvegarde d'une version **plus récente** que l'application est refusée, sans rien
   modifier (message : « Mets l'application à jour »).
@@ -27,7 +27,13 @@ recettes-2026-10-27-1430.zip
 | 2 | 0.1.0 (corrigée) | `tips` supprimé ; son contenu est fusionné dans `notes`. Titre optionnel `title` sur les étapes |
 | 3 | 0.2.0 | Ajout de `favorite`, `rating`, `status`, `course`, `category`, `collections`, `extraPhotos`, `linkedRecipes` |
 | 4 | 0.2.0 | Ajout de `servingsUnit` (« 12 blinis ») |
-| 5 | 0.2.0 | Ajout de `equipment`, `videoLinks` et `ingredients[].substitutes` |
+| 5 | 0.2.0 (test) | Ajout de `equipment` (noms), `videoLinks` et `ingredients[].substitutes` |
+| 6 | 0.2.0 | Liste commune du matériel (`equipment` du document, `equipment` des recettes = identifiants) ; recettes liées dans les ingrédients (`ingredients[].linkedRecipe`), `linkedRecipes` disparaît |
+
+Lecture d'une version 5 (et 3, 4) : le matériel écrit en noms dans les recettes devient la liste
+commune (un même nom, à la casse et aux accents près, donne un seul matériel, avec un identifiant
+calculé à partir du nom) ; `linkedRecipes` devient des lignes d'ingrédients (une ligne qui porte
+déjà le nom de la recette liée devient le lien, sinon une ligne est ajoutée à la fin).
 
 Lecture d'une version 4 : `equipment`, `videoLinks` et `substitutes` sont vides.
 
@@ -39,14 +45,17 @@ Lecture d'une version 2 : les champs ajoutés par la version 3 prennent leur val
 Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une ligne vide) ; les
 étapes n'ont pas de titre.
 
-## `recettes.json` — version 5
+## `recettes.json` — version 6
 
 ```json
 {
   "format": "recettes-backup",
-  "version": 5,
+  "version": 6,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
+  "equipment": [
+    { "id": "…", "name": "Moule à tarte", "createdAt": "…", "updatedAt": "…", "deletedAt": null }
+  ],
   "recipes": [
     {
       "id": "3f2c…",
@@ -68,8 +77,7 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
       "course": "Plat",
       "category": "Tartes",
       "collections": ["Hiver"],
-      "linkedRecipes": ["<id de la pâte brisée>"],
-      "equipment": ["moule à tarte"],
+      "equipment": ["<id de « Moule à tarte »>"],
       "videoLinks": ["https://youtu.be/…"],
       "createdAt": "2026-10-20T08:00:00.000Z",
       "updatedAt": "2026-10-27T12:00:00.000Z",
@@ -105,8 +113,10 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
 | `status` | `toTest`, `validated`, `toImprove` ou `null` | |
 | `course`, `category` | texte | type de plat et catégorie, texte libre en attendant la 0.3 |
 | `collections` | liste de textes | |
-| `linkedRecipes` | liste d'`id` | recettes utilisées par celle-ci (pâte, sauce) ; une recette supprimée depuis n'est simplement plus affichée |
-| `equipment`, `videoLinks` | liste de textes | matériel nécessaire et liens vidéo, un élément par ligne à la saisie |
+| `equipment` (document) | liste d'objets | la liste commune du matériel : `id`, `name`, dates ; `deletedAt` non nul = supprimé |
+| `equipment` (recette) | liste d'`id` | matériel nécessaire, dans l'ordre d'affichage |
+| `videoLinks` | liste de textes | liens vidéo |
+| `ingredients[].linkedRecipe` | `id` ou `null` | l'ingrédient est une recette (pâte, sauce) ; `name` est alors son titre. Une recette supprimée depuis n'est simplement plus ouverte |
 | `ingredients[].substitutes` | texte | remplaçants possibles (« huile de coco, margarine ») |
 | `ingredients[].section` | booléen | vrai = titre de groupe (« Pour la pâte ») |
 | `ingredients[].quantity` | nombre ou `null` | `null` = sans quantité précise |
@@ -145,5 +155,5 @@ Réglages → Importer depuis Recipe Keeper, avec le ZIP produit par Recipe Keep
 | catégorie `_A tester` | `status` = `toTest` (et pas une catégorie) |
 | autres catégories, plat, collections | `category`, `course`, `collections` |
 | photos | `mainPhoto` (la première) et `extraPhotos` |
-| recettes liées | `linkedRecipes` ; les renvois `[recipe:Nom]` du texte deviennent le simple nom |
+| recettes liées | lignes d'ingrédients liées (`linkedRecipe`) : le renvoi `[recipe:Nom]` d'une ligne devient le lien, un lien absent du texte est ajouté à la fin de la liste ; dans les notes, le renvoi devient le simple nom |
 | valeurs nutritionnelles | ajoutées en texte à la fin des notes |
