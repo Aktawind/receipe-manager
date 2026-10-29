@@ -422,6 +422,60 @@ void main() {
   );
 
   test(
+    'une sauvegarde v7 (test 0.3) : étiquettes et occasions → collections',
+    () async {
+      Map<String, Object?> label(String id, String kind, String name) => {
+        'id': id,
+        'kind': kind,
+        'name': name,
+        'createdAt': '2026-10-29T08:00:00Z',
+        'updatedAt': '2026-10-29T08:00:00Z',
+      };
+      final archive = Archive()
+        ..addFile(
+          ArchiveFile.string(
+            BackupFormat.dataFile,
+            jsonEncode({
+              'format': 'recettes-backup',
+              'version': 7,
+              'equipment': [],
+              'labels': [
+                label('plats', 'category', 'Plats'),
+                label('rapide', 'tag', 'Rapide'),
+                label('paques', 'occasion', 'Pâques'),
+                label('diner', 'meal', 'Dîner'),
+              ],
+              'recipes': [
+                {
+                  'id': 'a',
+                  'title': 'A',
+                  'labels': ['plats', 'rapide', 'paques', 'diner'],
+                  'ingredients': [],
+                  'steps': [],
+                  'createdAt': '2026-10-29T08:00:00Z',
+                  'updatedAt': '2026-10-29T08:00:00Z',
+                },
+              ],
+            }),
+          ),
+        );
+      final contents = target.service.readZip(ZipEncoder().encode(archive));
+      await target.service.import(contents, ImportMode.merge);
+
+      final all = {for (final l in await target.labels.getAll()) l.id: l};
+      final recipe = (await target.repo.getRecipe('a'))!;
+      expect(
+        [
+          for (final id in recipe.labelIds)
+            '${all[id]!.kind.code}:${all[id]!.name}',
+        ]..sort(),
+        ['category:Plats', 'collection:Pâques', 'collection:Rapide'],
+      );
+      expect(all.values.any((l) => l.name == 'Dîner'), isFalse);
+    },
+  );
+
+  test(
     'une sauvegarde v2 (0.1.0) se lit encore : champs 0.2 neutres',
     () async {
       final archive = Archive()

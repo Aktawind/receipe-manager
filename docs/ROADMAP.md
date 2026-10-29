@@ -125,9 +125,10 @@ Objectif : retrouver toute ta bibliothèque et pouvoir lâcher Recipe Keeper pou
   catégories personnalisées (nom, icône, couleur) ; fusion des doublons
 - Collections personnalisées (Noël, À tester, Goûters de la famille…) : une recette dans
   plusieurs collections, ordre des recettes personnalisable
-- Étiquettes : Rapide, Économique, Végétarien, Batch cooking par défaut ; personnalisées ;
-  fusion des doublons
-- Classements complémentaires : origine culinaire, type de repas, occasion, saison
+- ~~Étiquettes~~ : abandonnées le 2026-10-29, une collection fait le même travail (« Végétarien »,
+  « Pâques », « Rapide »…) et se combine avec les autres au filtrage
+- Classements complémentaires : origine culinaire, saison (le type de repas viendra avec le
+  planning, 0.11 ; les occasions sont des collections)
 - Accès rapide aux favoris
 - Recettes récemment consultées, récemment ajoutées
 - Vues liste, grille et cartes ; affichage avec ou sans photos
@@ -141,8 +142,11 @@ saison n'a pas d'importance (les quatre ensemble à l'import).
 - **Étape 1** : classement commun (catégories et sous-catégories, collections, étiquettes, origine,
   type de repas, occasion, saison) géré dans Réglages → Classement, choisi dans le formulaire,
   affiché sur la fiche ; conversion de tes recettes et de l'import Recipe Keeper.
-- **Étape 2 (en test)** : filtrer la liste par classement, accès rapide aux favoris, récemment consultées et
-  ajoutées, vues liste / grille / cartes avec ou sans photos, ordre personnalisé d'une collection.
+- **Étape 2 (en test)** : filtrer la liste par classement (listes à cocher), favoris, récemment consultées et
+  ajoutées, vues liste / grille / cartes, ordre personnalisé d'une collection.
+- **Retours du 2026-10-29** : quatre familles seulement (catégories, saisons, collections, origine),
+  classement rangé dans « À propos », filtres en listes, accès rapides dans le filtre, photos
+  toujours affichées.
 
 **À tester** : ranger ta bibliothèque, créer tes collections, vérifier les fusions.
 

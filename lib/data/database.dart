@@ -470,16 +470,27 @@ UPDATE recipes SET
       ).get();
       if (links.isEmpty) continue;
 
+      // La collection du même nom, si elle existe déjà ; sinon on la crée.
       final name = row.read<String>('name');
-      final target = Label.idFor(LabelKind.collection, name);
-      final position = await customSelect(
-        "SELECT COUNT(*) AS n FROM labels WHERE kind = 'collection'",
-      ).getSingle();
-      await customStatement(
-        'INSERT OR IGNORE INTO labels (id, kind, name, parent_id, icon, color, '
-        "position, created_at, updated_at) VALUES (?, 'collection', ?, NULL, '', '', ?, ?, ?)",
-        [target, name, position.read<int>('n'), now, now],
-      );
+      final collections = await customSelect(
+        "SELECT id, name FROM labels WHERE kind = 'collection' "
+        'AND deleted_at IS NULL',
+      ).get();
+      final same = collections
+          .where(
+            (c) => Label.keyOf(c.read<String>('name')) == Label.keyOf(name),
+          )
+          .firstOrNull;
+      final target =
+          same?.read<String>('id') ?? Label.idFor(LabelKind.collection, name);
+      if (same == null) {
+        await customStatement(
+          'INSERT OR IGNORE INTO labels (id, kind, name, parent_id, icon, '
+          "color, position, created_at, updated_at) VALUES (?, 'collection', "
+          "?, NULL, '', '', ?, ?, ?)",
+          [target, name, collections.length, now, now],
+        );
+      }
       for (final link in links) {
         final recipeId = link.read<String>('recipe_id');
         final already = await customSelect(

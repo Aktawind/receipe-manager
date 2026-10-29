@@ -37,12 +37,6 @@ void main() {
       'Sauces',
       'Préparations',
     ]);
-    expect(await names(LabelKind.tag), [
-      'Rapide',
-      'Économique',
-      'Végétarien',
-      'Batch cooking',
-    ]);
     expect(await names(LabelKind.season), [
       'Printemps',
       'Été',
@@ -50,15 +44,20 @@ void main() {
       'Hiver',
       'Toute saison',
     ]);
-    expect(await names(LabelKind.meal), contains('Dîner'));
+    expect(await names(LabelKind.cuisine), contains('Italienne'));
+    // Les collections sont à toi : aucune au départ.
+    expect(await names(LabelKind.collection), isEmpty);
   });
 
   test(
     'un nom = un élément, à la casse, aux accents et au pluriel près',
     () async {
-      final a = await labels.findOrCreate(LabelKind.tag, 'sans gluten');
+      final a = await labels.findOrCreate(LabelKind.collection, 'sans gluten');
       expect(a.name, 'Sans gluten');
-      final b = await labels.findOrCreate(LabelKind.tag, 'Sans  GLUTEN ');
+      final b = await labels.findOrCreate(
+        LabelKind.collection,
+        'Sans  GLUTEN ',
+      );
       expect(b.id, a.id);
       final plats = await labels.findOrCreate(LabelKind.category, 'plat');
       expect(
@@ -88,11 +87,12 @@ void main() {
   );
 
   test('renommer : refusé si le nom existe déjà au même endroit', () async {
-    final a = await labels.findOrCreate(LabelKind.tag, 'Fait maison');
+    final a = await labels.findOrCreate(LabelKind.collection, 'Fait maison');
+    await labels.findOrCreate(LabelKind.collection, 'Rapide');
     expect(await labels.rename(a.id, 'rapide'), isFalse);
     expect(await labels.rename(a.id, ' '), isFalse);
     expect(await labels.rename(a.id, 'fait main'), isTrue);
-    expect(await names(LabelKind.tag), contains('Fait main'));
+    expect(await names(LabelKind.collection), contains('Fait main'));
   });
 
   test('supprimer : sous-catégories avec, retiré des recettes', () async {
@@ -168,7 +168,7 @@ void main() {
   });
 
   test('fusionner deux familles différentes ne fait rien', () async {
-    final tag = await labels.findOrCreate(LabelKind.tag, 'Rapide');
+    final tag = await labels.findOrCreate(LabelKind.collection, 'Rapide');
     final season = await labels.findOrCreate(LabelKind.season, 'Hiver');
     await labels.merge(tag.id, season.id);
     expect((await labels.getAll()).where((l) => l.isDeleted), isEmpty);
