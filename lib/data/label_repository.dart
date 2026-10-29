@@ -217,6 +217,19 @@ class LabelRepository {
     }
   }
 
+  /// Fixe l'ordre des recettes d'une collection : la première de la liste
+  /// passe en tête. Les recettes qui n'y sont pas ne bougent pas.
+  Future<void> setOrder(String labelId, List<String> recipeIds) {
+    return _db.transaction(() async {
+      for (final (index, recipeId) in recipeIds.indexed) {
+        await (_db.update(_db.recipeLabels)..where(
+              (l) => l.recipeId.equals(recipeId) & l.labelId.equals(labelId),
+            ))
+            .write(RecipeLabelsCompanion(sortIndex: Value(index)));
+      }
+    });
+  }
+
   Future<void> _touchRecipe(String recipeId, DateTime now) {
     return (_db.update(_db.recipes)..where((r) => r.id.equals(recipeId))).write(
       RecipesCompanion(updatedAt: Value(now)),

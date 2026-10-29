@@ -20,13 +20,27 @@ const _wideBreakpoint = 840.0;
 /// Largeur de la colonne de gauche (photo, infos, ingrédients) sur tablette.
 const _widePaneWidth = 440.0;
 
-class RecipeDetailPage extends ConsumerWidget {
+class RecipeDetailPage extends ConsumerStatefulWidget {
   const RecipeDetailPage({super.key, required this.recipeId});
 
   final String recipeId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecipeDetailPage> createState() => _RecipeDetailPageState();
+}
+
+class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
+  String get recipeId => widget.recipeId;
+
+  @override
+  void initState() {
+    super.initState();
+    // La fiche ouverte compte dans « récemment consultées ».
+    ref.read(recipeRepositoryProvider).markViewed(recipeId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final recipe = ref.watch(recipeProvider(recipeId));
     return recipe.when(

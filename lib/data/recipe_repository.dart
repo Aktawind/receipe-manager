@@ -22,6 +22,25 @@ class RecipeRepository {
     return query.watch().map((rows) => rows.map(_fromRow).toList());
   }
 
+  /// Le classement de chaque recette hors corbeille : pour chaque recette, ses
+  /// éléments et leur rang (ordre personnalisé d'une collection).
+  Stream<Map<String, Map<String, int>>> watchLabelLinks() {
+    final query = _db.customSelect(
+      'SELECT rl.recipe_id AS recipe, rl.label_id AS label, '
+      'rl.sort_index AS sort FROM recipe_labels rl '
+      'JOIN recipes r ON r.id = rl.recipe_id WHERE r.deleted_at IS NULL',
+      readsFrom: {_db.recipeLabels, _db.recipes},
+    );
+    return query.watch().map((rows) {
+      final links = <String, Map<String, int>>{};
+      for (final row in rows) {
+        (links[row.read<String>('recipe')] ??= {})[row.read<String>('label')] =
+            row.read<int>('sort');
+      }
+      return links;
+    });
+  }
+
   /// Recettes dans la corbeille, les plus récemment supprimées d'abord.
   Stream<List<Recipe>> watchTrash() {
     final query = _db.select(_db.recipes)
