@@ -12,7 +12,7 @@ recettes-2026-10-27-1430.zip
 
 ## Règles de compatibilité
 
-- Le champ `version` indique la version du format (actuellement **2**).
+- Le champ `version` indique la version du format (actuellement **6**).
 - Toute version de l'application sait lire **toutes les versions précédentes** du format.
 - Une sauvegarde d'une version **plus récente** que l'application est refusée, sans rien
   modifier (message : « Mets l'application à jour »).
@@ -25,18 +25,37 @@ recettes-2026-10-27-1430.zip
 |---|---|---|
 | 1 | 0.1.0 | Première version : champs `notes` et `tips` (« Astuces ») |
 | 2 | 0.1.0 (corrigée) | `tips` supprimé ; son contenu est fusionné dans `notes`. Titre optionnel `title` sur les étapes |
+| 3 | 0.2.0 | Ajout de `favorite`, `rating`, `status`, `course`, `category`, `collections`, `extraPhotos`, `linkedRecipes` |
+| 4 | 0.2.0 | Ajout de `servingsUnit` (« 12 blinis ») |
+| 5 | 0.2.0 (test) | Ajout de `equipment` (noms), `videoLinks` et `ingredients[].substitutes` |
+| 6 | 0.2.0 | Liste commune du matériel (`equipment` du document, `equipment` des recettes = identifiants) ; recettes liées dans les ingrédients (`ingredients[].linkedRecipe`), `linkedRecipes` disparaît |
+
+Lecture d'une version 5 (et 3, 4) : le matériel écrit en noms dans les recettes devient la liste
+commune (un même nom, à la casse et aux accents près, donne un seul matériel, avec un identifiant
+calculé à partir du nom) ; `linkedRecipes` devient des lignes d'ingrédients (une ligne qui porte
+déjà le nom de la recette liée devient le lien, sinon une ligne est ajoutée à la fin).
+
+Lecture d'une version 4 : `equipment`, `videoLinks` et `substitutes` sont vides.
+
+Lecture d'une version 3 : `servingsUnit` est vide (des personnes).
+
+Lecture d'une version 2 : les champs ajoutés par la version 3 prennent leur valeur neutre
+(pas favori, pas de note, pas de statut, classement vide, aucune photo supplémentaire).
 
 Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une ligne vide) ; les
 étapes n'ont pas de titre.
 
-## `recettes.json` — version 2
+## `recettes.json` — version 6
 
 ```json
 {
   "format": "recettes-backup",
-  "version": 2,
+  "version": 6,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
+  "equipment": [
+    { "id": "…", "name": "Moule à tarte", "createdAt": "…", "updatedAt": "…", "deletedAt": null }
+  ],
   "recipes": [
     {
       "id": "3f2c…",
@@ -45,11 +64,21 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
       "source": "Livre de mamie, p. 12",
       "notes": "Précuire la pâte 10 min.",
       "servings": 6,
+      "servingsUnit": "",
       "prepMinutes": 20,
       "cookMinutes": 35,
       "restMinutes": null,
       "timesCooked": 3,
       "mainPhoto": "8a1b….jpg",
+      "extraPhotos": ["c04d….jpg"],
+      "favorite": true,
+      "rating": 4,
+      "status": "validated",
+      "course": "Plat",
+      "category": "Tartes",
+      "collections": ["Hiver"],
+      "equipment": ["<id de « Moule à tarte »>"],
+      "videoLinks": ["https://youtu.be/…"],
       "createdAt": "2026-10-20T08:00:00.000Z",
       "updatedAt": "2026-10-27T12:00:00.000Z",
       "deletedAt": null,
@@ -74,11 +103,24 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
 |---|---|---|
 | `id` | texte | UUID, stable pour toujours (sert à fusionner et synchroniser) |
 | `servings`, `*Minutes` | entier ou `null` | |
+| `servingsUnit` | texte | ce que compte `servings` (« blinis », « ramequins »), vide = des personnes |
 | `timesCooked` | entier | 0 par défaut |
 | `mainPhoto` | texte ou `null` | nom d'un fichier de `photos/`, sans dossier |
 | `createdAt`, `updatedAt`, `deletedAt` | date ISO 8601 UTC | `deletedAt` non nul = dans la corbeille |
+| `extraPhotos` | liste de textes | photos après la principale, noms de fichiers de `photos/` |
+| `favorite` | booléen | |
+| `rating` | entier 1 à 5 ou `null` | `null` = pas noté |
+| `status` | `toTest`, `validated`, `toImprove` ou `null` | |
+| `course`, `category` | texte | type de plat et catégorie, texte libre en attendant la 0.3 |
+| `collections` | liste de textes | |
+| `equipment` (document) | liste d'objets | la liste commune du matériel : `id`, `name`, dates ; `deletedAt` non nul = supprimé |
+| `equipment` (recette) | liste d'`id` | matériel nécessaire, dans l'ordre d'affichage |
+| `videoLinks` | liste de textes | liens vidéo |
+| `ingredients[].linkedRecipe` | `id` ou `null` | l'ingrédient est une recette (pâte, sauce) ; `name` est alors son titre. Une recette supprimée depuis n'est simplement plus ouverte |
+| `ingredients[].substitutes` | texte | remplaçants possibles (« huile de coco, margarine ») |
 | `ingredients[].section` | booléen | vrai = titre de groupe (« Pour la pâte ») |
 | `ingredients[].quantity` | nombre ou `null` | `null` = sans quantité précise |
+| `steps[].text` | texte | `**gras**` et `*italique*` sont des marqueurs de mise en forme |
 | `steps[].title` | texte | titre de la partie (« Biscuit »), vide le plus souvent ; porté par la première étape de la partie |
 | `ingredients[].unit` | texte | forme canonique : `g`, `kg`, `ml`, `cl`, `L`, `c. à s.`, `c. à c.`, `pincée`… |
 
@@ -92,3 +134,26 @@ L'ordre des listes `ingredients` et `steps` est l'ordre d'affichage.
 - Dans les deux cas, une **sauvegarde automatique** est écrite juste avant dans le dossier
   interne de l'app (les 5 dernières sont gardées), et l'écriture se fait en une seule
   transaction.
+- **Ajouter les absentes** (import Recipe Keeper) : seules les recettes dont l'`id` est inconnu
+  sont ajoutées, celles qui existent déjà ne sont jamais modifiées.
+
+## Import depuis Recipe Keeper
+
+Réglages → Importer depuis Recipe Keeper, avec le ZIP produit par Recipe Keeper
+(Paramètres → Exporter les recettes). Ce ZIP contient `recipes.html` et un dossier `images/`.
+
+| Recipe Keeper | Recettes |
+|---|---|
+| `recipeId` | `id` (conservé : réimporter le même fichier n'ajoute rien) |
+| nom, source, notes | `title`, `source`, `notes` |
+| ingrédients (un paragraphe par ligne) | analysés par `IngredientText` ; un paragraphe en gras ou en majuscules est un titre de groupe |
+| préparation | analysée par `StepText` |
+| taille de portion | `servings` et `servingsUnit` : « 4 personnes » → 4 ; « 12 blinis » → 12 et « blinis ». Sans nombre (« Une dizaine »), le texte est ajouté en tête des notes (« Quantité : … ») |
+| temps de préparation, de cuisson | `prepMinutes`, `cookMinutes` (0 = absent) |
+| favori | `favorite` |
+| note en étoiles | **non reprise** (choix de la personne qui utilise l'app) |
+| catégorie `_A tester` | `status` = `toTest` (et pas une catégorie) |
+| autres catégories, plat, collections | `category`, `course`, `collections` |
+| photos | `mainPhoto` (la première) et `extraPhotos` |
+| recettes liées | lignes d'ingrédients liées (`linkedRecipe`) : le renvoi `[recipe:Nom]` d'une ligne devient le lien, un lien absent du texte est ajouté à la fin de la liste ; dans les notes, le renvoi devient le simple nom |
+| valeurs nutritionnelles | ajoutées en texte à la fin des notes |

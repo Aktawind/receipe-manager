@@ -8,7 +8,7 @@ import 'package:recettes/domain/recipe.dart';
 import 'generated_migrations/app/generated/schema.dart';
 import 'generated_migrations/app/generated/schema_v1.dart' as v1;
 
-/// Migration v1 → v2 avec de vraies données : les recettes saisies avec
+/// Migration v1 → v4 (en passant par v2 et v3) avec de vraies données : les recettes saisies avec
 /// l'application 0.1.0 doivent survivre, « Astuces » fusionnées dans « Notes ».
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -73,7 +73,7 @@ void main() {
     await oldDb.close();
 
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 2);
+    await verifier.migrateAndValidate(db, 6);
 
     final repo = RecipeRepository(db);
     final both = (await repo.getRecipe('both'))!;

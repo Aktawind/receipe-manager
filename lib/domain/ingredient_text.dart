@@ -2,6 +2,9 @@ import 'package:uuid/uuid.dart';
 
 import 'recipe.dart';
 
+/// Une recette qu'un ingrédient peut désigner : son identifiant et son titre.
+typedef RecipeRef = ({String id, String title});
+
 /// Conversion entre une ligne de texte (« 200 g de farine, tamisée ») et un
 /// [IngredientLine] structuré. Sert à la saisie, et servira aux imports.
 abstract final class IngredientText {
@@ -22,6 +25,9 @@ abstract final class IngredientText {
       'c. à s.',
       'c.à.s.',
       'c.à.s',
+      'c.s.',
+      'c.s',
+      'c/s',
       'c. à s',
       'cas',
       'càs',
@@ -39,6 +45,9 @@ abstract final class IngredientText {
       'c. à c.',
       'c.à.c.',
       'c.à.c',
+      'c.c.',
+      'c.c',
+      'c/c',
       'c. à c',
       'cac',
       'càc',
@@ -167,14 +176,52 @@ abstract final class IngredientText {
 
   /// Analyse une ligne saisie ou collée. Une ligne terminée par « : », un
   /// titre en gras ou « ## », ou « Pour la pâte » devient un titre de groupe.
-  static IngredientLine parse(String input, {required String id}) {
+  static IngredientLine parse(
+    String input, {
+    required String id,
+    RecipeRef? Function(String title)? resolveRecipe,
+  }) {
+    // « 150 g de [[Pâte brisée]] » : la recette liée, si [resolveRecipe] la
+    // connaît ; sinon c'est un ingrédient ordinaire.
+    final link = RegExp(r'\[\[([^\]]+)\]\]').firstMatch(input);
+    if (link != null) {
+      final title = link.group(1)!.trim();
+      final line = parse(input.replaceFirst(link.group(0)!, title), id: id);
+      final target = resolveRecipe?.call(title);
+      if (target == null || line.isSection) return line;
+      return IngredientLine(
+        id: id,
+        name: target.title,
+        quantity: line.quantity,
+        unit: line.unit,
+        note: line.note,
+        optional: line.optional,
+        substitutes: line.substitutes,
+        linkedRecipeId: target.id,
+      );
+    }
     var (text, heading) = _clean(input);
+    // « beurre | huile de coco, margarine » : ce qui suit « | » peut le remplacer.
+    var substitutes = '';
+    final pipe = text.indexOf('|');
+    if (pipe >= 0) {
+      substitutes = text.substring(pipe + 1).trim();
+      text = text.substring(0, pipe).trim();
+    }
     final words = text.split(' ').length;
     final looksLikeFor =
         _forPattern.hasMatch(text) &&
         !RegExp(r'[\d,]').hasMatch(text) &&
         words <= 6;
-    if (text.endsWith(':') || heading || looksLikeFor) {
+    // « 🍐 INSERT POIRE » : quelques mots en majuscules, sans chiffre.
+    final isCapitals =
+        words >= 2 &&
+        words <= 5 &&
+        text.length <= 40 &&
+        text == text.toUpperCase() &&
+        RegExp(r'\p{L}', unicode: true).hasMatch(text) &&
+        !RegExp(r'\d|[.!?]$').hasMatch(text);
+    if (text.endsWith(':') || heading || looksLikeFor || isCapitals) {
       return IngredientLine(
         id: id,
         isSection: true,
@@ -246,12 +293,20 @@ abstract final class IngredientText {
       unit: unit,
       note: notes.where((n) => n.isNotEmpty).join(', '),
       optional: optional,
+      substitutes: substitutes,
     );
   }
 
   /// Texte affiché et réédité : l'inverse de [parse].
-  static String format(IngredientLine line) {
+  static String format(
+    IngredientLine line, {
+    String? Function(String recipeId)? titleOf,
+  }) {
     if (line.isSection) return '${line.name}:';
+    final linkedId = line.linkedRecipeId;
+    final name = linkedId == null
+        ? line.name
+        : '[[${titleOf?.call(linkedId) ?? line.name}]]';
     final buffer = StringBuffer();
     if (line.quantity != null) {
       buffer.write(formatQuantity(line.quantity!));
@@ -259,12 +314,13 @@ abstract final class IngredientText {
       if (line.unit.isNotEmpty) {
         buffer.write(_unitFor(line.unit, line.quantity!));
         buffer.write(' ');
-        if (line.name.isNotEmpty) buffer.write(_partitive(line.name));
+        if (name.isNotEmpty) buffer.write(partitive(name));
       }
     }
-    buffer.write(line.name);
+    buffer.write(name);
     if (line.note.isNotEmpty) buffer.write(', ${line.note}');
     if (line.optional) buffer.write(' (facultatif)');
+    if (line.substitutes.isNotEmpty) buffer.write(' | ${line.substitutes}');
     return buffer.toString().trim();
   }
 
@@ -274,6 +330,7 @@ abstract final class IngredientText {
   static List<IngredientLine> parseList(
     String text, {
     List<String> previousIds = const [],
+    RecipeRef? Function(String title)? resolveRecipe,
   }) {
     final lines = <IngredientLine>[];
     for (final raw in text.split(RegExp(r'\r?\n'))) {
@@ -281,14 +338,16 @@ abstract final class IngredientText {
       final id = lines.length < previousIds.length
           ? previousIds[lines.length]
           : const Uuid().v4();
-      lines.add(parse(raw, id: id));
+      lines.add(parse(raw, id: id, resolveRecipe: resolveRecipe));
     }
     return lines;
   }
 
   /// Texte d'édition d'une liste d'ingrédients : l'inverse de [parseList].
-  static String formatList(List<IngredientLine> lines) =>
-      lines.map(format).join('\n');
+  static String formatList(
+    List<IngredientLine> lines, {
+    String? Function(String recipeId)? titleOf,
+  }) => lines.map((l) => format(l, titleOf: titleOf)).join('\n');
 
   /// Quantité et unité telles qu'affichées à droite du nom : « 250 g »,
   /// « 2 gousses », « 3 ». Vide si l'ingrédient n'a pas de quantité.
@@ -390,7 +449,8 @@ abstract final class IngredientText {
     return _displayForm[unit] ?? unit;
   }
 
-  static String _partitive(String name) {
+  /// « de » ou « d' » devant un nom, pour « 200 g de farine », « 1 pot d'huile ».
+  static String partitive(String name) {
     final first = name[0].toLowerCase();
     return 'aeiouyhéèêàâîôû'.contains(first) ? "d'" : 'de ';
   }

@@ -7,6 +7,7 @@ import '../../core/settings/theme_mode_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../recipes/recipe_providers.dart';
 import 'backup_actions.dart';
+import 'recipe_keeper_actions.dart';
 
 final _packageInfoProvider = FutureProvider<PackageInfo>(
   (ref) => PackageInfo.fromPlatform(),
@@ -73,6 +74,18 @@ class SettingsPage extends ConsumerWidget {
             title: Text(l10n.importBackup),
             subtitle: Text(l10n.importBackupSubtitle),
             onTap: () => BackupActions(context, ref).import(),
+          ),
+          ListTile(
+            leading: const Icon(Icons.restaurant_menu),
+            title: Text(l10n.importRecipeKeeper),
+            subtitle: Text(l10n.importRecipeKeeperSubtitle),
+            onTap: () => RecipeKeeperActions(context, ref).import(),
+          ),
+          ListTile(
+            leading: const Icon(Icons.kitchen_outlined),
+            title: Text(l10n.equipmentTitle),
+            subtitle: Text(l10n.equipmentSubtitle),
+            onTap: () => context.push('/reglages/materiel'),
           ),
           ListTile(
             leading: const Icon(Icons.delete_outline),

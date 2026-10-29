@@ -1,5 +1,22 @@
 import 'package:flutter/foundation.dart';
 
+/// Où en est la recette : à essayer, adoptée, ou à revoir.
+enum RecipeStatus {
+  toTest,
+  validated,
+  toImprove;
+
+  /// Valeur enregistrée en base et dans les sauvegardes.
+  String get code => name;
+
+  static RecipeStatus? fromCode(String? code) {
+    for (final status in values) {
+      if (status.name == code) return status;
+    }
+    return null;
+  }
+}
+
 /// Une recette complète : informations, ingrédients et étapes.
 ///
 /// La recette est l'unité d'enregistrement, d'export et (plus tard) de
@@ -13,11 +30,21 @@ class Recipe {
     this.source = '',
     this.notes = '',
     this.servings,
+    this.servingsUnit = '',
     this.prepMinutes,
     this.cookMinutes,
     this.restMinutes,
     this.timesCooked = 0,
     this.mainPhoto,
+    this.extraPhotos = const [],
+    this.isFavorite = false,
+    this.rating,
+    this.status,
+    this.course = '',
+    this.category = '',
+    this.collections = const [],
+    this.equipmentIds = const [],
+    this.videoLinks = const [],
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -31,6 +58,10 @@ class Recipe {
   final String source;
   final String notes;
   final int? servings;
+
+  /// Ce que compte [servings] quand ce ne sont pas des personnes : « blinis »,
+  /// « ramequins ». Vide = des personnes.
+  final String servingsUnit;
   final int? prepMinutes;
   final int? cookMinutes;
   final int? restMinutes;
@@ -38,6 +69,26 @@ class Recipe {
 
   /// Nom du fichier de la photo principale dans le dossier des photos.
   final String? mainPhoto;
+
+  /// Photos supplémentaires, après la principale.
+  final List<String> extraPhotos;
+  final bool isFavorite;
+
+  /// Note de 1 à 5 étoiles ; `null` tant que la recette n'est pas notée.
+  final int? rating;
+  final RecipeStatus? status;
+
+  /// Type de plat (« Plat », « Dessert », « Goûter »…), texte libre pour
+  /// l'instant : le classement complet arrive en 0.3.
+  final String course;
+  final String category;
+  final List<String> collections;
+
+  /// Matériel nécessaire : identifiants de la liste commune du matériel.
+  final List<String> equipmentIds;
+
+  /// Liens vers des vidéos de la recette, un par ligne.
+  final List<String> videoLinks;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -45,6 +96,16 @@ class Recipe {
   final List<RecipeStep> steps;
 
   bool get isDeleted => deletedAt != null;
+
+  /// Recettes utilisées par celle-ci (pâte, sauce) : celles liées dans ses
+  /// ingrédients.
+  List<String> get linkedRecipeIds => [
+    for (final line in ingredients)
+      if (line.linkedRecipeId != null) line.linkedRecipeId!,
+  ];
+
+  /// Toutes les photos, la principale en premier.
+  List<String> get allPhotos => [?mainPhoto, ...extraPhotos];
 
   int? get totalMinutes {
     final parts = [prepMinutes, cookMinutes, restMinutes].nonNulls;
@@ -58,10 +119,14 @@ class Recipe {
       source.trim().isEmpty &&
       notes.trim().isEmpty &&
       servings == null &&
+      servingsUnit.trim().isEmpty &&
       prepMinutes == null &&
       cookMinutes == null &&
       restMinutes == null &&
       mainPhoto == null &&
+      extraPhotos.isEmpty &&
+      equipmentIds.isEmpty &&
+      videoLinks.isEmpty &&
       ingredients.every((i) => i.isBlank) &&
       steps.every((s) => s.text.trim().isEmpty);
 
@@ -71,11 +136,21 @@ class Recipe {
     String? source,
     String? notes,
     ValueGetter<int?>? servings,
+    String? servingsUnit,
     ValueGetter<int?>? prepMinutes,
     ValueGetter<int?>? cookMinutes,
     ValueGetter<int?>? restMinutes,
     int? timesCooked,
     ValueGetter<String?>? mainPhoto,
+    List<String>? extraPhotos,
+    bool? isFavorite,
+    ValueGetter<int?>? rating,
+    ValueGetter<RecipeStatus?>? status,
+    String? course,
+    String? category,
+    List<String>? collections,
+    List<String>? equipmentIds,
+    List<String>? videoLinks,
     DateTime? createdAt,
     DateTime? updatedAt,
     ValueGetter<DateTime?>? deletedAt,
@@ -89,11 +164,21 @@ class Recipe {
       source: source ?? this.source,
       notes: notes ?? this.notes,
       servings: servings != null ? servings() : this.servings,
+      servingsUnit: servingsUnit ?? this.servingsUnit,
       prepMinutes: prepMinutes != null ? prepMinutes() : this.prepMinutes,
       cookMinutes: cookMinutes != null ? cookMinutes() : this.cookMinutes,
       restMinutes: restMinutes != null ? restMinutes() : this.restMinutes,
       timesCooked: timesCooked ?? this.timesCooked,
       mainPhoto: mainPhoto != null ? mainPhoto() : this.mainPhoto,
+      extraPhotos: extraPhotos ?? this.extraPhotos,
+      isFavorite: isFavorite ?? this.isFavorite,
+      rating: rating != null ? rating() : this.rating,
+      status: status != null ? status() : this.status,
+      course: course ?? this.course,
+      category: category ?? this.category,
+      collections: collections ?? this.collections,
+      equipmentIds: equipmentIds ?? this.equipmentIds,
+      videoLinks: videoLinks ?? this.videoLinks,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt != null ? deletedAt() : this.deletedAt,
@@ -115,6 +200,8 @@ class IngredientLine {
     this.unit = '',
     this.note = '',
     this.optional = false,
+    this.substitutes = '',
+    this.linkedRecipeId,
   });
 
   final String id;
@@ -129,11 +216,19 @@ class IngredientLine {
   final String note;
   final bool optional;
 
+  /// La recette qu'est cet ingrédient (pâte, sauce préparée à l'avance) ; son
+  /// [name] est alors le titre de cette recette.
+  final String? linkedRecipeId;
+
+  /// Ce qui peut le remplacer (« huile de coco, margarine »).
+  final String substitutes;
+
   bool get isBlank =>
       name.trim().isEmpty &&
       quantity == null &&
       unit.isEmpty &&
-      note.trim().isEmpty;
+      note.trim().isEmpty &&
+      substitutes.trim().isEmpty;
 
   @override
   bool operator ==(Object other) =>
@@ -144,11 +239,22 @@ class IngredientLine {
       other.quantity == quantity &&
       other.unit == unit &&
       other.note == note &&
-      other.optional == optional;
+      other.optional == optional &&
+      other.substitutes == substitutes &&
+      other.linkedRecipeId == linkedRecipeId;
 
   @override
-  int get hashCode =>
-      Object.hash(id, isSection, name, quantity, unit, note, optional);
+  int get hashCode => Object.hash(
+    id,
+    isSection,
+    name,
+    quantity,
+    unit,
+    note,
+    optional,
+    substitutes,
+    linkedRecipeId,
+  );
 }
 
 @immutable

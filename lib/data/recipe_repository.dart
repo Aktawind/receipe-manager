@@ -80,10 +80,20 @@ class RecipeRepository {
       source: original.source,
       notes: original.notes,
       servings: original.servings,
+      servingsUnit: original.servingsUnit,
       prepMinutes: original.prepMinutes,
       cookMinutes: original.cookMinutes,
       restMinutes: original.restMinutes,
       mainPhoto: original.mainPhoto,
+      extraPhotos: original.extraPhotos,
+      isFavorite: original.isFavorite,
+      rating: original.rating,
+      status: original.status,
+      course: original.course,
+      category: original.category,
+      collections: original.collections,
+      equipmentIds: original.equipmentIds,
+      videoLinks: original.videoLinks,
       createdAt: now,
       updatedAt: now,
       ingredients: [
@@ -96,6 +106,8 @@ class RecipeRepository {
             unit: line.unit,
             note: line.note,
             optional: line.optional,
+            substitutes: line.substitutes,
+            linkedRecipeId: line.linkedRecipeId,
           ),
       ],
       steps: [
@@ -120,6 +132,24 @@ class RecipeRepository {
     );
   }
 
+  Future<void> setFavorite(String id, bool value) {
+    return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
+      RecipesCompanion(isFavorite: Value(value), updatedAt: Value(_clock())),
+    );
+  }
+
+  Future<void> setRating(String id, int? rating) {
+    return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
+      RecipesCompanion(rating: Value(rating), updatedAt: Value(_clock())),
+    );
+  }
+
+  Future<void> setStatus(String id, RecipeStatus? status) {
+    return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
+      RecipesCompanion(status: Value(status?.code), updatedAt: Value(_clock())),
+    );
+  }
+
   /// Met la recette à la corbeille.
   Future<void> moveToTrash(String id) => _setDeletedAt(id, _clock());
 
@@ -137,14 +167,19 @@ class RecipeRepository {
     final idList = ids.toList();
     if (idList.isEmpty) return {};
     return _db.transaction(() async {
-      final photos =
-          await (_db.selectOnly(_db.recipes)
-                ..addColumns([_db.recipes.mainPhoto])
-                ..where(_db.recipes.id.isIn(idList)))
-              .map((row) => row.read(_db.recipes.mainPhoto))
-              .get();
+      final photos = <String>{
+        ...(await (_db.selectOnly(_db.recipes)
+                  ..addColumns([_db.recipes.mainPhoto])
+                  ..where(_db.recipes.id.isIn(idList)))
+                .map((row) => row.read(_db.recipes.mainPhoto))
+                .get())
+            .nonNulls,
+        ...(await (_db.select(
+          _db.recipePhotos,
+        )..where((p) => p.recipeId.isIn(idList))).get()).map((p) => p.file),
+      };
       await (_db.delete(_db.recipes)..where((r) => r.id.isIn(idList))).go();
-      return _unusedPhotos(photos.nonNulls.toSet());
+      return _unusedPhotos(photos);
     });
   }
 
@@ -166,11 +201,12 @@ class RecipeRepository {
       _db.transaction(action);
 
   Future<Set<String>> usedPhotos() async {
-    final photos =
+    final main =
         await (_db.selectOnly(_db.recipes)..addColumns([_db.recipes.mainPhoto]))
             .map((row) => row.read(_db.recipes.mainPhoto))
             .get();
-    return photos.nonNulls.toSet();
+    final extra = await _db.select(_db.recipePhotos).get();
+    return {...main.nonNulls, ...extra.map((p) => p.file)};
   }
 
   Future<Set<String>> _unusedPhotos(Set<String> candidates) async {
@@ -189,11 +225,19 @@ class RecipeRepository {
             source: Value(recipe.source),
             notes: Value(recipe.notes),
             servings: Value(recipe.servings),
+            servingsUnit: Value(recipe.servingsUnit),
             prepMinutes: Value(recipe.prepMinutes),
             cookMinutes: Value(recipe.cookMinutes),
             restMinutes: Value(recipe.restMinutes),
             timesCooked: Value(recipe.timesCooked),
             mainPhoto: Value(recipe.mainPhoto),
+            isFavorite: Value(recipe.isFavorite),
+            rating: Value(recipe.rating),
+            status: Value(recipe.status?.code),
+            course: Value(recipe.course),
+            category: Value(recipe.category),
+            collections: Value(recipe.collections.join('\n')),
+            videoLinks: Value(recipe.videoLinks.join('\n')),
             createdAt: recipe.createdAt,
             updatedAt: recipe.updatedAt,
             deletedAt: Value(recipe.deletedAt),
@@ -205,7 +249,29 @@ class RecipeRepository {
     await (_db.delete(
       _db.recipeSteps,
     )..where((s) => s.recipeId.equals(recipe.id))).go();
+    await (_db.delete(
+      _db.recipePhotos,
+    )..where((p) => p.recipeId.equals(recipe.id))).go();
+    await (_db.delete(
+      _db.recipeEquipment,
+    )..where((e) => e.recipeId.equals(recipe.id))).go();
     await _db.batch((batch) {
+      batch.insertAll(_db.recipePhotos, [
+        for (final (index, file) in recipe.extraPhotos.indexed)
+          RecipePhotosCompanion.insert(
+            recipeId: recipe.id,
+            position: index,
+            file: file,
+          ),
+      ]);
+      batch.insertAll(_db.recipeEquipment, [
+        for (final (index, id) in recipe.equipmentIds.indexed)
+          RecipeEquipmentCompanion.insert(
+            recipeId: recipe.id,
+            position: index,
+            equipmentId: id,
+          ),
+      ]);
       batch.insertAll(_db.ingredients, [
         for (final (index, line) in recipe.ingredients.indexed)
           IngredientsCompanion.insert(
@@ -218,6 +284,8 @@ class RecipeRepository {
             unit: Value(line.unit),
             note: Value(line.note),
             optional: Value(line.optional),
+            substitutes: Value(line.substitutes),
+            linkedRecipeId: Value(line.linkedRecipeId),
           ),
       ]);
       batch.insertAll(_db.recipeSteps, [
@@ -244,7 +312,19 @@ class RecipeRepository {
               ..where((s) => s.recipeId.equals(row.id))
               ..orderBy([(s) => OrderingTerm.asc(s.position)]))
             .get();
+    final photos =
+        await (_db.select(_db.recipePhotos)
+              ..where((p) => p.recipeId.equals(row.id))
+              ..orderBy([(p) => OrderingTerm.asc(p.position)]))
+            .get();
+    final equipment =
+        await (_db.select(_db.recipeEquipment)
+              ..where((e) => e.recipeId.equals(row.id))
+              ..orderBy([(e) => OrderingTerm.asc(e.position)]))
+            .get();
     return _fromRow(row).copyWith(
+      extraPhotos: [for (final p in photos) p.file],
+      equipmentIds: [for (final e in equipment) e.equipmentId],
       ingredients: [
         for (final i in ingredients)
           IngredientLine(
@@ -255,6 +335,8 @@ class RecipeRepository {
             unit: i.unit,
             note: i.note,
             optional: i.optional,
+            substitutes: i.substitutes,
+            linkedRecipeId: i.linkedRecipeId,
           ),
       ],
       steps: [
@@ -264,6 +346,9 @@ class RecipeRepository {
     );
   }
 
+  static List<String> _lines(String text) =>
+      text.isEmpty ? const [] : text.split('\n');
+
   static Recipe _fromRow(RecipeRow row) => Recipe(
     id: row.id,
     title: row.title,
@@ -271,11 +356,19 @@ class RecipeRepository {
     source: row.source,
     notes: row.notes,
     servings: row.servings,
+    servingsUnit: row.servingsUnit,
     prepMinutes: row.prepMinutes,
     cookMinutes: row.cookMinutes,
     restMinutes: row.restMinutes,
     timesCooked: row.timesCooked,
     mainPhoto: row.mainPhoto,
+    isFavorite: row.isFavorite,
+    rating: row.rating,
+    status: RecipeStatus.fromCode(row.status),
+    course: row.course,
+    category: row.category,
+    collections: _lines(row.collections),
+    videoLinks: _lines(row.videoLinks),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,

@@ -122,6 +122,82 @@ void main() {
       }
     });
 
+    test('titre en majuscules, avec ou sans emoji (export Recipe Keeper)', () {
+      for (final text in ['🍐 INSERT POIRE', 'MOUSSE CHOCOLAT AU LAIT']) {
+        expect(parse(text).isSection, isTrue, reason: text);
+      }
+      expect(parse('🍐 INSERT POIRE').name, '🍐 INSERT POIRE');
+      // Un seul mot, un chiffre ou une phrase ne sont pas des titres.
+      for (final text in ['SEL', '2 ŒUFS', 'SEL ET POIVRE.', 'Sel et poivre']) {
+        expect(parse(text).isSection, isFalse, reason: text);
+      }
+    });
+
+    test('remplaçants : ce qui suit « | »', () {
+      final line = parse('100 g de beurre | huile de coco, margarine');
+      expect(line.name, 'beurre');
+      expect(line.quantity, 100);
+      expect(line.unit, 'g');
+      expect(line.substitutes, 'huile de coco, margarine');
+      expect(
+        IngredientText.format(line),
+        '100 g de beurre | huile de coco, margarine',
+      );
+      expect(parse('sel | fleur de sel').substitutes, 'fleur de sel');
+      expect(parse('2 œufs').substitutes, '');
+    });
+
+    test('recette liée : [[Titre]] avec ou sans quantité', () {
+      RecipeRef? resolve(String title) => title.toLowerCase() == 'pâte brisée'
+          ? (id: 'pate', title: 'Pâte brisée')
+          : null;
+      final plain = IngredientText.parse(
+        '[[pâte brisée]]',
+        id: 'x',
+        resolveRecipe: resolve,
+      );
+      expect(plain.linkedRecipeId, 'pate');
+      expect(plain.name, 'Pâte brisée');
+      expect(plain.quantity, isNull);
+
+      final counted = IngredientText.parse(
+        '1 [[Pâte brisée]]',
+        id: 'x',
+        resolveRecipe: resolve,
+      );
+      expect(counted.linkedRecipeId, 'pate');
+      expect(counted.quantity, 1);
+
+      final weighed = IngredientText.parse(
+        '300 g de [[Pâte brisée]]',
+        id: 'x',
+        resolveRecipe: resolve,
+      );
+      expect(
+        (weighed.quantity, weighed.unit, weighed.name),
+        (300, 'g', 'Pâte brisée'),
+      );
+
+      // Recette inconnue : un ingrédient ordinaire, sans les crochets.
+      final unknown = IngredientText.parse(
+        '[[Inconnue]]',
+        id: 'x',
+        resolveRecipe: resolve,
+      );
+      expect(unknown.linkedRecipeId, isNull);
+      expect(unknown.name, 'Inconnue');
+
+      // Aller-retour : le titre affiché est celui de la recette aujourd'hui.
+      expect(
+        IngredientText.format(counted, titleOf: (id) => 'Pâte brisée maison'),
+        '1 [[Pâte brisée maison]]',
+      );
+      expect(
+        IngredientText.format(weighed, titleOf: (id) => 'Pâte brisée'),
+        '300 g de [[Pâte brisée]]',
+      );
+    });
+
     test('« Pour 4 personnes » et « pour le service, 2 c. » ne sont pas des titres', () {
       expect(parse('Pour 4 personnes').isSection, isFalse);
       expect(parse('Pour le service, 2 citrons').isSection, isFalse);
@@ -145,6 +221,8 @@ void main() {
         '2 c. à soupe de sucre',
         '2 cuillères à soupe de sucre',
         '2 c.à.s. de sucre',
+        '2 c.s. de sucre',
+        '2 c.s de sucre',
         '2 cs de sucre',
       ]) {
         final line = parse(text);

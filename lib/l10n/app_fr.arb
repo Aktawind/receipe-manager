@@ -286,5 +286,140 @@
       }
     }
   },
-  "minutesUnit": "min"
+  "minutesUnit": "min",
+  "importRecipeKeeper": "Importer depuis Recipe Keeper",
+  "importRecipeKeeperSubtitle": "Le fichier ZIP exporté par Recipe Keeper",
+  "rkNotAnExport": "Ce fichier n’est pas un export de Recipe Keeper. Dans Recipe Keeper : Paramètres → Exporter les recettes.",
+  "rkReading": "Lecture du fichier…",
+  "rkPreviewFound": "{count, plural, =0{Aucune recette trouvée dans ce fichier.} =1{1 recette trouvée dans ce fichier.} other{{count} recettes trouvées dans ce fichier.}}",
+  "@rkPreviewFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rkPreviewToAdd": "{count, plural, =0{Aucune recette à importer.} =1{1 recette à importer.} other{{count} recettes à importer.}}",
+  "@rkPreviewToAdd": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rkPreviewPresent": "{count, plural, =1{1 est déjà dans l’application : elle est ignorée, rien n’est écrasé.} other{{count} sont déjà dans l’application : elles sont ignorées, rien n’est écrasé.}}",
+  "@rkPreviewPresent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rkPreviewSameTitle": "{count, plural, =1{1 recette a le même titre qu’une recette existante : elle est importée quand même, tu pourras supprimer le doublon ensuite.} other{{count} recettes ont le même titre qu’une recette existante : elles sont importées quand même, tu pourras supprimer les doublons ensuite.}}",
+  "@rkPreviewSameTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rkPreviewIssues": "{count, plural, =1{1 point à vérifier sera signalé dans le rapport.} other{{count} points à vérifier seront signalés dans le rapport.}}",
+  "@rkPreviewIssues": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rkImportAction": "Importer",
+  "rkDoneTitle": "Import terminé",
+  "rkDoneIssues": "À vérifier",
+  "rkDoneSameTitle": "Même titre qu’une recette existante",
+  "close": "Fermer",
+  "rkDoneAdded": "{count, plural, =0{Aucune recette ajoutée.} =1{1 recette ajoutée.} other{{count} recettes ajoutées.}}",
+  "@rkDoneAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rkDoneSkipped": "{count, plural, =1{1 recette ignorée (déjà présente).} other{{count} recettes ignorées (déjà présentes).}}",
+  "@rkDoneSkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statusToTest": "À tester",
+  "statusValidated": "Validée",
+  "statusToImprove": "À améliorer",
+  "addToFavorites": "Ajouter aux favoris",
+  "removeFromFavorites": "Retirer des favoris",
+  "collectionsLabel": "Collections",
+  "morePhotos": "Autres photos",
+  "fieldServingsUnit": "Unité des portions",
+  "fieldServingsUnitHint": "personnes",
+  "quantityLabel": "Quantité",
+  "statusNone": "Aucun statut",
+  "statusLabel": "Statut",
+  "neverCooked": "Jamais réalisée",
+  "equipment": "Matériel",
+  "fieldVideos": "Liens vidéo (un par ligne)",
+  "videosLabel": "Vidéos",
+  "substitutesPrefix": "Ou",
+  "ratingLabel": "Note",
+  "rateStars": "Noter {count} sur 5",
+  "clearRating": "Retirer la note",
+  "morePhotosEdit": "Autres photos",
+  "addMorePhoto": "Ajouter une photo",
+  "removeThisPhoto": "Retirer cette photo",
+  "chooseRecipe": "Choisir une recette",
+  "noRecipeToLink": "Aucune autre recette",
+  "formatBold": "Gras",
+  "formatItalic": "Italique",
+  "@rateStars": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "equipmentTitle": "Matériel",
+  "equipmentSubtitle": "Moules, robots, ustensiles… la liste commune à toutes les recettes",
+  "equipmentEmpty": "Aucun matériel pour l’instant",
+  "equipmentEmptyHint": "Ajoute ici ce dont tu te sers en cuisine : tu pourras ensuite le cocher dans tes recettes.",
+  "addEquipment": "Ajouter un matériel",
+  "renameEquipment": "Renommer",
+  "equipmentName": "Nom du matériel",
+  "equipmentExists": "Ce matériel existe déjà",
+  "deleteEquipmentConfirm": "Supprimer « {name} » ? Il sera aussi retiré des recettes qui l’utilisent.",
+  "chooseEquipment": "Choisir le matériel",
+  "searchOrAddEquipment": "Rechercher ou ajouter un matériel",
+  "addEquipmentNamed": "Ajouter « {name} »",
+  "validate": "Valider",
+  "insertRecipe": "Insérer une recette (pâte, sauce…)",
+  "equipmentUsed": "{count, plural, =0{Utilisé dans aucune recette} =1{Utilisé dans 1 recette} other{Utilisé dans {count} recettes}}",
+  "@equipmentUsed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@deleteEquipmentConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@addEquipmentNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

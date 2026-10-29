@@ -77,11 +77,11 @@ Pour la pâte :
     expect(find.text('Pour la pâte'), findsOneWidget);
     // Pas de trait entre les ingrédients : seul le titre de groupe en a un.
     expect(find.byType(Divider), findsOneWidget);
-    expect(find.text('Farine'), findsOneWidget);
-    expect(find.text('250 g'), findsOneWidget);
-    expect(find.text('2 c. à soupe'), findsOneWidget);
-    expect(find.text('3'), findsOneWidget);
-    expect(find.text('selon le goût'), findsOneWidget);
+    // Une phrase par ingrédient, quantité juste avant le nom.
+    expect(find.text('250 g de farine'), findsOneWidget);
+    expect(find.text('4 œufs'), findsOneWidget);
+    expect(find.text('2 c. à soupe de sucre'), findsOneWidget);
+    expect(find.text('Sel, selon le goût'), findsOneWidget);
     expect(find.text('Mélanger la farine et les œufs.'), findsOneWidget);
     await scrollTo(tester, find.text('SOURCE · SITE WEB'));
     expect(find.text('Doubler les quantités pour 8.'), findsOneWidget);
@@ -189,6 +189,7 @@ Pour la pâte :
 
     await tester.tap(find.text('Réglages').last);
     await settle(tester);
+    await scrollTo(tester, find.text('Corbeille'));
     await tester.tap(find.text('Corbeille'));
     await settle(tester);
     await tester.tap(find.byTooltip('Restaurer'));
@@ -219,7 +220,7 @@ Pour la pâte :
     await tester.tap(find.text('Soupe'));
     await settle(tester);
     expect(find.text('Jamais réalisée'), findsOneWidget);
-    await tester.tap(find.text("J'ai fait cette recette"));
+    await tester.tap(find.byTooltip("J'ai fait cette recette"));
     await settle(tester);
     expect(find.text('Réalisée 1 fois'), findsOneWidget);
   });

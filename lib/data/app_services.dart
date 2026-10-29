@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'backup/backup_service.dart';
 import 'database.dart';
+import 'equipment_repository.dart';
 import 'photo_store.dart';
 import 'recipe_repository.dart';
 
@@ -16,12 +17,14 @@ class AppServices {
   AppServices({
     required this.database,
     required this.recipes,
+    required this.equipment,
     required this.photos,
     required this.backups,
   });
 
   final AppDatabase database;
   final RecipeRepository recipes;
+  final EquipmentRepository equipment;
   final PhotoStore photos;
   final BackupService backups;
 
@@ -73,13 +76,16 @@ class AppServices {
           ),
     );
     final recipes = RecipeRepository(database);
+    final equipment = EquipmentRepository(database);
     final photos = PhotoStore(Directory(p.join(root.path, 'photos')));
     final services = AppServices(
       database: database,
       recipes: recipes,
+      equipment: equipment,
       photos: photos,
       backups: BackupService(
         repository: recipes,
+        equipment: equipment,
         photos: photos,
         backupsDirectory: backupsDir,
         appVersion: appVersion,
@@ -89,6 +95,7 @@ class AppServices {
     // Forces the database to open (and migrate) now, inside main()'s error
     // handling, rather than on the first screen.
     await database.customSelect('SELECT 1').get();
+    await equipment.capitalizeNames();
     await prefs.setInt(_schemaVersionKey, AppDatabase.latestSchemaVersion);
     return services;
   }
@@ -108,6 +115,10 @@ final appServicesProvider = Provider<AppServices>(
 
 final recipeRepositoryProvider = Provider<RecipeRepository>(
   (ref) => ref.watch(appServicesProvider).recipes,
+);
+
+final equipmentRepositoryProvider = Provider<EquipmentRepository>(
+  (ref) => ref.watch(appServicesProvider).equipment,
 );
 
 final photoStoreProvider = Provider<PhotoStore>(
