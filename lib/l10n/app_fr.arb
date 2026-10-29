@@ -358,7 +358,6 @@
   "addToFavorites": "Ajouter aux favoris",
   "removeFromFavorites": "Retirer des favoris",
   "collectionsLabel": "Collections",
-  "linkedRecipesLabel": "Recettes utilisées",
   "morePhotos": "Autres photos",
   "fieldServingsUnit": "Unité des portions",
   "fieldServingsUnitHint": "personnes",
@@ -367,7 +366,6 @@
   "statusLabel": "Statut",
   "neverCooked": "Jamais réalisée",
   "equipment": "Matériel",
-  "fieldEquipment": "Matériel nécessaire (un par ligne)",
   "fieldVideos": "Liens vidéo (un par ligne)",
   "videosLabel": "Vidéos",
   "substitutesPrefix": "Ou",
@@ -377,9 +375,6 @@
   "morePhotosEdit": "Autres photos",
   "addMorePhoto": "Ajouter une photo",
   "removeThisPhoto": "Retirer cette photo",
-  "linkedRecipesEdit": "Recettes utilisées (pâte, sauce…)",
-  "addLinkedRecipe": "Ajouter une recette",
-  "removeLinkedRecipe": "Retirer",
   "chooseRecipe": "Choisir une recette",
   "noRecipeToLink": "Aucune autre recette",
   "formatBold": "Gras",
@@ -388,6 +383,42 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "equipmentTitle": "Matériel",
+  "equipmentSubtitle": "Moules, robots, ustensiles… la liste commune à toutes les recettes",
+  "equipmentEmpty": "Aucun matériel pour l’instant",
+  "equipmentEmptyHint": "Ajoute ici ce dont tu te sers en cuisine : tu pourras ensuite le cocher dans tes recettes.",
+  "addEquipment": "Ajouter un matériel",
+  "renameEquipment": "Renommer",
+  "equipmentName": "Nom du matériel",
+  "equipmentExists": "Ce matériel existe déjà",
+  "deleteEquipmentConfirm": "Supprimer « {name} » ? Il sera aussi retiré des recettes qui l’utilisent.",
+  "chooseEquipment": "Choisir le matériel",
+  "searchOrAddEquipment": "Rechercher ou ajouter un matériel",
+  "addEquipmentNamed": "Ajouter « {name} »",
+  "validate": "Valider",
+  "insertRecipe": "Insérer une recette (pâte, sauce…)",
+  "equipmentUsed": "{count, plural, =0{Utilisé dans aucune recette} =1{Utilisé dans 1 recette} other{Utilisé dans {count} recettes}}",
+  "@equipmentUsed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@deleteEquipmentConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@addEquipmentNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   }

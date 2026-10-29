@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/equipment/equipment_page.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/planning/planning_page.dart';
 import '../../features/recipes/recipe_detail_page.dart';
@@ -54,6 +55,11 @@ GoRouter buildRouter() => GoRouter(
               path: '/reglages',
               builder: (context, state) => const SettingsPage(),
               routes: [
+                GoRoute(
+                  path: 'materiel',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const EquipmentPage(),
+                ),
                 GoRoute(
                   path: 'corbeille',
                   parentNavigatorKey: _rootKey,

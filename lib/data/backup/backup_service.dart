@@ -5,7 +5,9 @@ import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/format/text_search.dart';
+import '../../domain/equipment.dart';
 import '../../domain/recipe.dart';
+import '../equipment_repository.dart';
 import '../photo_store.dart';
 import '../recipe_repository.dart';
 import 'backup_format.dart';
@@ -26,9 +28,12 @@ enum ImportMode {
 
 /// Contenu d'une sauvegarde lue et validée, prête à être importée.
 class BackupContents {
-  const BackupContents(this.recipes, this.photos);
+  const BackupContents(this.recipes, this.photos, {this.equipment = const []});
 
   final List<Recipe> recipes;
+
+  /// La liste commune du matériel.
+  final List<EquipmentItem> equipment;
   final Map<String, List<int>> photos;
 }
 
@@ -72,6 +77,7 @@ class RecipeKeeperPreview {
 class BackupService {
   BackupService({
     required this.repository,
+    required this.equipment,
     required this.photos,
     required this.backupsDirectory,
     required this.appVersion,
@@ -79,6 +85,7 @@ class BackupService {
   }) : _clock = clock ?? DateTime.now;
 
   final RecipeRepository repository;
+  final EquipmentRepository equipment;
   final PhotoStore photos;
   final Directory backupsDirectory;
   final String appVersion;
@@ -94,6 +101,7 @@ class BackupService {
     final json = const JsonEncoder.withIndent('  ').convert(
       BackupFormat.encode(
         recipes,
+        equipment: await equipment.getAll(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -138,7 +146,8 @@ class BackupService {
     } on FormatException {
       throw const BackupFormatException(BackupError.invalid, 'json');
     }
-    final recipes = BackupFormat.decode(json);
+    final decoded = BackupFormat.decode(json);
+    final recipes = decoded.recipes;
     final photoFiles = <String, List<int>>{};
     for (final file in archive.files) {
       if (file.isFile && file.name.startsWith(BackupFormat.photosFolder)) {
@@ -151,7 +160,7 @@ class BackupService {
         throw BackupFormatException(BackupError.missingPhoto, name);
       }
     }
-    return BackupContents(recipes, photoFiles);
+    return BackupContents(recipes, photoFiles, equipment: decoded.equipment);
   }
 
   /// Compare un export Recipe Keeper avec les recettes de l'application.
@@ -198,7 +207,22 @@ class BackupService {
       final existing = {
         for (final r in await repository.getAllWithDetails()) r.id: r,
       };
-      if (mode == ImportMode.replace) await repository.deleteAll();
+      final existingEquipment = {
+        for (final item in await equipment.getAll()) item.id: item,
+      };
+      if (mode == ImportMode.replace) {
+        await repository.deleteAll();
+        await equipment.deleteAll();
+        existingEquipment.clear();
+      }
+      for (final item in contents.equipment) {
+        final current = existingEquipment[item.id];
+        if (current == null ||
+            (mode != ImportMode.addMissing &&
+                item.updatedAt.isAfter(current.updatedAt))) {
+          await equipment.put(item);
+        }
+      }
       for (final recipe in contents.recipes) {
         final current = existing[recipe.id];
         if (mode == ImportMode.replace) {

@@ -92,8 +92,7 @@ class RecipeRepository {
       course: original.course,
       category: original.category,
       collections: original.collections,
-      linkedRecipeIds: original.linkedRecipeIds,
-      equipment: original.equipment,
+      equipmentIds: original.equipmentIds,
       videoLinks: original.videoLinks,
       createdAt: now,
       updatedAt: now,
@@ -108,6 +107,7 @@ class RecipeRepository {
             note: line.note,
             optional: line.optional,
             substitutes: line.substitutes,
+            linkedRecipeId: line.linkedRecipeId,
           ),
       ],
       steps: [
@@ -237,7 +237,6 @@ class RecipeRepository {
             course: Value(recipe.course),
             category: Value(recipe.category),
             collections: Value(recipe.collections.join('\n')),
-            equipment: Value(recipe.equipment.join('\n')),
             videoLinks: Value(recipe.videoLinks.join('\n')),
             createdAt: recipe.createdAt,
             updatedAt: recipe.updatedAt,
@@ -254,8 +253,8 @@ class RecipeRepository {
       _db.recipePhotos,
     )..where((p) => p.recipeId.equals(recipe.id))).go();
     await (_db.delete(
-      _db.recipeLinks,
-    )..where((l) => l.recipeId.equals(recipe.id))).go();
+      _db.recipeEquipment,
+    )..where((e) => e.recipeId.equals(recipe.id))).go();
     await _db.batch((batch) {
       batch.insertAll(_db.recipePhotos, [
         for (final (index, file) in recipe.extraPhotos.indexed)
@@ -265,12 +264,12 @@ class RecipeRepository {
             file: file,
           ),
       ]);
-      batch.insertAll(_db.recipeLinks, [
-        for (final (index, linked) in recipe.linkedRecipeIds.indexed)
-          RecipeLinksCompanion.insert(
+      batch.insertAll(_db.recipeEquipment, [
+        for (final (index, id) in recipe.equipmentIds.indexed)
+          RecipeEquipmentCompanion.insert(
             recipeId: recipe.id,
             position: index,
-            linkedRecipeId: linked,
+            equipmentId: id,
           ),
       ]);
       batch.insertAll(_db.ingredients, [
@@ -286,6 +285,7 @@ class RecipeRepository {
             note: Value(line.note),
             optional: Value(line.optional),
             substitutes: Value(line.substitutes),
+            linkedRecipeId: Value(line.linkedRecipeId),
           ),
       ]);
       batch.insertAll(_db.recipeSteps, [
@@ -317,14 +317,14 @@ class RecipeRepository {
               ..where((p) => p.recipeId.equals(row.id))
               ..orderBy([(p) => OrderingTerm.asc(p.position)]))
             .get();
-    final links =
-        await (_db.select(_db.recipeLinks)
-              ..where((l) => l.recipeId.equals(row.id))
-              ..orderBy([(l) => OrderingTerm.asc(l.position)]))
+    final equipment =
+        await (_db.select(_db.recipeEquipment)
+              ..where((e) => e.recipeId.equals(row.id))
+              ..orderBy([(e) => OrderingTerm.asc(e.position)]))
             .get();
     return _fromRow(row).copyWith(
       extraPhotos: [for (final p in photos) p.file],
-      linkedRecipeIds: [for (final l in links) l.linkedRecipeId],
+      equipmentIds: [for (final e in equipment) e.equipmentId],
       ingredients: [
         for (final i in ingredients)
           IngredientLine(
@@ -336,6 +336,7 @@ class RecipeRepository {
             note: i.note,
             optional: i.optional,
             substitutes: i.substitutes,
+            linkedRecipeId: i.linkedRecipeId,
           ),
       ],
       steps: [
@@ -367,7 +368,6 @@ class RecipeRepository {
     course: row.course,
     category: row.category,
     collections: _lines(row.collections),
-    equipment: _lines(row.equipment),
     videoLinks: _lines(row.videoLinks),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

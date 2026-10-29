@@ -82,6 +82,12 @@ class SettingsPage extends ConsumerWidget {
             onTap: () => RecipeKeeperActions(context, ref).import(),
           ),
           ListTile(
+            leading: const Icon(Icons.kitchen_outlined),
+            title: Text(l10n.equipmentTitle),
+            subtitle: Text(l10n.equipmentSubtitle),
+            onTap: () => context.push('/reglages/materiel'),
+          ),
+          ListTile(
             leading: const Icon(Icons.delete_outline),
             title: Text(l10n.trash),
             subtitle: Text(l10n.trashSubtitle),

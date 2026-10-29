@@ -628,7 +628,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
   final String category;
   final String collections;
 
-  /// Matériel nécessaire et liens vidéo, un par ligne ; ajoutés en v5.
+  /// Liens vidéo, un par ligne ; ajouté en v5. [equipment] (matériel en texte,
+  /// v5) est vidé par la migration v6 : le matériel est dans [RecipeEquipment].
   final String equipment;
   final String videoLinks;
   final DateTime createdAt;
@@ -1431,6 +1432,17 @@ class $IngredientsTable extends Ingredients
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _linkedRecipeIdMeta = const VerificationMeta(
+    'linkedRecipeId',
+  );
+  @override
+  late final GeneratedColumn<String> linkedRecipeId = GeneratedColumn<String>(
+    'linked_recipe_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1443,6 +1455,7 @@ class $IngredientsTable extends Ingredients
     note,
     optional,
     substitutes,
+    linkedRecipeId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1522,6 +1535,15 @@ class $IngredientsTable extends Ingredients
         ),
       );
     }
+    if (data.containsKey('linked_recipe_id')) {
+      context.handle(
+        _linkedRecipeIdMeta,
+        linkedRecipeId.isAcceptableOrUnknown(
+          data['linked_recipe_id']!,
+          _linkedRecipeIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1571,6 +1593,10 @@ class $IngredientsTable extends Ingredients
         DriftSqlType.string,
         data['${effectivePrefix}substitutes'],
       )!,
+      linkedRecipeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}linked_recipe_id'],
+      ),
     );
   }
 
@@ -1593,6 +1619,9 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
 
   /// Remplaçants possibles de l'ingrédient ; ajouté en v5.
   final String substitutes;
+
+  /// Recette qu'est cet ingrédient (pâte, sauce) ; ajouté en v6.
+  final String? linkedRecipeId;
   const IngredientRow({
     required this.id,
     required this.recipeId,
@@ -1604,6 +1633,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     required this.note,
     required this.optional,
     required this.substitutes,
+    this.linkedRecipeId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1620,6 +1650,9 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     map['note'] = Variable<String>(note);
     map['optional'] = Variable<bool>(optional);
     map['substitutes'] = Variable<String>(substitutes);
+    if (!nullToAbsent || linkedRecipeId != null) {
+      map['linked_recipe_id'] = Variable<String>(linkedRecipeId);
+    }
     return map;
   }
 
@@ -1637,6 +1670,9 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
       note: Value(note),
       optional: Value(optional),
       substitutes: Value(substitutes),
+      linkedRecipeId: linkedRecipeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(linkedRecipeId),
     );
   }
 
@@ -1656,6 +1692,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
       note: serializer.fromJson<String>(json['note']),
       optional: serializer.fromJson<bool>(json['optional']),
       substitutes: serializer.fromJson<String>(json['substitutes']),
+      linkedRecipeId: serializer.fromJson<String?>(json['linkedRecipeId']),
     );
   }
   @override
@@ -1672,6 +1709,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
       'note': serializer.toJson<String>(note),
       'optional': serializer.toJson<bool>(optional),
       'substitutes': serializer.toJson<String>(substitutes),
+      'linkedRecipeId': serializer.toJson<String?>(linkedRecipeId),
     };
   }
 
@@ -1686,6 +1724,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     String? note,
     bool? optional,
     String? substitutes,
+    Value<String?> linkedRecipeId = const Value.absent(),
   }) => IngredientRow(
     id: id ?? this.id,
     recipeId: recipeId ?? this.recipeId,
@@ -1697,6 +1736,9 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     note: note ?? this.note,
     optional: optional ?? this.optional,
     substitutes: substitutes ?? this.substitutes,
+    linkedRecipeId: linkedRecipeId.present
+        ? linkedRecipeId.value
+        : this.linkedRecipeId,
   );
   IngredientRow copyWithCompanion(IngredientsCompanion data) {
     return IngredientRow(
@@ -1712,6 +1754,9 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
       substitutes: data.substitutes.present
           ? data.substitutes.value
           : this.substitutes,
+      linkedRecipeId: data.linkedRecipeId.present
+          ? data.linkedRecipeId.value
+          : this.linkedRecipeId,
     );
   }
 
@@ -1727,7 +1772,8 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
           ..write('unit: $unit, ')
           ..write('note: $note, ')
           ..write('optional: $optional, ')
-          ..write('substitutes: $substitutes')
+          ..write('substitutes: $substitutes, ')
+          ..write('linkedRecipeId: $linkedRecipeId')
           ..write(')'))
         .toString();
   }
@@ -1744,6 +1790,7 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
     note,
     optional,
     substitutes,
+    linkedRecipeId,
   );
   @override
   bool operator ==(Object other) =>
@@ -1758,7 +1805,8 @@ class IngredientRow extends DataClass implements Insertable<IngredientRow> {
           other.unit == this.unit &&
           other.note == this.note &&
           other.optional == this.optional &&
-          other.substitutes == this.substitutes);
+          other.substitutes == this.substitutes &&
+          other.linkedRecipeId == this.linkedRecipeId);
 }
 
 class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
@@ -1772,6 +1820,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
   final Value<String> note;
   final Value<bool> optional;
   final Value<String> substitutes;
+  final Value<String?> linkedRecipeId;
   final Value<int> rowid;
   const IngredientsCompanion({
     this.id = const Value.absent(),
@@ -1784,6 +1833,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     this.note = const Value.absent(),
     this.optional = const Value.absent(),
     this.substitutes = const Value.absent(),
+    this.linkedRecipeId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   IngredientsCompanion.insert({
@@ -1797,6 +1847,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     this.note = const Value.absent(),
     this.optional = const Value.absent(),
     this.substitutes = const Value.absent(),
+    this.linkedRecipeId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        recipeId = Value(recipeId),
@@ -1812,6 +1863,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     Expression<String>? note,
     Expression<bool>? optional,
     Expression<String>? substitutes,
+    Expression<String>? linkedRecipeId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1825,6 +1877,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
       if (note != null) 'note': note,
       if (optional != null) 'optional': optional,
       if (substitutes != null) 'substitutes': substitutes,
+      if (linkedRecipeId != null) 'linked_recipe_id': linkedRecipeId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1840,6 +1893,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     Value<String>? note,
     Value<bool>? optional,
     Value<String>? substitutes,
+    Value<String?>? linkedRecipeId,
     Value<int>? rowid,
   }) {
     return IngredientsCompanion(
@@ -1853,6 +1907,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
       note: note ?? this.note,
       optional: optional ?? this.optional,
       substitutes: substitutes ?? this.substitutes,
+      linkedRecipeId: linkedRecipeId ?? this.linkedRecipeId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1890,6 +1945,9 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
     if (substitutes.present) {
       map['substitutes'] = Variable<String>(substitutes.value);
     }
+    if (linkedRecipeId.present) {
+      map['linked_recipe_id'] = Variable<String>(linkedRecipeId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1909,6 +1967,7 @@ class IngredientsCompanion extends UpdateCompanion<IngredientRow> {
           ..write('note: $note, ')
           ..write('optional: $optional, ')
           ..write('substitutes: $substitutes, ')
+          ..write('linkedRecipeId: $linkedRecipeId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2535,12 +2594,373 @@ class RecipePhotosCompanion extends UpdateCompanion<ExtraPhotoRow> {
   }
 }
 
-class $RecipeLinksTable extends RecipeLinks
-    with TableInfo<$RecipeLinksTable, RecipeLinkRow> {
+class $EquipmentItemsTable extends EquipmentItems
+    with TableInfo<$EquipmentItemsTable, EquipmentRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $RecipeLinksTable(this.attachedDatabase, [this._alias]);
+  $EquipmentItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'equipment_items';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EquipmentRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EquipmentRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EquipmentRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+    );
+  }
+
+  @override
+  $EquipmentItemsTable createAlias(String alias) {
+    return $EquipmentItemsTable(attachedDatabase, alias);
+  }
+}
+
+class EquipmentRow extends DataClass implements Insertable<EquipmentRow> {
+  final String id;
+  final String name;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  const EquipmentRow({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    return map;
+  }
+
+  EquipmentItemsCompanion toCompanion(bool nullToAbsent) {
+    return EquipmentItemsCompanion(
+      id: Value(id),
+      name: Value(name),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory EquipmentRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EquipmentRow(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+    };
+  }
+
+  EquipmentRow copyWith({
+    String? id,
+    String? name,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+  }) => EquipmentRow(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+  );
+  EquipmentRow copyWithCompanion(EquipmentItemsCompanion data) {
+    return EquipmentRow(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EquipmentRow(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, createdAt, updatedAt, deletedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EquipmentRow &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class EquipmentItemsCompanion extends UpdateCompanion<EquipmentRow> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<int> rowid;
+  const EquipmentItemsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EquipmentItemsCompanion.insert({
+    required String id,
+    required String name,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<EquipmentRow> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EquipmentItemsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return EquipmentItemsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EquipmentItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RecipeEquipmentTable extends RecipeEquipment
+    with TableInfo<$RecipeEquipmentTable, RecipeEquipmentRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RecipeEquipmentTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _recipeIdMeta = const VerificationMeta(
     'recipeId',
   );
@@ -2566,27 +2986,27 @@ class $RecipeLinksTable extends RecipeLinks
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _linkedRecipeIdMeta = const VerificationMeta(
-    'linkedRecipeId',
+  static const VerificationMeta _equipmentIdMeta = const VerificationMeta(
+    'equipmentId',
   );
   @override
-  late final GeneratedColumn<String> linkedRecipeId = GeneratedColumn<String>(
-    'linked_recipe_id',
+  late final GeneratedColumn<String> equipmentId = GeneratedColumn<String>(
+    'equipment_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [recipeId, position, linkedRecipeId];
+  List<GeneratedColumn> get $columns => [recipeId, position, equipmentId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'recipe_links';
+  static const String $name = 'recipe_equipment';
   @override
   VerificationContext validateIntegrity(
-    Insertable<RecipeLinkRow> instance, {
+    Insertable<RecipeEquipmentRow> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -2607,16 +3027,16 @@ class $RecipeLinksTable extends RecipeLinks
     } else if (isInserting) {
       context.missing(_positionMeta);
     }
-    if (data.containsKey('linked_recipe_id')) {
+    if (data.containsKey('equipment_id')) {
       context.handle(
-        _linkedRecipeIdMeta,
-        linkedRecipeId.isAcceptableOrUnknown(
-          data['linked_recipe_id']!,
-          _linkedRecipeIdMeta,
+        _equipmentIdMeta,
+        equipmentId.isAcceptableOrUnknown(
+          data['equipment_id']!,
+          _equipmentIdMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_linkedRecipeIdMeta);
+      context.missing(_equipmentIdMeta);
     }
     return context;
   }
@@ -2624,9 +3044,9 @@ class $RecipeLinksTable extends RecipeLinks
   @override
   Set<GeneratedColumn> get $primaryKey => {recipeId, position};
   @override
-  RecipeLinkRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+  RecipeEquipmentRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return RecipeLinkRow(
+    return RecipeEquipmentRow(
       recipeId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}recipe_id'],
@@ -2635,54 +3055,55 @@ class $RecipeLinksTable extends RecipeLinks
         DriftSqlType.int,
         data['${effectivePrefix}position'],
       )!,
-      linkedRecipeId: attachedDatabase.typeMapping.read(
+      equipmentId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}linked_recipe_id'],
+        data['${effectivePrefix}equipment_id'],
       )!,
     );
   }
 
   @override
-  $RecipeLinksTable createAlias(String alias) {
-    return $RecipeLinksTable(attachedDatabase, alias);
+  $RecipeEquipmentTable createAlias(String alias) {
+    return $RecipeEquipmentTable(attachedDatabase, alias);
   }
 }
 
-class RecipeLinkRow extends DataClass implements Insertable<RecipeLinkRow> {
+class RecipeEquipmentRow extends DataClass
+    implements Insertable<RecipeEquipmentRow> {
   final String recipeId;
   final int position;
-  final String linkedRecipeId;
-  const RecipeLinkRow({
+  final String equipmentId;
+  const RecipeEquipmentRow({
     required this.recipeId,
     required this.position,
-    required this.linkedRecipeId,
+    required this.equipmentId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['recipe_id'] = Variable<String>(recipeId);
     map['position'] = Variable<int>(position);
-    map['linked_recipe_id'] = Variable<String>(linkedRecipeId);
+    map['equipment_id'] = Variable<String>(equipmentId);
     return map;
   }
 
-  RecipeLinksCompanion toCompanion(bool nullToAbsent) {
-    return RecipeLinksCompanion(
+  RecipeEquipmentCompanion toCompanion(bool nullToAbsent) {
+    return RecipeEquipmentCompanion(
       recipeId: Value(recipeId),
       position: Value(position),
-      linkedRecipeId: Value(linkedRecipeId),
+      equipmentId: Value(equipmentId),
     );
   }
 
-  factory RecipeLinkRow.fromJson(
+  factory RecipeEquipmentRow.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return RecipeLinkRow(
+    return RecipeEquipmentRow(
       recipeId: serializer.fromJson<String>(json['recipeId']),
       position: serializer.fromJson<int>(json['position']),
-      linkedRecipeId: serializer.fromJson<String>(json['linkedRecipeId']),
+      equipmentId: serializer.fromJson<String>(json['equipmentId']),
     );
   }
   @override
@@ -2691,93 +3112,93 @@ class RecipeLinkRow extends DataClass implements Insertable<RecipeLinkRow> {
     return <String, dynamic>{
       'recipeId': serializer.toJson<String>(recipeId),
       'position': serializer.toJson<int>(position),
-      'linkedRecipeId': serializer.toJson<String>(linkedRecipeId),
+      'equipmentId': serializer.toJson<String>(equipmentId),
     };
   }
 
-  RecipeLinkRow copyWith({
+  RecipeEquipmentRow copyWith({
     String? recipeId,
     int? position,
-    String? linkedRecipeId,
-  }) => RecipeLinkRow(
+    String? equipmentId,
+  }) => RecipeEquipmentRow(
     recipeId: recipeId ?? this.recipeId,
     position: position ?? this.position,
-    linkedRecipeId: linkedRecipeId ?? this.linkedRecipeId,
+    equipmentId: equipmentId ?? this.equipmentId,
   );
-  RecipeLinkRow copyWithCompanion(RecipeLinksCompanion data) {
-    return RecipeLinkRow(
+  RecipeEquipmentRow copyWithCompanion(RecipeEquipmentCompanion data) {
+    return RecipeEquipmentRow(
       recipeId: data.recipeId.present ? data.recipeId.value : this.recipeId,
       position: data.position.present ? data.position.value : this.position,
-      linkedRecipeId: data.linkedRecipeId.present
-          ? data.linkedRecipeId.value
-          : this.linkedRecipeId,
+      equipmentId: data.equipmentId.present
+          ? data.equipmentId.value
+          : this.equipmentId,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('RecipeLinkRow(')
+    return (StringBuffer('RecipeEquipmentRow(')
           ..write('recipeId: $recipeId, ')
           ..write('position: $position, ')
-          ..write('linkedRecipeId: $linkedRecipeId')
+          ..write('equipmentId: $equipmentId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(recipeId, position, linkedRecipeId);
+  int get hashCode => Object.hash(recipeId, position, equipmentId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is RecipeLinkRow &&
+      (other is RecipeEquipmentRow &&
           other.recipeId == this.recipeId &&
           other.position == this.position &&
-          other.linkedRecipeId == this.linkedRecipeId);
+          other.equipmentId == this.equipmentId);
 }
 
-class RecipeLinksCompanion extends UpdateCompanion<RecipeLinkRow> {
+class RecipeEquipmentCompanion extends UpdateCompanion<RecipeEquipmentRow> {
   final Value<String> recipeId;
   final Value<int> position;
-  final Value<String> linkedRecipeId;
+  final Value<String> equipmentId;
   final Value<int> rowid;
-  const RecipeLinksCompanion({
+  const RecipeEquipmentCompanion({
     this.recipeId = const Value.absent(),
     this.position = const Value.absent(),
-    this.linkedRecipeId = const Value.absent(),
+    this.equipmentId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  RecipeLinksCompanion.insert({
+  RecipeEquipmentCompanion.insert({
     required String recipeId,
     required int position,
-    required String linkedRecipeId,
+    required String equipmentId,
     this.rowid = const Value.absent(),
   }) : recipeId = Value(recipeId),
        position = Value(position),
-       linkedRecipeId = Value(linkedRecipeId);
-  static Insertable<RecipeLinkRow> custom({
+       equipmentId = Value(equipmentId);
+  static Insertable<RecipeEquipmentRow> custom({
     Expression<String>? recipeId,
     Expression<int>? position,
-    Expression<String>? linkedRecipeId,
+    Expression<String>? equipmentId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (recipeId != null) 'recipe_id': recipeId,
       if (position != null) 'position': position,
-      if (linkedRecipeId != null) 'linked_recipe_id': linkedRecipeId,
+      if (equipmentId != null) 'equipment_id': equipmentId,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
-  RecipeLinksCompanion copyWith({
+  RecipeEquipmentCompanion copyWith({
     Value<String>? recipeId,
     Value<int>? position,
-    Value<String>? linkedRecipeId,
+    Value<String>? equipmentId,
     Value<int>? rowid,
   }) {
-    return RecipeLinksCompanion(
+    return RecipeEquipmentCompanion(
       recipeId: recipeId ?? this.recipeId,
       position: position ?? this.position,
-      linkedRecipeId: linkedRecipeId ?? this.linkedRecipeId,
+      equipmentId: equipmentId ?? this.equipmentId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2791,8 +3212,8 @@ class RecipeLinksCompanion extends UpdateCompanion<RecipeLinkRow> {
     if (position.present) {
       map['position'] = Variable<int>(position.value);
     }
-    if (linkedRecipeId.present) {
-      map['linked_recipe_id'] = Variable<String>(linkedRecipeId.value);
+    if (equipmentId.present) {
+      map['equipment_id'] = Variable<String>(equipmentId.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -2802,10 +3223,10 @@ class RecipeLinksCompanion extends UpdateCompanion<RecipeLinkRow> {
 
   @override
   String toString() {
-    return (StringBuffer('RecipeLinksCompanion(')
+    return (StringBuffer('RecipeEquipmentCompanion(')
           ..write('recipeId: $recipeId, ')
           ..write('position: $position, ')
-          ..write('linkedRecipeId: $linkedRecipeId, ')
+          ..write('equipmentId: $equipmentId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2819,7 +3240,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $IngredientsTable ingredients = $IngredientsTable(this);
   late final $RecipeStepsTable recipeSteps = $RecipeStepsTable(this);
   late final $RecipePhotosTable recipePhotos = $RecipePhotosTable(this);
-  late final $RecipeLinksTable recipeLinks = $RecipeLinksTable(this);
+  late final $EquipmentItemsTable equipmentItems = $EquipmentItemsTable(this);
+  late final $RecipeEquipmentTable recipeEquipment = $RecipeEquipmentTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2829,7 +3253,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ingredients,
     recipeSteps,
     recipePhotos,
-    recipeLinks,
+    equipmentItems,
+    recipeEquipment,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2859,7 +3284,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         'recipes',
         limitUpdateKind: UpdateKind.delete,
       ),
-      result: [TableUpdate('recipe_links', kind: UpdateKind.delete)],
+      result: [TableUpdate('recipe_equipment', kind: UpdateKind.delete)],
     ),
   ]);
   @override
@@ -2980,19 +3405,21 @@ final class $$RecipesTableReferences
     );
   }
 
-  static MultiTypedResultKey<$RecipeLinksTable, List<RecipeLinkRow>>
-  _recipeLinksRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.recipeLinks,
-    aliasName: 'recipes__id__recipe_links__recipe_id',
+  static MultiTypedResultKey<$RecipeEquipmentTable, List<RecipeEquipmentRow>>
+  _recipeEquipmentRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.recipeEquipment,
+    aliasName: 'recipes__id__recipe_equipment__recipe_id',
   );
 
-  $$RecipeLinksTableProcessedTableManager get recipeLinksRefs {
-    final manager = $$RecipeLinksTableTableManager(
+  $$RecipeEquipmentTableProcessedTableManager get recipeEquipmentRefs {
+    final manager = $$RecipeEquipmentTableTableManager(
       $_db,
-      $_db.recipeLinks,
+      $_db.recipeEquipment,
     ).filter((f) => f.recipeId.id.sqlEquals($_itemColumn<String>('id')!));
 
-    final cache = $_typedResult.readTableOrNull(_recipeLinksRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(
+      _recipeEquipmentRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -3203,22 +3630,22 @@ class $$RecipesTableFilterComposer
     return f(composer);
   }
 
-  Expression<bool> recipeLinksRefs(
-    Expression<bool> Function($$RecipeLinksTableFilterComposer f) f,
+  Expression<bool> recipeEquipmentRefs(
+    Expression<bool> Function($$RecipeEquipmentTableFilterComposer f) f,
   ) {
-    final $$RecipeLinksTableFilterComposer composer = $composerBuilder(
+    final $$RecipeEquipmentTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.recipeLinks,
+      referencedTable: $db.recipeEquipment,
       getReferencedColumn: (t) => t.recipeId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$RecipeLinksTableFilterComposer(
+          }) => $$RecipeEquipmentTableFilterComposer(
             $db: $db,
-            $table: $db.recipeLinks,
+            $table: $db.recipeEquipment,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3533,22 +3960,22 @@ class $$RecipesTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> recipeLinksRefs<T extends Object>(
-    Expression<T> Function($$RecipeLinksTableAnnotationComposer a) f,
+  Expression<T> recipeEquipmentRefs<T extends Object>(
+    Expression<T> Function($$RecipeEquipmentTableAnnotationComposer a) f,
   ) {
-    final $$RecipeLinksTableAnnotationComposer composer = $composerBuilder(
+    final $$RecipeEquipmentTableAnnotationComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.recipeLinks,
+      referencedTable: $db.recipeEquipment,
       getReferencedColumn: (t) => t.recipeId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$RecipeLinksTableAnnotationComposer(
+          }) => $$RecipeEquipmentTableAnnotationComposer(
             $db: $db,
-            $table: $db.recipeLinks,
+            $table: $db.recipeEquipment,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3576,7 +4003,7 @@ class $$RecipesTableTableManager
             bool ingredientsRefs,
             bool recipeStepsRefs,
             bool recipePhotosRefs,
-            bool recipeLinksRefs,
+            bool recipeEquipmentRefs,
           })
         > {
   $$RecipesTableTableManager(_$AppDatabase db, $RecipesTable table)
@@ -3711,7 +4138,7 @@ class $$RecipesTableTableManager
                 ingredientsRefs = false,
                 recipeStepsRefs = false,
                 recipePhotosRefs = false,
-                recipeLinksRefs = false,
+                recipeEquipmentRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -3719,7 +4146,7 @@ class $$RecipesTableTableManager
                     if (ingredientsRefs) db.ingredients,
                     if (recipeStepsRefs) db.recipeSteps,
                     if (recipePhotosRefs) db.recipePhotos,
-                    if (recipeLinksRefs) db.recipeLinks,
+                    if (recipeEquipmentRefs) db.recipeEquipment,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -3784,22 +4211,22 @@ class $$RecipesTableTableManager
                           referencedColumn: 'recipe_id',
                           typedResults: items,
                         ),
-                      if (recipeLinksRefs)
+                      if (recipeEquipmentRefs)
                         await $_getPrefetchedDataByColumns<
                           RecipeRow,
                           $RecipesTable,
-                          RecipeLinkRow,
-                          $RecipeLinksTable
+                          RecipeEquipmentRow,
+                          $RecipeEquipmentTable
                         >(
                           currentTable: table,
                           referencedTable: $$RecipesTableReferences
-                              ._recipeLinksRefsTable(db),
+                              ._recipeEquipmentRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$RecipesTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).recipeLinksRefs,
+                              ).recipeEquipmentRefs,
                           currentColumn: 'id',
                           referencedColumn: 'recipe_id',
                           typedResults: items,
@@ -3828,7 +4255,7 @@ typedef $$RecipesTableProcessedTableManager =
         bool ingredientsRefs,
         bool recipeStepsRefs,
         bool recipePhotosRefs,
-        bool recipeLinksRefs,
+        bool recipeEquipmentRefs,
       })
     >;
 typedef $$IngredientsTableCreateCompanionBuilder =
@@ -3843,6 +4270,7 @@ typedef $$IngredientsTableCreateCompanionBuilder =
       Value<String> note,
       Value<bool> optional,
       Value<String> substitutes,
+      Value<String?> linkedRecipeId,
       Value<int> rowid,
     });
 typedef $$IngredientsTableUpdateCompanionBuilder =
@@ -3857,6 +4285,7 @@ typedef $$IngredientsTableUpdateCompanionBuilder =
       Value<String> note,
       Value<bool> optional,
       Value<String> substitutes,
+      Value<String?> linkedRecipeId,
       Value<int> rowid,
     });
 
@@ -3933,6 +4362,11 @@ class $$IngredientsTableFilterComposer
 
   ColumnFilters<String> get substitutes => $composableBuilder(
     column: $table.substitutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get linkedRecipeId => $composableBuilder(
+    column: $table.linkedRecipeId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4014,6 +4448,11 @@ class $$IngredientsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get linkedRecipeId => $composableBuilder(
+    column: $table.linkedRecipeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$RecipesTableOrderingComposer get recipeId {
     final $$RecipesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -4073,6 +4512,11 @@ class $$IngredientsTableAnnotationComposer
 
   GeneratedColumn<String> get substitutes => $composableBuilder(
     column: $table.substitutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get linkedRecipeId => $composableBuilder(
+    column: $table.linkedRecipeId,
     builder: (column) => column,
   );
 
@@ -4138,6 +4582,7 @@ class $$IngredientsTableTableManager
                 Value<String> note = const Value.absent(),
                 Value<bool> optional = const Value.absent(),
                 Value<String> substitutes = const Value.absent(),
+                Value<String?> linkedRecipeId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IngredientsCompanion(
                 id: id,
@@ -4150,6 +4595,7 @@ class $$IngredientsTableTableManager
                 note: note,
                 optional: optional,
                 substitutes: substitutes,
+                linkedRecipeId: linkedRecipeId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4164,6 +4610,7 @@ class $$IngredientsTableTableManager
                 Value<String> note = const Value.absent(),
                 Value<bool> optional = const Value.absent(),
                 Value<String> substitutes = const Value.absent(),
+                Value<String?> linkedRecipeId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IngredientsCompanion.insert(
                 id: id,
@@ -4176,6 +4623,7 @@ class $$IngredientsTableTableManager
                 note: note,
                 optional: optional,
                 substitutes: substitutes,
+                linkedRecipeId: linkedRecipeId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -4835,27 +5283,247 @@ typedef $$RecipePhotosTableProcessedTableManager =
       ExtraPhotoRow,
       PrefetchHooks Function({bool recipeId})
     >;
-typedef $$RecipeLinksTableCreateCompanionBuilder =
-    RecipeLinksCompanion Function({
+typedef $$EquipmentItemsTableCreateCompanionBuilder =
+    EquipmentItemsCompanion Function({
+      required String id,
+      required String name,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<int> rowid,
+    });
+typedef $$EquipmentItemsTableUpdateCompanionBuilder =
+    EquipmentItemsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<int> rowid,
+    });
+
+class $$EquipmentItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $EquipmentItemsTable> {
+  $$EquipmentItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EquipmentItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $EquipmentItemsTable> {
+  $$EquipmentItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EquipmentItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EquipmentItemsTable> {
+  $$EquipmentItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$EquipmentItemsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EquipmentItemsTable,
+          EquipmentRow,
+          $$EquipmentItemsTableFilterComposer,
+          $$EquipmentItemsTableOrderingComposer,
+          $$EquipmentItemsTableAnnotationComposer,
+          $$EquipmentItemsTableCreateCompanionBuilder,
+          $$EquipmentItemsTableUpdateCompanionBuilder,
+          (
+            EquipmentRow,
+            BaseReferences<_$AppDatabase, $EquipmentItemsTable, EquipmentRow>,
+          ),
+          EquipmentRow,
+          PrefetchHooks Function()
+        > {
+  $$EquipmentItemsTableTableManager(
+    _$AppDatabase db,
+    $EquipmentItemsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EquipmentItemsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EquipmentItemsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EquipmentItemsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EquipmentItemsCompanion(
+                id: id,
+                name: name,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EquipmentItemsCompanion.insert(
+                id: id,
+                name: name,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$EquipmentItemsTable, EquipmentRow>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $EquipmentItemsTable,
+                    EquipmentRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EquipmentItemsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EquipmentItemsTable,
+      EquipmentRow,
+      $$EquipmentItemsTableFilterComposer,
+      $$EquipmentItemsTableOrderingComposer,
+      $$EquipmentItemsTableAnnotationComposer,
+      $$EquipmentItemsTableCreateCompanionBuilder,
+      $$EquipmentItemsTableUpdateCompanionBuilder,
+      (
+        EquipmentRow,
+        BaseReferences<_$AppDatabase, $EquipmentItemsTable, EquipmentRow>,
+      ),
+      EquipmentRow,
+      PrefetchHooks Function()
+    >;
+typedef $$RecipeEquipmentTableCreateCompanionBuilder =
+    RecipeEquipmentCompanion Function({
       required String recipeId,
       required int position,
-      required String linkedRecipeId,
+      required String equipmentId,
       Value<int> rowid,
     });
-typedef $$RecipeLinksTableUpdateCompanionBuilder =
-    RecipeLinksCompanion Function({
+typedef $$RecipeEquipmentTableUpdateCompanionBuilder =
+    RecipeEquipmentCompanion Function({
       Value<String> recipeId,
       Value<int> position,
-      Value<String> linkedRecipeId,
+      Value<String> equipmentId,
       Value<int> rowid,
     });
 
-final class $$RecipeLinksTableReferences
-    extends BaseReferences<_$AppDatabase, $RecipeLinksTable, RecipeLinkRow> {
-  $$RecipeLinksTableReferences(super.$_db, super.$_table, super.$_typedResult);
+final class $$RecipeEquipmentTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $RecipeEquipmentTable,
+          RecipeEquipmentRow
+        > {
+  $$RecipeEquipmentTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
 
   static $RecipesTable _recipeIdTable(_$AppDatabase db) =>
-      db.recipes.createAlias('recipe_links__recipe_id__recipes__id');
+      db.recipes.createAlias('recipe_equipment__recipe_id__recipes__id');
 
   $$RecipesTableProcessedTableManager get recipeId {
     final $_column = $_itemColumn<String>('recipe_id')!;
@@ -4872,9 +5540,9 @@ final class $$RecipeLinksTableReferences
   }
 }
 
-class $$RecipeLinksTableFilterComposer
-    extends Composer<_$AppDatabase, $RecipeLinksTable> {
-  $$RecipeLinksTableFilterComposer({
+class $$RecipeEquipmentTableFilterComposer
+    extends Composer<_$AppDatabase, $RecipeEquipmentTable> {
+  $$RecipeEquipmentTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -4886,8 +5554,8 @@ class $$RecipeLinksTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get linkedRecipeId => $composableBuilder(
-    column: $table.linkedRecipeId,
+  ColumnFilters<String> get equipmentId => $composableBuilder(
+    column: $table.equipmentId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4915,9 +5583,9 @@ class $$RecipeLinksTableFilterComposer
   }
 }
 
-class $$RecipeLinksTableOrderingComposer
-    extends Composer<_$AppDatabase, $RecipeLinksTable> {
-  $$RecipeLinksTableOrderingComposer({
+class $$RecipeEquipmentTableOrderingComposer
+    extends Composer<_$AppDatabase, $RecipeEquipmentTable> {
+  $$RecipeEquipmentTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -4929,8 +5597,8 @@ class $$RecipeLinksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get linkedRecipeId => $composableBuilder(
-    column: $table.linkedRecipeId,
+  ColumnOrderings<String> get equipmentId => $composableBuilder(
+    column: $table.equipmentId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4958,9 +5626,9 @@ class $$RecipeLinksTableOrderingComposer
   }
 }
 
-class $$RecipeLinksTableAnnotationComposer
-    extends Composer<_$AppDatabase, $RecipeLinksTable> {
-  $$RecipeLinksTableAnnotationComposer({
+class $$RecipeEquipmentTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RecipeEquipmentTable> {
+  $$RecipeEquipmentTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -4970,8 +5638,8 @@ class $$RecipeLinksTableAnnotationComposer
   GeneratedColumn<int> get position =>
       $composableBuilder(column: $table.position, builder: (column) => column);
 
-  GeneratedColumn<String> get linkedRecipeId => $composableBuilder(
-    column: $table.linkedRecipeId,
+  GeneratedColumn<String> get equipmentId => $composableBuilder(
+    column: $table.equipmentId,
     builder: (column) => column,
   );
 
@@ -4999,61 +5667,63 @@ class $$RecipeLinksTableAnnotationComposer
   }
 }
 
-class $$RecipeLinksTableTableManager
+class $$RecipeEquipmentTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $RecipeLinksTable,
-          RecipeLinkRow,
-          $$RecipeLinksTableFilterComposer,
-          $$RecipeLinksTableOrderingComposer,
-          $$RecipeLinksTableAnnotationComposer,
-          $$RecipeLinksTableCreateCompanionBuilder,
-          $$RecipeLinksTableUpdateCompanionBuilder,
-          (RecipeLinkRow, $$RecipeLinksTableReferences),
-          RecipeLinkRow,
+          $RecipeEquipmentTable,
+          RecipeEquipmentRow,
+          $$RecipeEquipmentTableFilterComposer,
+          $$RecipeEquipmentTableOrderingComposer,
+          $$RecipeEquipmentTableAnnotationComposer,
+          $$RecipeEquipmentTableCreateCompanionBuilder,
+          $$RecipeEquipmentTableUpdateCompanionBuilder,
+          (RecipeEquipmentRow, $$RecipeEquipmentTableReferences),
+          RecipeEquipmentRow,
           PrefetchHooks Function({bool recipeId})
         > {
-  $$RecipeLinksTableTableManager(_$AppDatabase db, $RecipeLinksTable table)
-    : super(
+  $$RecipeEquipmentTableTableManager(
+    _$AppDatabase db,
+    $RecipeEquipmentTable table,
+  ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$RecipeLinksTableFilterComposer($db: db, $table: table),
+              $$RecipeEquipmentTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$RecipeLinksTableOrderingComposer($db: db, $table: table),
+              $$RecipeEquipmentTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$RecipeLinksTableAnnotationComposer($db: db, $table: table),
+              $$RecipeEquipmentTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> recipeId = const Value.absent(),
                 Value<int> position = const Value.absent(),
-                Value<String> linkedRecipeId = const Value.absent(),
+                Value<String> equipmentId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => RecipeLinksCompanion(
+              }) => RecipeEquipmentCompanion(
                 recipeId: recipeId,
                 position: position,
-                linkedRecipeId: linkedRecipeId,
+                equipmentId: equipmentId,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String recipeId,
                 required int position,
-                required String linkedRecipeId,
+                required String equipmentId,
                 Value<int> rowid = const Value.absent(),
-              }) => RecipeLinksCompanion.insert(
+              }) => RecipeEquipmentCompanion.insert(
                 recipeId: recipeId,
                 position: position,
-                linkedRecipeId: linkedRecipeId,
+                equipmentId: equipmentId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable<$RecipeLinksTable, RecipeLinkRow>(table),
-                  $$RecipeLinksTableReferences(db, table, e),
+                  e.readTable<$RecipeEquipmentTable, RecipeEquipmentRow>(table),
+                  $$RecipeEquipmentTableReferences(db, table, e),
                 ),
               )
               .toList(),
@@ -5081,9 +5751,9 @@ class $$RecipeLinksTableTableManager
                       state = state.withJoin(
                         currentTable: table,
                         currentColumn: table.recipeId,
-                        referencedTable: $$RecipeLinksTableReferences
+                        referencedTable: $$RecipeEquipmentTableReferences
                             ._recipeIdTable(db),
-                        referencedColumn: $$RecipeLinksTableReferences
+                        referencedColumn: $$RecipeEquipmentTableReferences
                             ._recipeIdTable(db)
                             .id,
                       ) as T;
@@ -5100,18 +5770,18 @@ class $$RecipeLinksTableTableManager
       );
 }
 
-typedef $$RecipeLinksTableProcessedTableManager =
+typedef $$RecipeEquipmentTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $RecipeLinksTable,
-      RecipeLinkRow,
-      $$RecipeLinksTableFilterComposer,
-      $$RecipeLinksTableOrderingComposer,
-      $$RecipeLinksTableAnnotationComposer,
-      $$RecipeLinksTableCreateCompanionBuilder,
-      $$RecipeLinksTableUpdateCompanionBuilder,
-      (RecipeLinkRow, $$RecipeLinksTableReferences),
-      RecipeLinkRow,
+      $RecipeEquipmentTable,
+      RecipeEquipmentRow,
+      $$RecipeEquipmentTableFilterComposer,
+      $$RecipeEquipmentTableOrderingComposer,
+      $$RecipeEquipmentTableAnnotationComposer,
+      $$RecipeEquipmentTableCreateCompanionBuilder,
+      $$RecipeEquipmentTableUpdateCompanionBuilder,
+      (RecipeEquipmentRow, $$RecipeEquipmentTableReferences),
+      RecipeEquipmentRow,
       PrefetchHooks Function({bool recipeId})
     >;
 
@@ -5126,6 +5796,8 @@ class $AppDatabaseManager {
       $$RecipeStepsTableTableManager(_db, _db.recipeSteps);
   $$RecipePhotosTableTableManager get recipePhotos =>
       $$RecipePhotosTableTableManager(_db, _db.recipePhotos);
-  $$RecipeLinksTableTableManager get recipeLinks =>
-      $$RecipeLinksTableTableManager(_db, _db.recipeLinks);
+  $$EquipmentItemsTableTableManager get equipmentItems =>
+      $$EquipmentItemsTableTableManager(_db, _db.equipmentItems);
+  $$RecipeEquipmentTableTableManager get recipeEquipment =>
+      $$RecipeEquipmentTableTableManager(_db, _db.recipeEquipment);
 }

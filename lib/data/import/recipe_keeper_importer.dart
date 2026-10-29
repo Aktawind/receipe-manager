@@ -5,8 +5,10 @@ import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html;
 import 'package:path/path.dart' as p;
 
+import '../../core/format/text_search.dart';
 import '../../domain/ingredient_text.dart';
 import '../../domain/recipe.dart';
+import '../../domain/recipe_links.dart';
 import '../../domain/step_text.dart';
 import '../photo_store.dart';
 
@@ -90,10 +92,32 @@ abstract final class RecipeKeeperImporter {
     final issues = <ImportIssue>[];
     final seen = <String>{};
 
-    for (final node in document.querySelectorAll('.recipe-details')) {
-      final recipe = _recipe(node, images, photos, issues, stamp);
+    // Les titres de toutes les recettes : un renvoi « [recipe:Pâte brisée] »
+    // dans une liste d'ingrédients devient un lien vers cette recette.
+    final nodes = document.querySelectorAll('.recipe-details');
+    final byTitle = <String, RecipeRef>{};
+    for (final node in nodes) {
+      final id = _meta(node, 'recipeId').firstOrNull?.trim();
+      final title = _text(node.querySelector('[itemprop=name]'));
+      if (id != null && id.isNotEmpty && title.isNotEmpty) {
+        byTitle.putIfAbsent(
+          normalizeForSearch(title),
+          () => (id: id, title: title),
+        );
+      }
+    }
+    final titleOf = {for (final r in byTitle.values) r.id: r.title};
+
+    for (final node in nodes) {
+      final recipe = _recipe(node, images, photos, issues, stamp, byTitle);
       if (recipe == null || !seen.add(recipe.id)) continue;
-      recipes.add(recipe);
+      recipes.add(
+        RecipeLinks.attach(
+          recipe,
+          _meta(node, 'recipeLinkedRecipeId'),
+          (id) => titleOf[id],
+        ),
+      );
     }
     return RecipeKeeperExport(recipes: recipes, photos: photos, issues: issues);
   }
@@ -104,6 +128,7 @@ abstract final class RecipeKeeperImporter {
     Map<String, List<int>> photos,
     List<ImportIssue> issues,
     DateTime now,
+    Map<String, RecipeRef> byTitle,
   ) {
     final id = _meta(node, 'recipeId').firstOrNull?.trim();
     if (id == null || id.isEmpty) return null;
@@ -151,12 +176,11 @@ abstract final class RecipeKeeperImporter {
     final ingredientText = _paragraphs(
       node.querySelector('[itemprop=recipeIngredients]'),
       boldAsTitle: true,
+      keepRecipeLinks: true,
     );
     final stepText = _paragraphs(
       node.querySelector('[itemprop=recipeDirections]'),
     );
-
-    final linked = _meta(node, 'recipeLinkedRecipeId');
 
     return Recipe(
       id: id,
@@ -174,10 +198,12 @@ abstract final class RecipeKeeperImporter {
       course: _text(node.querySelector('span[itemprop=recipeCourse]')),
       category: category,
       collections: _meta(node, 'recipeCollection'),
-      linkedRecipeIds: linked,
       createdAt: now,
       updatedAt: now,
-      ingredients: IngredientText.parseList(ingredientText),
+      ingredients: IngredientText.parseList(
+        ingredientText,
+        resolveRecipe: (title) => byTitle[normalizeForSearch(title)],
+      ),
       steps: StepText.parse(stepText),
     );
   }
@@ -189,20 +215,29 @@ abstract final class RecipeKeeperImporter {
   ];
 
   /// Texte d'un élément, espaces normalisés. Les renvois « [recipe:Pâte] » de
-  /// Recipe Keeper deviennent le simple nom de la recette.
-  static String _text(Element? element) => (element?.text ?? '')
-      .replaceAllMapped(RegExp(r'\[recipe:([^\]]+)\]'), (m) => m.group(1)!)
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
+  /// Recipe Keeper deviennent le simple nom de la recette, ou « [[Pâte]] » avec
+  /// [keepRecipeLinks] (lien dans une liste d'ingrédients).
+  static String _text(Element? element, {bool keepRecipeLinks = false}) =>
+      (element?.text ?? '')
+          .replaceAllMapped(
+            RegExp(r'\[recipe:([^\]]+)\]'),
+            (m) => keepRecipeLinks ? '[[${m.group(1)}]]' : m.group(1)!,
+          )
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
 
   /// Un paragraphe par ligne. Un paragraphe entièrement en gras est un titre
   /// de groupe (« **Pour la pâte** ») : il est réécrit pour que l'analyse des
   /// ingrédients le reconnaisse.
-  static String _paragraphs(Element? container, {bool boldAsTitle = false}) {
+  static String _paragraphs(
+    Element? container, {
+    bool boldAsTitle = false,
+    bool keepRecipeLinks = false,
+  }) {
     if (container == null) return '';
     final lines = <String>[];
     for (final paragraph in container.querySelectorAll('p')) {
-      final text = _text(paragraph);
+      final text = _text(paragraph, keepRecipeLinks: keepRecipeLinks);
       if (text.isEmpty) {
         // Ligne vide de l'export : on la garde entre deux blocs de texte.
         if (lines.isNotEmpty && lines.last.isNotEmpty) lines.add('');

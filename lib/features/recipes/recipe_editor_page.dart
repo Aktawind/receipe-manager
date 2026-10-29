@@ -15,6 +15,8 @@ import '../../domain/recipe.dart';
 import '../../domain/step_text.dart';
 import '../../l10n/app_localizations.dart';
 import 'recipe_photo.dart';
+import '../equipment/equipment_page.dart';
+import '../equipment/equipment_providers.dart';
 import 'recipe_providers.dart';
 
 /// Délai entre la dernière frappe et l'enregistrement automatique.
@@ -55,11 +57,13 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
   final _notes = TextEditingController();
   final _ingredients = TextEditingController();
   final _steps = TextEditingController();
-  final _equipment = TextEditingController();
   final _videos = TextEditingController();
   String? _photo;
   var _extraPhotos = <String>[];
-  var _linkedRecipes = <String>[];
+  var _equipmentIds = <String>[];
+
+  /// Les autres recettes, pour lier une pâte ou une sauce dans les ingrédients.
+  var _known = const <Recipe>[];
   final _replacedPhotos = <String>{};
 
   Timer? _saveTimer;
@@ -80,7 +84,6 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _notes,
     _ingredients,
     _steps,
-    _equipment,
     _videos,
   ];
 
@@ -94,6 +97,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
 
   Future<void> _load() async {
     final recipe = await _repository.getRecipe(widget.recipeId);
+    _known = await ref.read(recipesProvider.future);
     if (!mounted || recipe == null) return;
     String number(int? value) => value?.toString() ?? '';
     _title.text = recipe.title;
@@ -107,12 +111,14 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _source.text = recipe.source;
     _notes.text = recipe.notes;
     _photo = recipe.mainPhoto;
-    _ingredients.text = IngredientText.formatList(recipe.ingredients);
+    _ingredients.text = IngredientText.formatList(
+      recipe.ingredients,
+      titleOf: _titleOf,
+    );
     _steps.text = StepText.format(recipe.steps);
-    _equipment.text = recipe.equipment.join('\n');
     _videos.text = recipe.videoLinks.join('\n');
     _extraPhotos = [...recipe.extraPhotos];
-    _linkedRecipes = [...recipe.linkedRecipeIds];
+    _equipmentIds = [...recipe.equipmentIds];
     for (final controller in _fieldControllers) {
       controller.addListener(_scheduleSave);
     }
@@ -140,6 +146,24 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     return future;
   }
 
+  RecipeRef? _resolveRecipe(String title) {
+    final key = normalizeForSearch(title.trim());
+    for (final recipe in _known) {
+      if (recipe.id != widget.recipeId &&
+          normalizeForSearch(recipe.title.trim()) == key) {
+        return (id: recipe.id, title: recipe.title.trim());
+      }
+    }
+    return null;
+  }
+
+  String? _titleOf(String id) {
+    for (final recipe in _known) {
+      if (recipe.id == id) return recipe.title.trim();
+    }
+    return null;
+  }
+
   List<String> _lines(TextEditingController controller) => [
     for (final line in controller.text.split('\n'))
       if (line.trim().isNotEmpty) line.trim(),
@@ -160,12 +184,12 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
       notes: _notes.text.trim(),
       mainPhoto: () => _photo,
       extraPhotos: _extraPhotos,
-      linkedRecipeIds: _linkedRecipes,
-      equipment: _lines(_equipment),
+      equipmentIds: _equipmentIds,
       videoLinks: _lines(_videos),
       ingredients: IngredientText.parseList(
         _ingredients.text,
         previousIds: [for (final line in base.ingredients) line.id],
+        resolveRecipe: _resolveRecipe,
       ),
       steps: StepText.parse(
         _steps.text,
@@ -277,23 +301,41 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _scheduleSave();
   }
 
-  Future<void> _addLinkedRecipe() async {
-    final all = ref.read(recipesProvider).value ?? const <Recipe>[];
+  /// Ajoute, sur la ligne suivante des ingrédients, une recette choisie dans
+  /// la liste : « [[Pâte brisée]] », que l'on peut faire précéder d'une
+  /// quantité (« 1 [[Pâte brisée]] »).
+  Future<void> _insertRecipe() async {
     final candidates = [
-      for (final r in all)
-        if (r.id != widget.recipeId && !_linkedRecipes.contains(r.id)) r,
+      for (final r in _known)
+        if (r.id != widget.recipeId && r.title.trim().isNotEmpty) r,
     ];
     final chosen = await showDialog<Recipe>(
       context: context,
       builder: (context) => _RecipePickerDialog(candidates: candidates),
     );
     if (chosen == null) return;
-    setState(() => _linkedRecipes = [..._linkedRecipes, chosen.id]);
-    _scheduleSave();
+    final value = _ingredients.value;
+    final text = value.text;
+    final offset = value.selection.isValid ? value.selection.end : text.length;
+    final newline = text.indexOf('\n', offset);
+    final end = newline < 0 ? text.length : newline;
+    final before = text.substring(0, end);
+    final line = '[[${chosen.title.trim()}]]';
+    final insertion = before.isEmpty || before.endsWith('\n')
+        ? line
+        : '\n$line';
+    _ingredients.value = TextEditingValue(
+      text: before + insertion + text.substring(end),
+      selection: TextSelection.collapsed(
+        offset: before.length + insertion.length,
+      ),
+    );
   }
 
-  void _removeLinkedRecipe(String id) {
-    setState(() => _linkedRecipes = [..._linkedRecipes]..remove(id));
+  Future<void> _chooseEquipment() async {
+    final chosen = await pickEquipment(context, selected: _equipmentIds);
+    if (chosen == null) return;
+    setState(() => _equipmentIds = chosen);
     _scheduleSave();
   }
 
@@ -372,6 +414,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final recipe = _recipe;
+    _known = ref.watch(recipesProvider).value ?? _known;
 
     return Scaffold(
       appBar: AppBar(
@@ -499,11 +542,24 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                   minLines: 8,
                   capitalization: TextCapitalization.none,
                 ),
-                _Heading(l10n.fieldEquipment),
-                _BigField(
-                  key: const ValueKey('field-equipment'),
-                  controller: _equipment,
-                  minLines: 2,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _insertRecipe,
+                    icon: const Icon(Icons.add_link),
+                    label: Text(l10n.insertRecipe),
+                  ),
+                ),
+                _Heading(l10n.equipment),
+                _EquipmentField(
+                  ids: _equipmentIds,
+                  onChoose: _chooseEquipment,
+                  onRemove: (id) {
+                    setState(
+                      () => _equipmentIds = [..._equipmentIds]..remove(id),
+                    );
+                    _scheduleSave();
+                  },
                 ),
                 _Heading(l10n.fieldSteps),
                 Row(
@@ -527,12 +583,6 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                   controller: _steps,
                   hint: l10n.stepsHint,
                   minLines: 8,
-                ),
-                _Heading(l10n.linkedRecipesEdit),
-                _LinkedRecipesField(
-                  ids: _linkedRecipes,
-                  onAdd: _addLinkedRecipe,
-                  onRemove: _removeLinkedRecipe,
                 ),
                 _Heading(l10n.fieldNotes),
                 _BigField(
@@ -776,25 +826,25 @@ class _ExtraPhotosField extends ConsumerWidget {
   }
 }
 
-/// Les recettes utilisées (pâte, sauce) : une pastille par recette, et un
-/// bouton pour en ajouter.
-class _LinkedRecipesField extends ConsumerWidget {
-  const _LinkedRecipesField({
+/// Le matériel de la recette : une pastille par matériel coché, et un bouton
+/// qui ouvre la liste commune.
+class _EquipmentField extends ConsumerWidget {
+  const _EquipmentField({
     required this.ids,
-    required this.onAdd,
+    required this.onChoose,
     required this.onRemove,
   });
 
   final List<String> ids;
-  final VoidCallback onAdd;
+  final VoidCallback onChoose;
   final ValueChanged<String> onRemove;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final recipes = {
-      for (final r in ref.watch(recipesProvider).value ?? const <Recipe>[])
-        r.id: r,
+    final names = {
+      for (final item in ref.watch(equipmentProvider).value ?? const [])
+        item.id: item.name,
     };
     return Wrap(
       spacing: 8,
@@ -802,18 +852,12 @@ class _LinkedRecipesField extends ConsumerWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         for (final id in ids)
-          if (recipes[id] case final recipe?)
-            InputChip(
-              label: Text(
-                recipe.title.isEmpty ? l10n.untitledRecipe : recipe.title,
-              ),
-              deleteButtonTooltipMessage: l10n.removeLinkedRecipe,
-              onDeleted: () => onRemove(id),
-            ),
+          if (names[id] case final name?)
+            InputChip(label: Text(name), onDeleted: () => onRemove(id)),
         ActionChip(
-          avatar: const Icon(Icons.add, size: 18),
-          label: Text(l10n.addLinkedRecipe),
-          onPressed: onAdd,
+          avatar: const Icon(Icons.checklist, size: 18),
+          label: Text(l10n.chooseEquipment),
+          onPressed: onChoose,
         ),
       ],
     );
