@@ -55,17 +55,9 @@ Future<void> seed(TestApp app, {bool collection = false}) async {
 
 Future<TestApp> setUpLibrary(
   WidgetTester tester, {
-  bool tablet = false,
   bool collection = false,
 }) async {
-  if (tablet) {
-    // Toutes les pastilles d'accès rapide tiennent sans faire défiler la rangée.
-    tester.view.physicalSize = const Size(2400, 1600);
-    tester.view.devicePixelRatio = 2;
-    addTearDown(tester.view.reset);
-  } else {
-    usePhoneSize(tester);
-  }
+  usePhoneSize(tester);
   final app = (await tester.runAsync(TestApp.create))!;
   await tester.runAsync(() => seed(app, collection: collection));
   await app.pump(tester);
@@ -77,11 +69,28 @@ Future<void> openFilters(WidgetTester tester) async {
   await settle(tester);
 }
 
-Future<void> tapChip(WidgetTester tester, String label) async {
-  final chip = find.widgetWithText(FilterChip, label);
-  await tester.ensureVisible(chip);
-  await tester.pump();
-  await tester.tap(chip);
+/// Ouvre la liste d'une famille dans la fenêtre de filtre, coche ces éléments
+/// et valide.
+Future<void> pickFor(
+  WidgetTester tester,
+  String family,
+  List<String> items,
+) async {
+  await tester.tap(find.text(family));
+  await settle(tester);
+  for (final item in items) {
+    await tester.tap(find.widgetWithText(CheckboxListTile, item));
+    await tester.pump();
+  }
+  await tester.tap(find.text('Valider'));
+  await settle(tester);
+}
+
+/// Choisit « Afficher » : Toutes, Favoris, Récemment consultées…
+Future<void> showOnly(WidgetTester tester, String what) async {
+  await tester.tap(find.text('Afficher'));
+  await settle(tester);
+  await tester.tap(find.text(what));
   await settle(tester);
 }
 
@@ -91,73 +100,125 @@ Future<void> done(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets(
-    'filtrer par classement : une catégorie inclut ses sous-catégories',
-    (tester) async {
-      await setUpLibrary(tester);
-      expect(find.text('Axoa'), findsOneWidget);
-      expect(find.text('Boulgour'), findsOneWidget);
-      expect(find.text('Cake citron'), findsOneWidget);
+  testWidgets('filtrer par classement : listes à cocher par famille', (
+    tester,
+  ) async {
+    await setUpLibrary(tester);
+    expect(find.text('Axoa'), findsOneWidget);
+    expect(find.text('Boulgour'), findsOneWidget);
+    expect(find.text('Cake citron'), findsOneWidget);
 
-      await openFilters(tester);
-      await tapChip(tester, 'Plats'); // Plats = Viandes + Salades
-      await done(tester);
-      expect(find.text('Axoa'), findsOneWidget);
-      expect(find.text('Boulgour'), findsOneWidget);
-      expect(find.text('Cake citron'), findsNothing);
+    // Catégories : « Plats » inclut ses sous-catégories (Viandes + Salades).
+    await openFilters(tester);
+    await pickFor(tester, 'Catégories', ['Plats']);
+    await done(tester);
+    expect(find.text('Axoa'), findsOneWidget);
+    expect(find.text('Boulgour'), findsOneWidget);
+    expect(find.text('Cake citron'), findsNothing);
 
-      // Familles différentes : les deux conditions (Plats ET Hiver).
-      await openFilters(tester);
-      await tapChip(tester, 'Hiver');
-      await done(tester);
-      expect(find.text('Axoa'), findsOneWidget);
-      expect(find.text('Boulgour'), findsNothing);
+    // Familles différentes : les deux conditions (Plats ET Hiver).
+    await openFilters(tester);
+    await pickFor(tester, 'Saison', ['Hiver']);
+    await done(tester);
+    expect(find.text('Axoa'), findsOneWidget);
+    expect(find.text('Boulgour'), findsNothing);
 
-      // Même famille : l'un ou l'autre (Hiver OU Été).
-      await openFilters(tester);
-      await tapChip(tester, 'Été');
-      await done(tester);
-      expect(find.text('Axoa'), findsOneWidget);
-      expect(find.text('Boulgour'), findsOneWidget);
+    // Même famille (saisons) : l'une ou l'autre (Hiver OU Été).
+    await openFilters(tester);
+    await pickFor(tester, 'Saison', ['Été']);
+    await done(tester);
+    expect(find.text('Axoa'), findsOneWidget);
+    expect(find.text('Boulgour'), findsOneWidget);
 
-      await openFilters(tester);
-      await tester.tap(find.text('Tout effacer'));
-      await settle(tester);
-      await done(tester);
-      expect(find.text('Cake citron'), findsOneWidget);
-    },
-  );
+    await openFilters(tester);
+    await tester.tap(find.text('Tout effacer'));
+    await settle(tester);
+    await done(tester);
+    expect(find.text('Cake citron'), findsOneWidget);
+  });
+
+  testWidgets('collections : toutes celles qui sont cochées', (tester) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(TestApp.create))!;
+    await tester.runAsync(() async {
+      final labels = app.services.labels;
+      final recipes = app.services.recipes;
+      final vege = await labels.findOrCreate(
+        LabelKind.collection,
+        'Végétarien',
+      );
+      final paques = await labels.findOrCreate(LabelKind.collection, 'Pâques');
+      Future<void> add(String title, List<String> ids) async {
+        final created = await recipes.create();
+        await recipes.save(created.copyWith(title: title, labelIds: ids));
+      }
+
+      await add('Gratin', [vege.id]);
+      await add('Agneau', [paques.id]);
+      await add('Tarte aux légumes', [vege.id, paques.id]);
+    });
+    await app.pump(tester);
+
+    await openFilters(tester);
+    await pickFor(tester, 'Collections', ['Végétarien']);
+    await done(tester);
+    expect(find.text('Gratin'), findsOneWidget);
+    expect(find.text('Tarte aux légumes'), findsOneWidget);
+    expect(find.text('Agneau'), findsNothing);
+
+    // Végétarien ET Pâques : seulement la recette qui est dans les deux.
+    await openFilters(tester);
+    await pickFor(tester, 'Collections', ['Pâques']);
+    await done(tester);
+    expect(find.text('Tarte aux légumes'), findsOneWidget);
+    expect(find.text('Gratin'), findsNothing);
+    expect(find.text('Agneau'), findsNothing);
+  });
 
   testWidgets('accès rapides : favoris et récemment consultées', (
     tester,
   ) async {
-    await setUpLibrary(tester, tablet: true);
+    await setUpLibrary(tester);
 
-    await tester.tap(find.text('Favoris'));
-    await settle(tester);
+    await openFilters(tester);
+    await showOnly(tester, 'Favoris');
+    await done(tester);
     expect(find.text('Boulgour'), findsOneWidget);
     expect(find.text('Axoa'), findsNothing);
 
     // Aucune fiche ouverte : rien de récent.
-    await tester.tap(find.text('Récemment consultées'));
-    await settle(tester);
+    await openFilters(tester);
+    await showOnly(tester, 'Récemment consultées');
+    await done(tester);
     expect(find.text('Axoa'), findsNothing);
     expect(find.text('Boulgour'), findsNothing);
 
     // On ouvre « Axoa » : elle devient la première récente.
-    await tester.tap(find.text('Toutes'));
-    await settle(tester);
+    await openFilters(tester);
+    await showOnly(tester, 'Toutes');
+    await done(tester);
     await tester.tap(find.text('Axoa'));
     await settle(tester);
     await tester.tap(find.byIcon(Icons.arrow_back));
     await settle(tester);
-    await tester.tap(find.text('Récemment consultées'));
-    await settle(tester);
+    await openFilters(tester);
+    await showOnly(tester, 'Récemment consultées');
+    await done(tester);
     expect(find.text('Axoa'), findsOneWidget);
     expect(find.text('Cake citron'), findsNothing);
   });
 
-  testWidgets('vues : cartes, liste, sans photos', (tester) async {
+  testWidgets('la rangée de pastilles a disparu du haut de la liste', (
+    tester,
+  ) async {
+    await setUpLibrary(tester);
+    expect(find.byType(ChoiceChip), findsNothing);
+    expect(find.text('Favoris'), findsNothing);
+  });
+
+  testWidgets('vues : cartes et liste, photos toujours affichées', (
+    tester,
+  ) async {
     await setUpLibrary(tester);
 
     Future<void> choose(String text) async {
@@ -169,17 +230,13 @@ void main() {
 
     await choose('Cartes');
     expect(find.text('Axoa'), findsOneWidget);
-    expect(find.text('Plats › Viandes'), findsOneWidget);
 
     await choose('Liste');
     expect(find.byType(ListTile), findsNWidgets(3));
 
-    await choose('Afficher les photos');
-    expect(find.byType(ListTile), findsNWidgets(3));
-    expect(
-      tester.widget<ListTile>(find.byType(ListTile).first).leading,
-      isNull,
-    );
+    await tester.tap(find.byTooltip('Affichage'));
+    await settle(tester);
+    expect(find.text('Afficher les photos'), findsNothing);
   });
 
   orderPageTests();
@@ -190,7 +247,7 @@ void main() {
     await setUpLibrary(tester, collection: true);
 
     await openFilters(tester);
-    await tapChip(tester, 'Noël');
+    await pickFor(tester, 'Collections', ['Noël']);
     await done(tester);
     await tester.tap(find.byTooltip('Affichage'));
     await settle(tester);

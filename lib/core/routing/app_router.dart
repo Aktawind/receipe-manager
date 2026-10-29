@@ -76,7 +76,7 @@ GoRouter buildRouter() => GoRouter(
                       builder: (context, state) => LabelsPage(
                         kind:
                             LabelKind.fromCode(state.pathParameters['kind']) ??
-                            LabelKind.tag,
+                            LabelKind.collection,
                       ),
                     ),
                   ],

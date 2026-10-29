@@ -480,10 +480,6 @@ class _Header extends StatelessWidget {
         _StatusRow(recipe: recipe, onCooked: onCooked, onStatus: onStatus),
         const SizedBox(height: 8),
         _StarRating(rating: recipe.rating, onChanged: onRating),
-        if (recipe.labelIds.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          RecipeLabelChips(labelIds: recipe.labelIds),
-        ],
         if (times.isNotEmpty) ...[
           const SizedBox(height: 16),
           Row(
@@ -950,6 +946,10 @@ class _AboutSection extends StatelessWidget {
               ],
             ),
           ),
+        if (recipe.labelIds.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          RecipeLabelChips(labelIds: recipe.labelIds),
+        ],
         if (recipe.videoLinks.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(l10n.videosLabel, style: theme.textTheme.titleSmall),

@@ -14,18 +14,36 @@ Future<List<String>?> pickLabels(
   BuildContext context, {
   required LabelKind kind,
   required List<String> selected,
+  bool allowCreate = true,
+  Set<String>? visibleIds,
 }) {
   return showDialog<List<String>>(
     context: context,
-    builder: (context) => _LabelPickerDialog(kind: kind, selected: selected),
+    builder: (context) => _LabelPickerDialog(
+      kind: kind,
+      selected: selected,
+      allowCreate: allowCreate,
+      visibleIds: visibleIds,
+    ),
   );
 }
 
 class _LabelPickerDialog extends ConsumerStatefulWidget {
-  const _LabelPickerDialog({required this.kind, required this.selected});
+  const _LabelPickerDialog({
+    required this.kind,
+    required this.selected,
+    required this.allowCreate,
+    required this.visibleIds,
+  });
 
   final LabelKind kind;
   final List<String> selected;
+
+  /// Proposer d'ajouter ce qui n'existe pas (désactivé pour filtrer).
+  final bool allowCreate;
+
+  /// Si renseigné, seuls ces éléments sont proposés (filtrer : ceux qui servent).
+  final Set<String>? visibleIds;
 
   @override
   ConsumerState<_LabelPickerDialog> createState() => _LabelPickerDialogState();
@@ -61,7 +79,11 @@ class _LabelPickerDialogState extends ConsumerState<_LabelPickerDialog> {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final all = (ref.watch(labelsProvider).value ?? const <Label>[])
-        .where((l) => l.kind == widget.kind)
+        .where(
+          (l) =>
+              l.kind == widget.kind &&
+              (widget.visibleIds?.contains(l.id) ?? true),
+        )
         .toList();
     final key = Label.keyOf(_query);
 
@@ -81,6 +103,7 @@ class _LabelPickerDialogState extends ConsumerState<_LabelPickerDialog> {
       }
     }
     final canCreate =
+        widget.allowCreate &&
         key.isNotEmpty &&
         !all.any((l) => l.parentId == null && Label.keyOf(l.name) == key);
 
@@ -94,7 +117,9 @@ class _LabelPickerDialogState extends ConsumerState<_LabelPickerDialog> {
             TextField(
               key: const ValueKey('label-search'),
               decoration: InputDecoration(
-                hintText: l10n.searchOrAddLabel,
+                hintText: widget.allowCreate
+                    ? l10n.searchOrAddLabel
+                    : l10n.search,
                 prefixIcon: const Icon(Icons.search),
               ),
               onChanged: (value) => setState(() => _query = value),

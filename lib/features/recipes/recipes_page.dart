@@ -7,6 +7,7 @@ import '../../data/app_services.dart';
 import '../../domain/label.dart';
 import '../../domain/recipe.dart';
 import '../../l10n/app_localizations.dart';
+import '../classification/label_picker.dart';
 import '../classification/labels_providers.dart';
 import 'recipe_photo.dart';
 import 'recipe_providers.dart';
@@ -44,7 +45,6 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final view = ref.watch(recipesViewProvider);
-    final showPhotos = ref.watch(showPhotosProvider);
     final filter = ref.watch(recipeFilterProvider);
     final recipes = ref.watch(visibleRecipesProvider);
 
@@ -80,18 +80,14 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
           IconButton(
             tooltip: l10n.filterTitle,
             icon: Badge(
-              isLabelVisible: filter.labelIds.isNotEmpty,
-              label: Text('${filter.labelIds.length}'),
+              isLabelVisible: filter.activeCount > 0,
+              label: Text('${filter.activeCount}'),
               child: const Icon(Icons.filter_list),
             ),
             onPressed: () => _showFilterSheet(context),
           ),
           const _DisplayMenu(),
         ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(56),
-          child: _QuickFilters(),
-        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createRecipe,
@@ -113,74 +109,11 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
             );
           }
           return switch (view) {
-            RecipesView.grid => _RecipeGrid(
-              recipes: recipes,
-              showPhotos: showPhotos,
-            ),
-            RecipesView.list => _RecipeList(
-              recipes: recipes,
-              showPhotos: showPhotos,
-            ),
-            RecipesView.cards => _RecipeCards(
-              recipes: recipes,
-              showPhotos: showPhotos,
-            ),
+            RecipesView.grid => _RecipeGrid(recipes: recipes),
+            RecipesView.list => _RecipeList(recipes: recipes),
+            RecipesView.cards => _RecipeCards(recipes: recipes),
           };
         },
-      ),
-    );
-  }
-}
-
-/// Accès rapides (toutes, favoris, récentes) et filtres de classement actifs.
-class _QuickFilters extends ConsumerWidget {
-  const _QuickFilters();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final filter = ref.watch(recipeFilterProvider);
-    final controller = ref.read(recipeFilterProvider.notifier);
-    final all = ref.watch(labelsProvider).value ?? const <Label>[];
-    final byId = {for (final l in all) l.id: l};
-
-    Widget quick(QuickFilter value, String label, [IconData? icon]) =>
-        ChoiceChip(
-          avatar: icon == null ? null : Icon(icon, size: 18),
-          label: Text(label),
-          selected: filter.quick == value,
-          onSelected: (_) => controller.setQuick(value),
-        );
-
-    return SizedBox(
-      height: 56,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        children: [
-          quick(QuickFilter.all, l10n.quickAll),
-          const SizedBox(width: 8),
-          quick(QuickFilter.favorites, l10n.quickFavorites, Icons.favorite),
-          const SizedBox(width: 8),
-          quick(QuickFilter.recent, l10n.quickRecent, Icons.history),
-          const SizedBox(width: 8),
-          quick(QuickFilter.added, l10n.quickAdded, Icons.fiber_new),
-          for (final id in filter.labelIds)
-            if (byId[id] case final label?) ...[
-              const SizedBox(width: 8),
-              InputChip(
-                label: Text(labelPath(label, byId)),
-                onDeleted: () => controller.toggleLabel(id),
-              ),
-            ],
-          if (filter.labelIds.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            ActionChip(
-              label: Text(l10n.filterClear),
-              onPressed: controller.clear,
-            ),
-          ],
-        ],
       ),
     );
   }
@@ -190,7 +123,6 @@ enum _DisplayChoice {
   list,
   grid,
   cards,
-  photos,
   sortTitle,
   sortAdded,
   sortViewed,
@@ -205,7 +137,6 @@ class _DisplayMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final view = ref.watch(recipesViewProvider);
-    final showPhotos = ref.watch(showPhotosProvider);
     final filter = ref.watch(recipeFilterProvider);
     final collection = ref.watch(singleCollectionFilterProvider);
 
@@ -235,8 +166,6 @@ class _DisplayMenu extends ConsumerWidget {
             views.set(RecipesView.grid);
           case _DisplayChoice.cards:
             views.set(RecipesView.cards);
-          case _DisplayChoice.photos:
-            ref.read(showPhotosProvider.notifier).set(!showPhotos);
           case _DisplayChoice.sortTitle:
             sort.setSort(RecipeSort.title);
           case _DisplayChoice.sortAdded:
@@ -252,11 +181,6 @@ class _DisplayMenu extends ConsumerWidget {
         choice(_DisplayChoice.list, l10n.viewList, view == RecipesView.list),
         choice(_DisplayChoice.grid, l10n.viewGrid, view == RecipesView.grid),
         choice(_DisplayChoice.cards, l10n.viewCards, view == RecipesView.cards),
-        CheckedPopupMenuItem(
-          value: _DisplayChoice.photos,
-          checked: showPhotos,
-          child: Text(l10n.showPhotos),
-        ),
         const PopupMenuDivider(),
         header(l10n.sortBy),
         choice(
@@ -285,26 +209,75 @@ class _DisplayMenu extends ConsumerWidget {
   }
 }
 
-/// Le filtre par classement : pour chaque famille, les éléments utilisés. Même
-/// famille = l'un ou l'autre ; familles différentes = les deux.
+/// Le filtre : « Afficher » (toutes, favoris, récentes…) puis une ligne par
+/// famille de classement, qui ouvre une liste à cocher. Catégories, saisons et
+/// origines : l'une ou l'autre ; collections : toutes celles qui sont cochées ;
+/// familles différentes : les deux.
 Future<void> _showFilterSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (context) => DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.7,
-      maxChildSize: 0.95,
-      builder: (context, scroll) => _FilterSheet(controller: scroll),
-    ),
+    builder: (context) => const _FilterSheet(),
   );
 }
 
 class _FilterSheet extends ConsumerWidget {
-  const _FilterSheet({required this.controller});
+  const _FilterSheet();
 
-  final ScrollController controller;
+  Future<void> _chooseQuick(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final current = ref.read(recipeFilterProvider).quick;
+    final chosen = await showDialog<QuickFilter>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(l10n.filterShow),
+        children: [
+          for (final (value, label) in [
+            (QuickFilter.all, l10n.quickAll),
+            (QuickFilter.favorites, l10n.quickFavorites),
+            (QuickFilter.recent, l10n.quickRecent),
+            (QuickFilter.added, l10n.quickAdded),
+          ])
+            ListTile(
+              title: Text(label),
+              trailing: value == current ? const Icon(Icons.check) : null,
+              onTap: () => Navigator.pop(context, value),
+            ),
+        ],
+      ),
+    );
+    if (chosen != null) {
+      ref.read(recipeFilterProvider.notifier).setQuick(chosen);
+    }
+  }
+
+  Future<void> _chooseLabels(
+    BuildContext context,
+    WidgetRef ref,
+    LabelKind kind,
+    List<Label> all,
+    Set<String> relevant,
+  ) async {
+    final filter = ref.read(recipeFilterProvider);
+    final ofKind = {
+      for (final l in all)
+        if (l.kind == kind) l.id,
+    };
+    final chosen = await pickLabels(
+      context,
+      kind: kind,
+      selected: [
+        for (final id in filter.labelIds)
+          if (ofKind.contains(id)) id,
+      ],
+      allowCreate: false,
+      visibleIds: relevant,
+    );
+    if (chosen != null) {
+      ref.read(recipeFilterProvider.notifier).replaceLabels(ofKind, chosen);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -314,7 +287,6 @@ class _FilterSheet extends ConsumerWidget {
     final all = ref.watch(labelsProvider).value ?? const <Label>[];
     final usage = ref.watch(labelUsageProvider).value ?? const {};
     final byId = {for (final l in all) l.id: l};
-    final notifier = ref.read(recipeFilterProvider.notifier);
 
     // Un élément est proposé s'il sert, s'il est déjà choisi, ou si l'une de
     // ses sous-catégories sert (« Plats » quand seules « Viandes »… servent).
@@ -329,75 +301,76 @@ class _FilterSheet extends ConsumerWidget {
       }
     }
 
-    return ListView(
-      controller: controller,
-      padding: EdgeInsets.fromLTRB(
-        16,
-        0,
-        16,
-        24 + MediaQuery.paddingOf(context).bottom,
-      ),
-      children: [
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8,
+    String quickName(QuickFilter quick) => switch (quick) {
+      QuickFilter.all => l10n.quickAll,
+      QuickFilter.favorites => l10n.quickFavorites,
+      QuickFilter.recent => l10n.quickRecent,
+      QuickFilter.added => l10n.quickAdded,
+    };
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(l10n.filterTitle, style: theme.textTheme.titleLarge),
-            Wrap(
-              spacing: 8,
-              children: [
-                if (filter.labelIds.isNotEmpty)
-                  TextButton(
-                    onPressed: notifier.clear,
-                    child: Text(l10n.filterClear),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                children: [
+                  Text(l10n.filterTitle, style: theme.textTheme.titleLarge),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      if (filter.isActive)
+                        TextButton(
+                          onPressed: ref
+                              .read(recipeFilterProvider.notifier)
+                              .clear,
+                          child: Text(l10n.filterClear),
+                        ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(l10n.filterDone),
+                      ),
+                    ],
                   ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(l10n.filterDone),
-                ),
-              ],
+                ],
+              ),
             ),
+            ListTile(
+              leading: const Icon(Icons.visibility_outlined),
+              title: Text(l10n.filterShow),
+              subtitle: Text(quickName(filter.quick)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _chooseQuick(context, ref),
+            ),
+            for (final kind in LabelKind.values)
+              () {
+                final selected = [
+                  for (final l in all)
+                    if (l.kind == kind && filter.labelIds.contains(l.id)) l,
+                ];
+                return ListTile(
+                  leading: Icon(kind.icon),
+                  title: Text(kind.title(l10n)),
+                  subtitle: Text(
+                    selected.isEmpty
+                        ? l10n.filterNone
+                        : selected.map((l) => labelPath(l, byId)).join(', '),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _chooseLabels(context, ref, kind, all, relevant),
+                );
+              }(),
           ],
         ),
-        for (final kind in LabelKind.values) ...[
-          () {
-            // Seuls les éléments qui servent (ou qui sont déjà choisis).
-            final labels = [
-              for (final l in all)
-                if (l.kind == kind && relevant.contains(l.id)) l,
-            ];
-            if (labels.isEmpty) return const SizedBox.shrink();
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 20, bottom: 8),
-                  child: Text(
-                    kind.title(l10n),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-                Wrap(
-                  spacing: 8,
-                  // Les zones tactiles des pastilles (48) ne se chevauchent pas.
-                  runSpacing: 16,
-                  children: [
-                    for (final label in labels)
-                      FilterChip(
-                        label: Text(labelPath(label, byId)),
-                        selected: filter.labelIds.contains(label.id),
-                        onSelected: (_) => notifier.toggleLabel(label.id),
-                      ),
-                  ],
-                ),
-              ],
-            );
-          }(),
-        ],
-      ],
+      ),
     );
   }
 }
@@ -420,10 +393,9 @@ String? _recipeSummary(AppLocalizations l10n, Recipe recipe) {
 }
 
 class _RecipeGrid extends StatelessWidget {
-  const _RecipeGrid({required this.recipes, required this.showPhotos});
+  const _RecipeGrid({required this.recipes});
 
   final List<Recipe> recipes;
-  final bool showPhotos;
 
   /// Hauteur du bloc texte sous la photo carrée.
   static const _textHeight = 76.0;
@@ -452,7 +424,7 @@ class _RecipeGrid extends StatelessWidget {
             crossAxisCount: columns,
             mainAxisSpacing: _spacing,
             crossAxisSpacing: _spacing,
-            mainAxisExtent: showPhotos ? cellWidth + _textHeight : _textHeight,
+            mainAxisExtent: cellWidth + _textHeight,
           ),
           itemCount: recipes.length,
           itemBuilder: (context, index) {
@@ -466,14 +438,13 @@ class _RecipeGrid extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (showPhotos)
-                      AspectRatio(
-                        aspectRatio: 1,
-                        child: RecipePhoto(
-                          photo: recipe.mainPhoto,
-                          decodeWidth: 480,
-                        ),
+                    AspectRatio(
+                      aspectRatio: 1,
+                      child: RecipePhoto(
+                        photo: recipe.mainPhoto,
+                        decodeWidth: 480,
                       ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
                       child: Column(
@@ -507,10 +478,9 @@ class _RecipeGrid extends StatelessWidget {
 }
 
 class _RecipeList extends StatelessWidget {
-  const _RecipeList({required this.recipes, required this.showPhotos});
+  const _RecipeList({required this.recipes});
 
   final List<Recipe> recipes;
-  final bool showPhotos;
 
   @override
   Widget build(BuildContext context) {
@@ -524,19 +494,17 @@ class _RecipeList extends StatelessWidget {
         final recipe = recipes[index];
         final summary = _recipeSummary(l10n, recipe);
         return ListTile(
-          leading: showPhotos
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox.square(
-                    dimension: 56,
-                    child: RecipePhoto(
-                      photo: recipe.mainPhoto,
-                      decodeWidth: 168,
-                      iconSize: 24,
-                    ),
-                  ),
-                )
-              : null,
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox.square(
+              dimension: 56,
+              child: RecipePhoto(
+                photo: recipe.mainPhoto,
+                decodeWidth: 168,
+                iconSize: 24,
+              ),
+            ),
+          ),
           title: Text(_recipeTitle(l10n, recipe)),
           subtitle: summary == null ? null : Text(summary),
           trailing: recipe.isFavorite
@@ -556,10 +524,9 @@ class _RecipeList extends StatelessWidget {
 /// Une carte par recette : photo carrée, titre, durée et portions, note,
 /// statut et classement.
 class _RecipeCards extends ConsumerWidget {
-  const _RecipeCards({required this.recipes, required this.showPhotos});
+  const _RecipeCards({required this.recipes});
 
   final List<Recipe> recipes;
-  final bool showPhotos;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -590,7 +557,7 @@ class _RecipeCards extends ConsumerWidget {
             crossAxisCount: columns,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            mainAxisExtent: showPhotos ? 132 : 104,
+            mainAxisExtent: 132,
           ),
           itemCount: recipes.length,
           itemBuilder: (context, index) {
@@ -609,14 +576,13 @@ class _RecipeCards extends ConsumerWidget {
                 onTap: () => _openRecipe(context, recipe),
                 child: Row(
                   children: [
-                    if (showPhotos)
-                      AspectRatio(
-                        aspectRatio: 1,
-                        child: RecipePhoto(
-                          photo: recipe.mainPhoto,
-                          decodeWidth: 400,
-                        ),
+                    AspectRatio(
+                      aspectRatio: 1,
+                      child: RecipePhoto(
+                        photo: recipe.mainPhoto,
+                        decodeWidth: 400,
                       ),
+                    ),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(12),

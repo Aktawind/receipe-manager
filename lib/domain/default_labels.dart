@@ -14,8 +14,6 @@ abstract final class DefaultLabels {
     ('Préparations', 'blender'),
   ];
 
-  static const _tags = ['Rapide', 'Économique', 'Végétarien', 'Batch cooking'];
-
   static const _cuisines = [
     'Française',
     'Italienne',
@@ -24,16 +22,6 @@ abstract final class DefaultLabels {
     'Orientale',
     'Mexicaine',
     'Américaine',
-  ];
-
-  static const _meals = ['Petit-déjeuner', 'Déjeuner', 'Goûter', 'Dîner'];
-
-  static const _occasions = [
-    'Noël',
-    'Pâques',
-    'Anniversaire',
-    'Repas entre amis',
-    'Pique-nique',
   ];
 
   static const seasonNames = ['Printemps', 'Été', 'Automne', 'Hiver'];
@@ -53,10 +41,7 @@ abstract final class DefaultLabels {
     return [
       for (final (i, c) in _categories.indexed)
         make(LabelKind.category, c.$1, i, c.$2),
-      for (final (i, n) in _tags.indexed) make(LabelKind.tag, n, i),
       for (final (i, n) in _cuisines.indexed) make(LabelKind.cuisine, n, i),
-      for (final (i, n) in _meals.indexed) make(LabelKind.meal, n, i),
-      for (final (i, n) in _occasions.indexed) make(LabelKind.occasion, n, i),
       for (final (i, n) in [...seasonNames, allSeasons].indexed)
         make(LabelKind.season, n, i),
     ];

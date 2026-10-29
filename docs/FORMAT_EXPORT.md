@@ -29,7 +29,7 @@ recettes-2026-10-27-1430.zip
 | 4 | 0.2.0 | Ajout de `servingsUnit` (« 12 blinis ») |
 | 5 | 0.2.0 (test) | Ajout de `equipment` (noms), `videoLinks` et `ingredients[].substitutes` |
 | 6 | 0.2.0 | Liste commune du matériel (`equipment` du document, `equipment` des recettes = identifiants) ; recettes liées dans les ingrédients (`ingredients[].linkedRecipe`), `linkedRecipes` disparaît |
-| 7 | 0.3.0 | Classement commun : `labels` (document) et `labels` (recettes = identifiants) remplacent `course`, `category` et `collections` |
+| 7 | 0.3.0 | Classement commun : `labels` (document) et `labels` (recettes = identifiants) remplacent `course`, `category` et `collections`. Quatre familles ; les étiquettes (`tag`) et occasions (`occasion`) des versions de test sont lues comme des collections, le type de repas (`meal`) est ignoré |
 
 Lecture d'une version 6 (et 3 à 5) : `course`, `category` et `collections` en texte libre deviennent
 le classement commun. Le type de plat devient la catégorie (« Plat » → « Plats »), la catégorie la
@@ -119,7 +119,7 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
 | `createdAt`, `updatedAt`, `deletedAt` | date ISO 8601 UTC | `deletedAt` non nul = dans la corbeille |
 | `extraPhotos` | liste de textes | photos après la principale, noms de fichiers de `photos/` |
 | `favorite` | booléen | |
-| `labels` (document) | liste d'objets | le classement commun : `kind` (`category`, `collection`, `tag`, `cuisine`, `meal`, `occasion`, `season`), `name`, `parentId` (sous-catégories), `icon`, `color` (clés du thème), `position`, dates ; `deletedAt` non nul = supprimé |
+| `labels` (document) | liste d'objets | le classement commun : `kind` (`category`, `season`, `collection`, `cuisine`), `name`, `parentId` (sous-catégories), `icon`, `color` (clés du thème), `position`, dates ; `deletedAt` non nul = supprimé |
 | `labels` (recette) | liste d'`id` | le classement de la recette |
 | `rating` | entier 1 à 5 ou `null` | `null` = pas noté |
 | `status` | `toTest`, `validated`, `toImprove` ou `null` | |

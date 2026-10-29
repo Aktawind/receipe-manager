@@ -4,6 +4,15 @@ import 'package:recettes/domain/label.dart';
 
 import '../helpers/test_app.dart';
 
+/// Amène un élément du formulaire à l'écran, hors de la barre du haut.
+Future<void> reveal(WidgetTester tester, Finder finder) async {
+  await scrollTo(tester, finder);
+  if (tester.getCenter(finder).dy < 150) {
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 200));
+    await tester.pump();
+  }
+}
+
 void main() {
   testWidgets('Réglages → Classement : sous-catégorie, renommer, supprimer', (
     tester,
@@ -86,23 +95,27 @@ void main() {
 
     // Catégorie : on coche « Plats ».
     final categories = find.byKey(const ValueKey('classification-category'));
-    await scrollTo(tester, categories);
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, 200));
-    await tester.pump();
+    await reveal(tester, categories);
     await tester.tap(categories);
     await settle(tester);
     await tester.tap(find.text('Plats'));
     await tester.tap(find.text('Valider'));
     await settle(tester);
 
-    // Étiquette : « Rapide » existe, « Sans gluten » est créée au passage.
-    final tags = find.byKey(const ValueKey('classification-tag'));
-    await scrollTo(tester, tags);
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, 200));
-    await tester.pump();
+    // Saison : « Hiver » est fournie.
+    final seasons = find.byKey(const ValueKey('classification-season'));
+    await reveal(tester, seasons);
+    await tester.tap(seasons);
+    await settle(tester);
+    await tester.tap(find.text('Hiver'));
+    await tester.tap(find.text('Valider'));
+    await settle(tester);
+
+    // Collection : « Sans gluten » n'existe pas, elle est créée au passage.
+    final tags = find.byKey(const ValueKey('classification-collection'));
+    await reveal(tester, tags);
     await tester.tap(tags);
     await settle(tester);
-    await tester.tap(find.text('Rapide'));
     await tester.enterText(
       find.byKey(const ValueKey('label-search')),
       'sans gluten',
@@ -119,14 +132,10 @@ void main() {
       final all = {for (final l in await app.services.labels.getAll()) l.id: l};
       return [for (final labelId in recipe.labelIds) all[labelId]!];
     }))!;
-    expect(saved.map((l) => l.name).toSet(), {
-      'Plats',
-      'Rapide',
-      'Sans gluten',
-    });
+    expect(saved.map((l) => l.name).toSet(), {'Plats', 'Hiver', 'Sans gluten'});
     expect(
       saved.firstWhere((l) => l.name == 'Sans gluten').kind,
-      LabelKind.tag,
+      LabelKind.collection,
     );
   });
 }
