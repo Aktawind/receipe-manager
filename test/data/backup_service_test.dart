@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/data/backup/backup_format.dart';
 import 'package:recettes/data/backup/backup_service.dart';
 import 'package:recettes/data/database.dart';
+import 'package:recettes/data/equipment_repository.dart';
 import 'package:recettes/data/photo_store.dart';
 import 'package:recettes/data/recipe_repository.dart';
 import 'package:recettes/domain/recipe.dart';
@@ -17,8 +18,10 @@ class _Env {
     : db = AppDatabase(NativeDatabase.memory()),
       photos = PhotoStore(Directory('${root.path}/photos')) {
     repo = RecipeRepository(db);
+    equipment = EquipmentRepository(db);
     service = BackupService(
       repository: repo,
+      equipment: equipment,
       photos: photos,
       backupsDirectory: Directory('${root.path}/backups'),
       appVersion: '0.1.0',
@@ -28,6 +31,7 @@ class _Env {
   final AppDatabase db;
   final PhotoStore photos;
   late final RecipeRepository repo;
+  late final EquipmentRepository equipment;
   late final BackupService service;
 }
 
@@ -194,13 +198,13 @@ void main() {
     expect((await target.repo.getRecipe('old-1'))!.notes, contains('Précuire'));
   });
 
-  test('l’export est en version 5, sans champ « tips »', () async {
+  test('l’export est en version 6, sans champ « tips »', () async {
     await addRecipe(source, 'Tarte');
     final archive = ZipDecoder().decodeBytes(await source.service.exportZip());
     final json = jsonDecode(
       utf8.decode(archive.findFile(BackupFormat.dataFile)!.content),
     ) as Map<String, Object?>;
-    expect(json['version'], 5);
+    expect(json['version'], 6);
     final recipe = (json['recipes'] as List).single as Map<String, Object?>;
     expect(recipe.containsKey('tips'), isFalse);
   });
@@ -211,6 +215,8 @@ void main() {
       await source.photos.write('a.jpg', utf8.encode('a'));
       await source.photos.write('b.jpg', utf8.encode('b'));
       final base = await addRecipe(source, 'Quiche');
+      final moule = await source.equipment.findOrCreate('Moule à tarte');
+      final rouleau = await source.equipment.findOrCreate('Rouleau');
       final full = await source.repo.save(
         base.copyWith(
           isFavorite: true,
@@ -221,8 +227,7 @@ void main() {
           collections: ['Hiver', 'Été'],
           mainPhoto: () => 'a.jpg',
           extraPhotos: ['b.jpg'],
-          linkedRecipeIds: ['pate'],
-          equipment: ['moule à tarte', 'rouleau'],
+          equipmentIds: [moule.id, rouleau.id],
           videoLinks: ['https://youtu.be/abc'],
           ingredients: [
             const IngredientLine(
@@ -231,6 +236,12 @@ void main() {
               quantity: 100,
               unit: 'g',
               substitutes: 'huile de coco',
+            ),
+            const IngredientLine(
+              id: 'i-pate',
+              name: 'Pâte brisée',
+              quantity: 1,
+              linkedRecipeId: 'pate',
             ),
           ],
         ),
@@ -248,10 +259,81 @@ void main() {
       expect(imported.collections, ['Hiver', 'Été']);
       expect(imported.extraPhotos, ['b.jpg']);
       expect(imported.linkedRecipeIds, ['pate']);
-      expect(imported.equipment, ['moule à tarte', 'rouleau']);
+      expect(imported.equipmentIds, [moule.id, rouleau.id]);
       expect(imported.videoLinks, ['https://youtu.be/abc']);
-      expect(imported.ingredients.single.substitutes, 'huile de coco');
+      expect(imported.ingredients.first.substitutes, 'huile de coco');
+      // La liste commune du matériel suit la sauvegarde.
+      expect(
+        (await target.equipment.getAll()).map((e) => e.name).toList()..sort(),
+        ['Moule à tarte', 'Rouleau'],
+      );
       expect(await target.photos.file('b.jpg').readAsString(), 'b');
+    },
+  );
+
+  test(
+    'une sauvegarde v5 (test 0.2) se lit : matériel et liens convertis',
+    () async {
+      Map<String, Object?> recipe(
+        String id,
+        String title, {
+        List<String> equipment = const [],
+        List<String> linked = const [],
+        List<Map<String, Object?>> ingredients = const [],
+      }) => {
+        'id': id,
+        'title': title,
+        'equipment': equipment,
+        'linkedRecipes': linked,
+        'ingredients': ingredients,
+        'steps': [],
+        'createdAt': '2026-10-28T08:00:00Z',
+        'updatedAt': '2026-10-28T08:00:00Z',
+      };
+      final archive = Archive()
+        ..addFile(
+          ArchiveFile.string(
+            BackupFormat.dataFile,
+            jsonEncode({
+              'format': 'recettes-backup',
+              'version': 5,
+              'exportedAt': '2026-10-28T09:00:00Z',
+              'recipes': [
+                recipe('pate', 'Pâte brisée', equipment: ['Rouleau']),
+                recipe(
+                  'quiche',
+                  'Quiche',
+                  equipment: ['Moule à tarte', 'rouleau'],
+                  linked: ['pate'],
+                  ingredients: [
+                    {
+                      'id': 'i1',
+                      'name': 'lardons',
+                      'quantity': 200,
+                      'unit': 'g',
+                    },
+                  ],
+                ),
+              ],
+            }),
+          ),
+        );
+      final contents = target.service.readZip(ZipEncoder().encode(archive));
+      expect(contents.equipment.map((e) => e.name).toList()..sort(), [
+        'Moule à tarte',
+        'Rouleau',
+      ]);
+      await target.service.import(contents, ImportMode.merge);
+
+      final quiche = (await target.repo.getRecipe('quiche'))!;
+      expect(quiche.equipmentIds, hasLength(2));
+      expect(
+        quiche.equipmentIds.last,
+        (await target.repo.getRecipe('pate'))!.equipmentIds.single,
+        reason: 'même matériel, même identifiant',
+      );
+      expect(quiche.ingredients.map((i) => i.name), ['lardons', 'Pâte brisée']);
+      expect(quiche.ingredients.last.linkedRecipeId, 'pate');
     },
   );
 

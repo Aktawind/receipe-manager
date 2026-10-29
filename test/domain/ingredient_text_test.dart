@@ -147,6 +147,57 @@ void main() {
       expect(parse('2 œufs').substitutes, '');
     });
 
+    test('recette liée : [[Titre]] avec ou sans quantité', () {
+      RecipeRef? resolve(String title) => title.toLowerCase() == 'pâte brisée'
+          ? (id: 'pate', title: 'Pâte brisée')
+          : null;
+      final plain = IngredientText.parse(
+        '[[pâte brisée]]',
+        id: 'x',
+        resolveRecipe: resolve,
+      );
+      expect(plain.linkedRecipeId, 'pate');
+      expect(plain.name, 'Pâte brisée');
+      expect(plain.quantity, isNull);
+
+      final counted = IngredientText.parse(
+        '1 [[Pâte brisée]]',
+        id: 'x',
+        resolveRecipe: resolve,
+      );
+      expect(counted.linkedRecipeId, 'pate');
+      expect(counted.quantity, 1);
+
+      final weighed = IngredientText.parse(
+        '300 g de [[Pâte brisée]]',
+        id: 'x',
+        resolveRecipe: resolve,
+      );
+      expect(
+        (weighed.quantity, weighed.unit, weighed.name),
+        (300, 'g', 'Pâte brisée'),
+      );
+
+      // Recette inconnue : un ingrédient ordinaire, sans les crochets.
+      final unknown = IngredientText.parse(
+        '[[Inconnue]]',
+        id: 'x',
+        resolveRecipe: resolve,
+      );
+      expect(unknown.linkedRecipeId, isNull);
+      expect(unknown.name, 'Inconnue');
+
+      // Aller-retour : le titre affiché est celui de la recette aujourd'hui.
+      expect(
+        IngredientText.format(counted, titleOf: (id) => 'Pâte brisée maison'),
+        '1 [[Pâte brisée maison]]',
+      );
+      expect(
+        IngredientText.format(weighed, titleOf: (id) => 'Pâte brisée'),
+        '300 g de [[Pâte brisée]]',
+      );
+    });
+
     test('« Pour 4 personnes » et « pour le service, 2 c. » ne sont pas des titres', () {
       expect(parse('Pour 4 personnes').isSection, isFalse);
       expect(parse('Pour le service, 2 citrons').isSection, isFalse);

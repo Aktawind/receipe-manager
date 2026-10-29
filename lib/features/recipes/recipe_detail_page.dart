@@ -9,6 +9,7 @@ import '../../data/app_services.dart';
 import '../../domain/ingredient_text.dart';
 import '../../domain/recipe.dart';
 import '../../l10n/app_localizations.dart';
+import '../equipment/equipment_providers.dart';
 import 'recipe_photo.dart';
 import 'recipe_providers.dart';
 
@@ -688,33 +689,60 @@ class _IngredientRow extends StatelessWidget {
         ? IngredientText.partitive(name)
         : '';
 
+    final linkedId = line.linkedRecipeId;
+    final linkStyle = TextStyle(
+      color: theme.colorScheme.primary,
+      decoration: TextDecoration.underline,
+      decorationColor: theme.colorScheme.primary,
+    );
+
+    final sentence = Text.rich(
+      TextSpan(
+        children: [
+          if (amount.isNotEmpty)
+            TextSpan(
+              text: '$amount ',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          if (amount.isNotEmpty && connector.isNotEmpty)
+            TextSpan(text: connector),
+          TextSpan(
+            text: amount.isEmpty ? _capitalize(name) : name,
+            style: linkedId == null ? null : linkStyle,
+          ),
+          if (linkedId != null)
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          if (line.note.isNotEmpty)
+            TextSpan(text: ', ${line.note}', style: muted),
+          if (line.optional)
+            TextSpan(
+              text: ' · $optionalLabel',
+              style: muted.copyWith(fontStyle: FontStyle.italic),
+            ),
+        ],
+      ),
+      style: theme.textTheme.bodyLarge,
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 9),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text.rich(
-            TextSpan(
-              children: [
-                if (amount.isNotEmpty)
-                  TextSpan(
-                    text: '$amount ',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                TextSpan(
-                  text: amount.isEmpty ? _capitalize(name) : '$connector$name',
-                ),
-                if (line.note.isNotEmpty)
-                  TextSpan(text: ', ${line.note}', style: muted),
-                if (line.optional)
-                  TextSpan(
-                    text: ' · $optionalLabel',
-                    style: muted.copyWith(fontStyle: FontStyle.italic),
-                  ),
-              ],
+          if (linkedId == null)
+            sentence
+          else
+            InkWell(
+              onTap: () => context.push('/recettes/$linkedId'),
+              child: sentence,
             ),
-            style: theme.textTheme.bodyLarge,
-          ),
           if (line.substitutes.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 2),
@@ -959,11 +987,6 @@ class _AboutSection extends StatelessWidget {
               ),
             ),
         ],
-        if (recipe.linkedRecipeIds.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Text(l10n.linkedRecipesLabel, style: theme.textTheme.titleSmall),
-          for (final id in recipe.linkedRecipeIds) _LinkedRecipeTile(id: id),
-        ],
         if (recipe.extraPhotos.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(l10n.morePhotos, style: theme.textTheme.titleSmall),
@@ -1016,26 +1039,6 @@ void _showPhoto(BuildContext context, String name) {
       ),
     ),
   );
-}
-
-/// Une recette utilisée par celle-ci (pâte, sauce) ; touche pour l'ouvrir.
-class _LinkedRecipeTile extends ConsumerWidget {
-  const _LinkedRecipeTile({required this.id});
-
-  final String id;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final recipe = ref.watch(recipeProvider(id)).value;
-    if (recipe == null || recipe.isDeleted) return const SizedBox.shrink();
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      dense: true,
-      leading: const Icon(Icons.link),
-      title: Text(recipe.title),
-      onTap: () => context.push('/recettes/$id'),
-    );
-  }
 }
 
 /// Où en est la recette : son statut (qu'on change d'un geste) et le nombre de
@@ -1123,14 +1126,19 @@ class _StatusRow extends StatelessWidget {
   }
 }
 
-class _EquipmentSection extends StatelessWidget {
+class _EquipmentSection extends ConsumerWidget {
   const _EquipmentSection({required this.recipe});
 
   final Recipe recipe;
 
   @override
-  Widget build(BuildContext context) {
-    final items = recipe.equipment.where((e) => e.trim().isNotEmpty).toList();
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (recipe.equipmentIds.isEmpty) return const SizedBox.shrink();
+    final names = {
+      for (final item in ref.watch(equipmentProvider).value ?? const [])
+        item.id: item.name,
+    };
+    final items = [for (final id in recipe.equipmentIds) ?names[id]];
     if (items.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
@@ -1150,9 +1158,7 @@ class _EquipmentSection extends StatelessWidget {
                   color: theme.colorScheme.primary,
                 ),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: Text(item.trim(), style: theme.textTheme.bodyLarge),
-                ),
+                Expanded(child: Text(item, style: theme.textTheme.bodyLarge)),
               ],
             ),
           ),

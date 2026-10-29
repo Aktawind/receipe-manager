@@ -239,29 +239,56 @@ void main() {
     expect(export.issues.single.message, contains('a_2.jpg'));
   });
 
-  test('recettes liées, renvois [recipe:…] et valeurs nutritionnelles', () {
-    final export = read([
-      block(id: 'pate', name: 'Pâte brisée'),
-      block(
-        id: 'tarte',
-        linked: ['pate'],
-        ingredients: ps(['150 g de [recipe:Gianduja]']),
-        notes: ps(['Avec la [recipe:Pâte brisée]']),
-        extra: '''
+  test(
+    'recettes liées : dans les ingrédients, par renvoi ou en fin de liste',
+    () {
+      final export = read([
+        block(id: 'pate', name: 'Pâte brisée'),
+        block(id: 'gianduja', name: 'Gianduja'),
+        block(
+          id: 'tarte',
+          linked: ['pate'],
+          ingredients: ps(['150 g de [recipe:Gianduja]', '2 œufs']),
+          notes: ps(['Avec la [recipe:Pâte brisée]']),
+          extra: '''
           <meta content="1 portion" itemprop="recipeNutServingSize">
           <meta content="140" itemprop="recipeNutCalories">
           <meta content="6" itemprop="recipeNutProtein">''',
-      ),
-    ]);
-    final tarte = export.recipes.last;
-    expect(tarte.linkedRecipeIds, ['pate']);
-    expect(tarte.ingredients.single.name, 'Gianduja');
-    expect(tarte.notes, startsWith('Avec la Pâte brisée'));
-    expect(
-      tarte.notes,
-      contains('Portion : 1 portion · Calories : 140 · Protéines : 6'),
-    );
-  });
+        ),
+        // Le lien n'est pas dans le texte : une ligne est ajoutée à la fin.
+        block(id: 'quiche', linked: ['pate'], ingredients: ps(['3 œufs'])),
+        // Une ligne « 1 pâte brisée » devient le lien et garde sa quantité.
+        block(
+          id: 'tourte',
+          linked: ['pate'],
+          ingredients: ps(['1 pâte brisée']),
+        ),
+      ]);
+      final [_, _, tarte, quiche, tourte] = export.recipes;
+
+      expect(tarte.ingredients.map((i) => i.name), [
+        'Gianduja',
+        'œufs',
+        'Pâte brisée',
+      ]);
+      expect(tarte.ingredients.first.linkedRecipeId, 'gianduja');
+      expect(tarte.ingredients.first.quantity, 150);
+      expect(tarte.ingredients.first.unit, 'g');
+      expect(tarte.linkedRecipeIds, ['gianduja', 'pate']);
+      expect(tarte.notes, startsWith('Avec la Pâte brisée'));
+      expect(
+        tarte.notes,
+        contains('Portion : 1 portion · Calories : 140 · Protéines : 6'),
+      );
+
+      expect(quiche.ingredients.map((i) => i.name), ['œufs', 'Pâte brisée']);
+      expect(quiche.linkedRecipeIds, ['pate']);
+
+      expect(tourte.ingredients, hasLength(1));
+      expect(tourte.ingredients.single.linkedRecipeId, 'pate');
+      expect(tourte.ingredients.single.quantity, 1);
+    },
+  );
 
   test('un identifiant en double dans le fichier n’est lu qu’une fois', () {
     final export = read([

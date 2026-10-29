@@ -43,8 +43,7 @@ class Recipe {
     this.course = '',
     this.category = '',
     this.collections = const [],
-    this.linkedRecipeIds = const [],
-    this.equipment = const [],
+    this.equipmentIds = const [],
     this.videoLinks = const [],
     required this.createdAt,
     required this.updatedAt,
@@ -85,11 +84,8 @@ class Recipe {
   final String category;
   final List<String> collections;
 
-  /// Recettes utilisées par celle-ci (pâte, sauce préparée à l'avance).
-  final List<String> linkedRecipeIds;
-
-  /// Matériel nécessaire (« moule à cake », « robot »), un élément par ligne.
-  final List<String> equipment;
+  /// Matériel nécessaire : identifiants de la liste commune du matériel.
+  final List<String> equipmentIds;
 
   /// Liens vers des vidéos de la recette, un par ligne.
   final List<String> videoLinks;
@@ -100,6 +96,13 @@ class Recipe {
   final List<RecipeStep> steps;
 
   bool get isDeleted => deletedAt != null;
+
+  /// Recettes utilisées par celle-ci (pâte, sauce) : celles liées dans ses
+  /// ingrédients.
+  List<String> get linkedRecipeIds => [
+    for (final line in ingredients)
+      if (line.linkedRecipeId != null) line.linkedRecipeId!,
+  ];
 
   /// Toutes les photos, la principale en premier.
   List<String> get allPhotos => [?mainPhoto, ...extraPhotos];
@@ -122,7 +125,7 @@ class Recipe {
       restMinutes == null &&
       mainPhoto == null &&
       extraPhotos.isEmpty &&
-      equipment.isEmpty &&
+      equipmentIds.isEmpty &&
       videoLinks.isEmpty &&
       ingredients.every((i) => i.isBlank) &&
       steps.every((s) => s.text.trim().isEmpty);
@@ -146,8 +149,7 @@ class Recipe {
     String? course,
     String? category,
     List<String>? collections,
-    List<String>? linkedRecipeIds,
-    List<String>? equipment,
+    List<String>? equipmentIds,
     List<String>? videoLinks,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -175,8 +177,7 @@ class Recipe {
       course: course ?? this.course,
       category: category ?? this.category,
       collections: collections ?? this.collections,
-      linkedRecipeIds: linkedRecipeIds ?? this.linkedRecipeIds,
-      equipment: equipment ?? this.equipment,
+      equipmentIds: equipmentIds ?? this.equipmentIds,
       videoLinks: videoLinks ?? this.videoLinks,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -200,6 +201,7 @@ class IngredientLine {
     this.note = '',
     this.optional = false,
     this.substitutes = '',
+    this.linkedRecipeId,
   });
 
   final String id;
@@ -213,6 +215,10 @@ class IngredientLine {
   /// Précision libre : « finement haché », « selon le goût »…
   final String note;
   final bool optional;
+
+  /// La recette qu'est cet ingrédient (pâte, sauce préparée à l'avance) ; son
+  /// [name] est alors le titre de cette recette.
+  final String? linkedRecipeId;
 
   /// Ce qui peut le remplacer (« huile de coco, margarine »).
   final String substitutes;
@@ -234,7 +240,8 @@ class IngredientLine {
       other.unit == unit &&
       other.note == note &&
       other.optional == optional &&
-      other.substitutes == substitutes;
+      other.substitutes == substitutes &&
+      other.linkedRecipeId == linkedRecipeId;
 
   @override
   int get hashCode => Object.hash(
@@ -246,6 +253,7 @@ class IngredientLine {
     note,
     optional,
     substitutes,
+    linkedRecipeId,
   );
 }
 
