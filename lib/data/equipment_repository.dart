@@ -47,7 +47,7 @@ class EquipmentRepository {
   /// Le matériel de ce nom, créé s'il n'existe pas encore (un matériel supprimé
   /// qu'on retape est ressuscité).
   Future<EquipmentItem> findOrCreate(String name) async {
-    final clean = name.trim().replaceAll(RegExp(r'\s+'), ' ');
+    final clean = EquipmentItem.cleanName(name);
     final key = EquipmentItem.keyOf(clean);
     final existing = (await getAll()).where(
       (e) => EquipmentItem.keyOf(e.name) == key,
@@ -76,7 +76,7 @@ class EquipmentRepository {
 
   /// Renomme. Renvoie `false` si un autre matériel porte déjà ce nom.
   Future<bool> rename(String id, String name) async {
-    final clean = name.trim().replaceAll(RegExp(r'\s+'), ' ');
+    final clean = EquipmentItem.cleanName(name);
     if (clean.isEmpty) return false;
     final key = EquipmentItem.keyOf(clean);
     final all = await getAll();
@@ -130,6 +130,18 @@ class EquipmentRepository {
             .write(RecipesCompanion(updatedAt: Value(now)));
       }
     });
+  }
+
+  /// Met en majuscule la première lettre des noms qui n'en ont pas (matériel
+  /// saisi avant cette règle). Sans effet quand tout est déjà propre.
+  Future<void> capitalizeNames() async {
+    final now = _clock();
+    for (final item in await getAll()) {
+      final clean = EquipmentItem.cleanName(item.name);
+      if (clean != item.name) {
+        await put(item.copyWith(name: clean, updatedAt: now));
+      }
+    }
   }
 
   /// Écrit un matériel tel quel (import, restauration).

@@ -95,6 +95,7 @@ class AppServices {
     // Forces the database to open (and migrate) now, inside main()'s error
     // handling, rather than on the first screen.
     await database.customSelect('SELECT 1').get();
+    await equipment.capitalizeNames();
     await prefs.setInt(_schemaVersionKey, AppDatabase.latestSchemaVersion);
     return services;
   }

@@ -9,7 +9,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 |---|---|---|
 | [0.0](#00--fondations) | Fondations | ✅ |
 | [0.1](#01--saisir-ses-recettes-et-les-sauvegarder) | Saisir ses recettes et les sauvegarder | ✅ |
-| [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | 🟦 |
+| [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | ✅ |
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ⬜ |
 | [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ⬜ |
 | [0.5](#05--recherche-et-filtres) | Recherche et filtres | ⬜ |
@@ -113,7 +113,7 @@ Objectif : retrouver toute ta bibliothèque et pouvoir lâcher Recipe Keeper pou
   collections, photos supplémentaires, recettes liées) et s'affichent sur la fiche. Les notes
   en étoiles de Recipe Keeper ne sont pas reprises (décision du 2026-10-28). Validée le
   2026-10-28.
-- **Étape 2 (en test)** : tout ce qui se saisit à la main (étoiles, statut, plusieurs photos, liens
+- **Étape 2** (validée le 2026-10-29) : tout ce qui se saisit à la main (étoiles, statut, plusieurs photos, liens
   vidéo, étapes mises en forme, matériel, substitutions, choix des recettes liées). Les
   « conseils » restent dans les Notes (champ unique, décision de la 0.1).
 
@@ -236,7 +236,10 @@ avion puis reconnecter ; modifier la même recette sur les deux appareils.
 ## 0.10 — Listes de courses
 
 - Plusieurs listes (semaine, magasin, événement), réutiliser une ancienne liste
-- Ajouter un produit à la main, les ingrédients d'une ou plusieurs recettes
+- Ajouter un produit à la main, les ingrédients d'une ou plusieurs recettes — **y compris ceux des
+  recettes liées** (la pâte d'une quiche, la sauce d'un plat) : une ligne d'ingrédient liée à une
+  recette ajoute les ingrédients de cette recette, proportionnellement à la quantité demandée
+  (demande du 2026-10-29)
 - Fusion des ingrédients identiques, addition des quantités, unités incompatibles séparées
 - Quantité à acheter différente de la quantité théorique, format, commentaire
 - Cocher, supprimer, déplacer
