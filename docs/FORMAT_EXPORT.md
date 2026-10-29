@@ -12,7 +12,7 @@ recettes-2026-10-27-1430.zip
 
 ## Règles de compatibilité
 
-- Le champ `version` indique la version du format (actuellement **6**).
+- Le champ `version` indique la version du format (actuellement **7**).
 - Toute version de l'application sait lire **toutes les versions précédentes** du format.
 - Une sauvegarde d'une version **plus récente** que l'application est refusée, sans rien
   modifier (message : « Mets l'application à jour »).
@@ -29,6 +29,13 @@ recettes-2026-10-27-1430.zip
 | 4 | 0.2.0 | Ajout de `servingsUnit` (« 12 blinis ») |
 | 5 | 0.2.0 (test) | Ajout de `equipment` (noms), `videoLinks` et `ingredients[].substitutes` |
 | 6 | 0.2.0 | Liste commune du matériel (`equipment` du document, `equipment` des recettes = identifiants) ; recettes liées dans les ingrédients (`ingredients[].linkedRecipe`), `linkedRecipes` disparaît |
+| 7 | 0.3.0 | Classement commun : `labels` (document) et `labels` (recettes = identifiants) remplacent `course`, `category` et `collections` |
+
+Lecture d'une version 6 (et 3 à 5) : `course`, `category` et `collections` en texte libre deviennent
+le classement commun. Le type de plat devient la catégorie (« Plat » → « Plats »), la catégorie la
+sous-catégorie ; les noms qui se ressemblent sont fusionnés (« Gâteau »/« Gâteaux », « Riz »/« Riz et
+céréales ») ; les collections Printemps, Été, Automne, Hiver deviennent des saisons (les quatre
+ensemble = « Toute saison ») ; toute autre collection reste une collection.
 
 Lecture d'une version 5 (et 3, 4) : le matériel écrit en noms dans les recettes devient la liste
 commune (un même nom, à la casse et aux accents près, donne un seul matériel, avec un identifiant
@@ -45,16 +52,21 @@ Lecture d'une version 2 : les champs ajoutés par la version 3 prennent leur val
 Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une ligne vide) ; les
 étapes n'ont pas de titre.
 
-## `recettes.json` — version 6
+## `recettes.json` — version 7
 
 ```json
 {
   "format": "recettes-backup",
-  "version": 6,
+  "version": 7,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
   "equipment": [
     { "id": "…", "name": "Moule à tarte", "createdAt": "…", "updatedAt": "…", "deletedAt": null }
+  ],
+  "labels": [
+    { "id": "…", "kind": "category", "name": "Viandes", "parentId": "<id de « Plats »>",
+      "icon": "restaurant", "color": "caramel", "position": 0,
+      "createdAt": "…", "updatedAt": "…", "deletedAt": null }
   ],
   "recipes": [
     {
@@ -74,10 +86,8 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
       "favorite": true,
       "rating": 4,
       "status": "validated",
-      "course": "Plat",
-      "category": "Tartes",
-      "collections": ["Hiver"],
       "equipment": ["<id de « Moule à tarte »>"],
+      "labels": ["<id de « Viandes »>", "<id de « Hiver »>"],
       "videoLinks": ["https://youtu.be/…"],
       "createdAt": "2026-10-20T08:00:00.000Z",
       "updatedAt": "2026-10-27T12:00:00.000Z",
@@ -109,10 +119,10 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
 | `createdAt`, `updatedAt`, `deletedAt` | date ISO 8601 UTC | `deletedAt` non nul = dans la corbeille |
 | `extraPhotos` | liste de textes | photos après la principale, noms de fichiers de `photos/` |
 | `favorite` | booléen | |
+| `labels` (document) | liste d'objets | le classement commun : `kind` (`category`, `collection`, `tag`, `cuisine`, `meal`, `occasion`, `season`), `name`, `parentId` (sous-catégories), `icon`, `color` (clés du thème), `position`, dates ; `deletedAt` non nul = supprimé |
+| `labels` (recette) | liste d'`id` | le classement de la recette |
 | `rating` | entier 1 à 5 ou `null` | `null` = pas noté |
 | `status` | `toTest`, `validated`, `toImprove` ou `null` | |
-| `course`, `category` | texte | type de plat et catégorie, texte libre en attendant la 0.3 |
-| `collections` | liste de textes | |
 | `equipment` (document) | liste d'objets | la liste commune du matériel : `id`, `name`, dates ; `deletedAt` non nul = supprimé |
 | `equipment` (recette) | liste d'`id` | matériel nécessaire, dans l'ordre d'affichage |
 | `videoLinks` | liste de textes | liens vidéo |
@@ -153,7 +163,7 @@ Réglages → Importer depuis Recipe Keeper, avec le ZIP produit par Recipe Keep
 | favori | `favorite` |
 | note en étoiles | **non reprise** (choix de la personne qui utilise l'app) |
 | catégorie `_A tester` | `status` = `toTest` (et pas une catégorie) |
-| autres catégories, plat, collections | `category`, `course`, `collections` |
+| type de plat, catégorie, collections | catégorie, sous-catégorie, saisons et collections du classement commun (mêmes règles de fusion que la lecture d'une version 6) |
 | photos | `mainPhoto` (la première) et `extraPhotos` |
 | recettes liées | lignes d'ingrédients liées (`linkedRecipe`) : le renvoi `[recipe:Nom]` d'une ligne devient le lien, un lien absent du texte est ajouté à la fin de la liste ; dans les notes, le renvoi devient le simple nom |
 | valeurs nutritionnelles | ajoutées en texte à la fin des notes |

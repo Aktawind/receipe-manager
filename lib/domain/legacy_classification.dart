@@ -187,7 +187,7 @@ class _Book {
 
   void freeze() {
     // « riz » est une forme courte de « riz et céréales ».
-    final keys = _seen.keys.toList()
+    final keys = {..._seen.keys, ..._preferred.keys}.toList()
       ..sort((a, b) => b.length.compareTo(a.length));
     _alias = {};
     for (final key in keys) {

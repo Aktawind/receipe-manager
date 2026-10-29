@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/data/recipe_repository.dart';
+import 'package:recettes/domain/label.dart';
 import 'package:recettes/domain/recipe.dart';
 
 import '../helpers/test_app.dart';
@@ -12,6 +13,20 @@ void main() {
     final app = (await tester.runAsync(TestApp.create))!;
     final repo = app.services.recipes;
 
+    final platsTartes = (await tester.runAsync(() async {
+      final plats = await app.services.labels.findOrCreate(
+        LabelKind.category,
+        'Plats',
+      );
+      return app.services.labels.findOrCreate(
+        LabelKind.category,
+        'Tartes',
+        parentId: plats.id,
+      );
+    }))!;
+    final hiver = (await tester.runAsync(
+      () => app.services.labels.findOrCreate(LabelKind.season, 'Hiver'),
+    ))!;
     final recipeId = (await tester.runAsync(() async {
       final dough = await repo.save(
         (await repo.create()).copyWith(title: 'Pâte brisée'),
@@ -20,9 +35,7 @@ void main() {
         (await repo.create()).copyWith(
           title: 'Tarte aux poireaux',
           status: () => RecipeStatus.toTest,
-          course: 'Plat',
-          category: 'Tartes',
-          collections: ['Hiver', 'Automne'],
+          labelIds: [platsTartes.id, hiver.id],
           ingredients: [
             IngredientLine(id: RecipeRepository.newId(), name: 'poireaux'),
             IngredientLine(
@@ -41,10 +54,8 @@ void main() {
     await tester.tap(find.text('Tarte aux poireaux'));
     await settle(tester);
     expect(find.text('À tester'), findsOneWidget);
-    expect(find.text('Plat'), findsOneWidget);
-    expect(find.text('Tartes'), findsOneWidget);
-
-    await scrollTo(tester, find.text('Collections : Hiver · Automne'));
+    expect(find.text('Plats › Tartes'), findsOneWidget);
+    expect(find.text('Hiver'), findsOneWidget);
 
     // Le cœur de la barre du haut bascule le favori.
     await tester.drag(find.byType(Scrollable).first, const Offset(0, 3000));
