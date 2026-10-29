@@ -89,9 +89,7 @@ class RecipeRepository {
       isFavorite: original.isFavorite,
       rating: original.rating,
       status: original.status,
-      course: original.course,
-      category: original.category,
-      collections: original.collections,
+      labelIds: original.labelIds,
       equipmentIds: original.equipmentIds,
       videoLinks: original.videoLinks,
       createdAt: now,
@@ -234,9 +232,6 @@ class RecipeRepository {
             isFavorite: Value(recipe.isFavorite),
             rating: Value(recipe.rating),
             status: Value(recipe.status?.code),
-            course: Value(recipe.course),
-            category: Value(recipe.category),
-            collections: Value(recipe.collections.join('\n')),
             videoLinks: Value(recipe.videoLinks.join('\n')),
             createdAt: recipe.createdAt,
             updatedAt: recipe.updatedAt,
@@ -255,6 +250,7 @@ class RecipeRepository {
     await (_db.delete(
       _db.recipeEquipment,
     )..where((e) => e.recipeId.equals(recipe.id))).go();
+    await _writeLabels(recipe);
     await _db.batch((batch) {
       batch.insertAll(_db.recipePhotos, [
         for (final (index, file) in recipe.extraPhotos.indexed)
@@ -301,6 +297,50 @@ class RecipeRepository {
     });
   }
 
+  /// Réécrit le classement de la recette en gardant le rang des éléments déjà
+  /// rattachés (ordre personnalisé d'une collection) ; un nouvel élément se
+  /// place en dernier.
+  Future<void> _writeLabels(Recipe recipe) async {
+    final current = {
+      for (final row in await (_db.select(
+        _db.recipeLabels,
+      )..where((l) => l.recipeId.equals(recipe.id))).get())
+        row.labelId: row.sortIndex,
+    };
+    await (_db.delete(
+      _db.recipeLabels,
+    )..where((l) => l.recipeId.equals(recipe.id))).go();
+    for (final labelId in recipe.labelIds.toSet()) {
+      var sortIndex = current[labelId];
+      if (sortIndex == null) {
+        final last = await _db
+            .customSelect(
+              'SELECT MAX(sort_index) AS last FROM recipe_labels WHERE label_id = ?',
+              variables: [Variable.withString(labelId)],
+            )
+            .getSingle();
+        sortIndex = (last.read<int?>('last') ?? -1) + 1;
+      }
+      await _db
+          .into(_db.recipeLabels)
+          .insert(
+            RecipeLabelsCompanion.insert(
+              recipeId: recipe.id,
+              labelId: labelId,
+              sortIndex: Value(sortIndex),
+            ),
+          );
+    }
+  }
+
+  /// Note l'ouverture de la fiche (recettes récentes), sans toucher à la date
+  /// de modification.
+  Future<void> markViewed(String id) {
+    return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
+      RecipesCompanion(lastViewedAt: Value(_clock())),
+    );
+  }
+
   Future<Recipe> _withChildren(RecipeRow row) async {
     final ingredients =
         await (_db.select(_db.ingredients)
@@ -317,6 +357,9 @@ class RecipeRepository {
               ..where((p) => p.recipeId.equals(row.id))
               ..orderBy([(p) => OrderingTerm.asc(p.position)]))
             .get();
+    final labels = await (_db.select(
+      _db.recipeLabels,
+    )..where((l) => l.recipeId.equals(row.id))).get();
     final equipment =
         await (_db.select(_db.recipeEquipment)
               ..where((e) => e.recipeId.equals(row.id))
@@ -325,6 +368,7 @@ class RecipeRepository {
     return _fromRow(row).copyWith(
       extraPhotos: [for (final p in photos) p.file],
       equipmentIds: [for (final e in equipment) e.equipmentId],
+      labelIds: [for (final l in labels) l.labelId],
       ingredients: [
         for (final i in ingredients)
           IngredientLine(
@@ -365,9 +409,8 @@ class RecipeRepository {
     isFavorite: row.isFavorite,
     rating: row.rating,
     status: RecipeStatus.fromCode(row.status),
-    course: row.course,
-    category: row.category,
-    collections: _lines(row.collections),
+    labelIds: const [],
+    lastViewedAt: row.lastViewedAt,
     videoLinks: _lines(row.videoLinks),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

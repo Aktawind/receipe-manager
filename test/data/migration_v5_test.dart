@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide isNull;
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/data/database.dart';
+import 'package:recettes/data/label_repository.dart';
 import 'package:recettes/data/recipe_repository.dart';
 import 'package:recettes/domain/recipe.dart';
 
@@ -62,7 +63,7 @@ void main() {
       await oldDb.close();
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 6);
+      await verifier.migrateAndValidate(db, 7);
       final repo = RecipeRepository(db);
 
       final recipe = (await repo.getRecipe('r1'))!;
@@ -72,7 +73,20 @@ void main() {
       expect(recipe.isFavorite, isTrue);
       expect(recipe.rating, 4);
       expect(recipe.status, RecipeStatus.validated);
-      expect(recipe.collections, ['Hiver', 'Été']);
+      // Type de plat, catégorie et collections sont devenus du classement.
+      final byId = {
+        for (final l in await LabelRepository(db).getAll()) l.id: l,
+      };
+      expect(
+        [
+          for (final id in recipe.labelIds)
+            [
+              if (byId[id]!.parentId != null) byId[byId[id]!.parentId]!.name,
+              byId[id]!.name,
+            ].join(' › '),
+        ]..sort(),
+        ['Apéritifs et entrées › Boulangerie', 'Hiver', 'Été'],
+      );
       expect(recipe.ingredients.single.name, 'beurre');
       expect(recipe.ingredients.single.substitutes, '');
       expect(recipe.equipmentIds, isEmpty);

@@ -9,6 +9,7 @@ import '../../data/app_services.dart';
 import '../../domain/ingredient_text.dart';
 import '../../domain/recipe.dart';
 import '../../l10n/app_localizations.dart';
+import '../classification/label_chips.dart';
 import '../equipment/equipment_providers.dart';
 import 'recipe_photo.dart';
 import 'recipe_providers.dart';
@@ -440,11 +441,6 @@ class _Header extends StatelessWidget {
       (Icons.bedtime_outlined, l10n.restTime, recipe.restMinutes),
     ].where((t) => t.$3 != null).toList();
 
-    final labels = [
-      if (recipe.course.isNotEmpty) recipe.course,
-      if (recipe.category.isNotEmpty) recipe.category,
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -470,26 +466,9 @@ class _Header extends StatelessWidget {
         _StatusRow(recipe: recipe, onCooked: onCooked, onStatus: onStatus),
         const SizedBox(height: 8),
         _StarRating(rating: recipe.rating, onChanged: onRating),
-        if (labels.isNotEmpty) ...[
+        if (recipe.labelIds.isNotEmpty) ...[
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final label in labels)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _tint(context),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(label, style: theme.textTheme.labelMedium),
-                ),
-            ],
-          ),
+          RecipeLabelChips(labelIds: recipe.labelIds),
         ],
         if (times.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -957,13 +936,6 @@ class _AboutSection extends StatelessWidget {
               ],
             ),
           ),
-        if (recipe.collections.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Text(
-            '${l10n.collectionsLabel} : ${recipe.collections.join(' · ')}',
-            style: theme.textTheme.bodyMedium,
-          ),
-        ],
         if (recipe.videoLinks.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(l10n.videosLabel, style: theme.textTheme.titleSmall),

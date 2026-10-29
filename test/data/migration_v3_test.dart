@@ -66,7 +66,7 @@ void main() {
     await oldDb.close();
 
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 6);
+    await verifier.migrateAndValidate(db, 7);
 
     final repo = RecipeRepository(db);
     final recipe = (await repo.getRecipe('r1'))!;
@@ -82,8 +82,7 @@ void main() {
     expect(recipe.isFavorite, isFalse);
     expect(recipe.rating, isNull);
     expect(recipe.status, isNull);
-    expect(recipe.category, '');
-    expect(recipe.collections, isEmpty);
+    expect(recipe.labelIds, isEmpty);
     expect(recipe.extraPhotos, isEmpty);
     expect(recipe.linkedRecipeIds, isEmpty);
     expect(recipe.equipmentIds, isEmpty);
@@ -94,9 +93,7 @@ void main() {
         isFavorite: true,
         rating: () => 4,
         status: () => RecipeStatus.toTest,
-        course: 'Plat',
-        category: 'Tartes',
-        collections: ['Hiver', 'Été'],
+        labelIds: ['plats', 'hiver'],
         extraPhotos: ['a.jpg', 'b.jpg'],
         equipmentIds: ['moule'],
         ingredients: [
@@ -112,9 +109,7 @@ void main() {
     expect(again.isFavorite, isTrue);
     expect(again.rating, 4);
     expect(again.status, RecipeStatus.toTest);
-    expect(again.course, 'Plat');
-    expect(again.category, 'Tartes');
-    expect(again.collections, ['Hiver', 'Été']);
+    expect(again.labelIds.toSet(), {'plats', 'hiver'});
     expect(again.extraPhotos, ['a.jpg', 'b.jpg']);
     expect(again.linkedRecipeIds, ['pate']);
     expect(again.equipmentIds, ['moule']);

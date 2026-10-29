@@ -78,6 +78,18 @@ String ps(List<String> lines) => lines.map((l) => '<p>$l</p>').join('\n');
 
 final jpeg = [1, 2, 3];
 
+/// Le classement d'une recette importée : « Plats › Viandes », « Été »…
+List<String> paths(RecipeKeeperExport export, Recipe recipe) {
+  final byId = {for (final l in export.labels) l.id: l};
+  return [
+    for (final id in recipe.labelIds)
+      [
+        if (byId[id]!.parentId != null) byId[byId[id]!.parentId]!.name,
+        byId[id]!.name,
+      ].join(' › '),
+  ];
+}
+
 void main() {
   final now = DateTime(2026, 10, 28, 8);
 
@@ -132,9 +144,7 @@ void main() {
     expect(r.cookMinutes, 75);
     expect(r.isFavorite, isTrue);
     expect(r.rating, isNull, reason: 'les étoiles ne sont pas reprises');
-    expect(r.course, 'Plat');
-    expect(r.category, 'Viandes');
-    expect(r.collections, ['Automne', 'Été']);
+    expect(paths(export, r), ['Plats › Viandes', 'Été', 'Automne']);
     expect(r.source, 'Page 32');
     expect(r.notes, 'Un régal !\nA accompagner de riz');
     expect(r.mainPhoto, 'aaaa-1_0.jpg');
@@ -186,9 +196,9 @@ void main() {
     ]);
     final [a, b, c] = export.recipes;
     expect(a.status, RecipeStatus.toTest);
-    expect(a.category, '');
+    expect(paths(export, a), ['Plats']);
     expect(b.status, RecipeStatus.toTest);
-    expect(b.category, 'Gâteaux');
+    expect(paths(export, b), ['Plats › Gâteaux']);
     expect(c.status, isNull);
   });
 

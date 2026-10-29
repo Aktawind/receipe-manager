@@ -1,4 +1,6 @@
 import '../../domain/equipment.dart';
+import '../../domain/label.dart';
+import '../../domain/legacy_classification.dart';
 import '../../domain/recipe.dart';
 import '../../domain/recipe_links.dart';
 import '../photo_store.dart';
@@ -18,15 +20,18 @@ import '../photo_store.dart';
 /// - v6 : liste commune du matériel (`equipment` au niveau du document, et
 ///   `equipment` des recettes = identifiants) ; recettes liées dans les
 ///   ingrédients (`linkedRecipe`) au lieu de `linkedRecipes`.
+/// - v7 : classement commun (`labels` du document, `labels` des recettes =
+///   identifiants) à la place de `course`, `category` et `collections`.
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 6;
+  static const currentVersion = 7;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 
   static Map<String, Object?> encode(
     List<Recipe> recipes, {
     List<EquipmentItem> equipment = const [],
+    List<Label> labels = const [],
     required DateTime exportedAt,
     required String appVersion,
   }) {
@@ -43,6 +48,21 @@ abstract final class BackupFormat {
             'createdAt': item.createdAt.toUtc().toIso8601String(),
             'updatedAt': item.updatedAt.toUtc().toIso8601String(),
             'deletedAt': item.deletedAt?.toUtc().toIso8601String(),
+          },
+      ],
+      'labels': [
+        for (final l in labels)
+          {
+            'id': l.id,
+            'kind': l.kind.code,
+            'name': l.name,
+            'parentId': l.parentId,
+            'icon': l.icon,
+            'color': l.color,
+            'position': l.position,
+            'createdAt': l.createdAt.toUtc().toIso8601String(),
+            'updatedAt': l.updatedAt.toUtc().toIso8601String(),
+            'deletedAt': l.deletedAt?.toUtc().toIso8601String(),
           },
       ],
       'recipes': [for (final recipe in recipes) _encodeRecipe(recipe)],
@@ -66,9 +86,7 @@ abstract final class BackupFormat {
     'favorite': r.isFavorite,
     'rating': r.rating,
     'status': r.status?.code,
-    'course': r.course,
-    'category': r.category,
-    'collections': r.collections,
+    'labels': r.labelIds,
     'equipment': r.equipmentIds,
     'videoLinks': r.videoLinks,
     'createdAt': r.createdAt.toUtc().toIso8601String(),
@@ -181,7 +199,58 @@ abstract final class BackupFormat {
       recipes = updated;
       equipment.addAll(byId.values);
     }
-    return BackupData(recipes, equipment);
+
+    final labels = <Label>[];
+    if (version >= 7) {
+      for (final item in _list(root, 'labels')) {
+        final m = _map(item, 'label');
+        final kind = LabelKind.fromCode(
+          m['kind'] is String ? m['kind'] as String : null,
+        );
+        final id = _string(m, 'id', required: true);
+        final name = Label.cleanName(_string(m, 'name', required: true));
+        if (kind == null || id.isEmpty || name.isEmpty) {
+          throw const BackupFormatException(BackupError.invalid, 'labels');
+        }
+        labels.add(
+          Label(
+            id: id,
+            kind: kind,
+            name: name,
+            parentId: m['parentId'] is String ? m['parentId'] as String : null,
+            icon: _string(m, 'icon'),
+            color: _string(m, 'color'),
+            position: _int(m, 'position') ?? 0,
+            createdAt: _date(m, 'createdAt')!,
+            updatedAt: _date(m, 'updatedAt')!,
+            deletedAt: _date(m, 'deletedAt', required: false),
+          ),
+        );
+      }
+    } else {
+      // v3 à v6 : type de plat, catégorie et collections en texte libre.
+      final rawRecipes = list.cast<Map<String, Object?>>();
+      final stamp =
+          DateTime.tryParse(
+            root['exportedAt'] is String ? root['exportedAt'] as String : '',
+          ) ??
+          DateTime.now();
+      final plan = LegacyClassification.plan([
+        for (final (index, recipe) in recipes.indexed)
+          LegacyEntry(
+            recipeId: recipe.id,
+            course: _string(rawRecipes[index], 'course'),
+            categories: [_string(rawRecipes[index], 'category')],
+            collections: _strings(rawRecipes[index], 'collections'),
+          ),
+      ], stamp);
+      labels.addAll(plan.labels);
+      recipes = [
+        for (final recipe in recipes)
+          recipe.copyWith(labelIds: plan.byRecipe[recipe.id] ?? const []),
+      ];
+    }
+    return BackupData(recipes, equipment, labels);
   }
 
   static Recipe _decodeRecipe(Object? json, int version) {
@@ -223,9 +292,7 @@ abstract final class BackupFormat {
       status: RecipeStatus.fromCode(
         m['status'] is String ? m['status'] as String : null,
       ),
-      course: _string(m, 'course'),
-      category: _string(m, 'category'),
-      collections: _strings(m, 'collections'),
+      labelIds: version >= 7 ? _strings(m, 'labels') : const [],
       equipmentIds: version >= 6 ? _strings(m, 'equipment') : const [],
       videoLinks: _strings(m, 'videoLinks'),
       createdAt: _date(m, 'createdAt')!,
@@ -330,10 +397,11 @@ abstract final class BackupFormat {
 
 /// Ce que contient une sauvegarde lue : les recettes et la liste du matériel.
 class BackupData {
-  const BackupData(this.recipes, this.equipment);
+  const BackupData(this.recipes, this.equipment, this.labels);
 
   final List<Recipe> recipes;
   final List<EquipmentItem> equipment;
+  final List<Label> labels;
 }
 
 enum BackupError { notABackup, newerVersion, invalid, missingPhoto }

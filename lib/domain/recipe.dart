@@ -40,9 +40,8 @@ class Recipe {
     this.isFavorite = false,
     this.rating,
     this.status,
-    this.course = '',
-    this.category = '',
-    this.collections = const [],
+    this.labelIds = const [],
+    this.lastViewedAt,
     this.equipmentIds = const [],
     this.videoLinks = const [],
     required this.createdAt,
@@ -78,11 +77,13 @@ class Recipe {
   final int? rating;
   final RecipeStatus? status;
 
-  /// Type de plat (« Plat », « Dessert », « Goûter »…), texte libre pour
-  /// l'instant : le classement complet arrive en 0.3.
-  final String course;
-  final String category;
-  final List<String> collections;
+  /// Classement : catégories, collections, étiquettes, saisons… (voir
+  /// [Label]). Les identifiants renvoient à la liste commune du classement.
+  final List<String> labelIds;
+
+  /// Dernière ouverture de la fiche sur cet appareil (recettes récentes) ;
+  /// n'est ni exporté ni synchronisé.
+  final DateTime? lastViewedAt;
 
   /// Matériel nécessaire : identifiants de la liste commune du matériel.
   final List<String> equipmentIds;
@@ -126,6 +127,7 @@ class Recipe {
       mainPhoto == null &&
       extraPhotos.isEmpty &&
       equipmentIds.isEmpty &&
+      labelIds.isEmpty &&
       videoLinks.isEmpty &&
       ingredients.every((i) => i.isBlank) &&
       steps.every((s) => s.text.trim().isEmpty);
@@ -146,9 +148,8 @@ class Recipe {
     bool? isFavorite,
     ValueGetter<int?>? rating,
     ValueGetter<RecipeStatus?>? status,
-    String? course,
-    String? category,
-    List<String>? collections,
+    List<String>? labelIds,
+    ValueGetter<DateTime?>? lastViewedAt,
     List<String>? equipmentIds,
     List<String>? videoLinks,
     DateTime? createdAt,
@@ -174,9 +175,8 @@ class Recipe {
       isFavorite: isFavorite ?? this.isFavorite,
       rating: rating != null ? rating() : this.rating,
       status: status != null ? status() : this.status,
-      course: course ?? this.course,
-      category: category ?? this.category,
-      collections: collections ?? this.collections,
+      labelIds: labelIds ?? this.labelIds,
+      lastViewedAt: lastViewedAt != null ? lastViewedAt() : this.lastViewedAt,
       equipmentIds: equipmentIds ?? this.equipmentIds,
       videoLinks: videoLinks ?? this.videoLinks,
       createdAt: createdAt ?? this.createdAt,
