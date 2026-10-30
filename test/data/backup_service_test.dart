@@ -9,8 +9,10 @@ import 'package:recettes/data/backup/backup_format.dart';
 import 'package:recettes/data/backup/backup_service.dart';
 import 'package:recettes/data/database.dart';
 import 'package:recettes/data/equipment_repository.dart';
+import 'package:recettes/data/label_repository.dart';
 import 'package:recettes/data/photo_store.dart';
 import 'package:recettes/data/recipe_repository.dart';
+import 'package:recettes/domain/label.dart';
 import 'package:recettes/domain/recipe.dart';
 
 class _Env {
@@ -19,9 +21,11 @@ class _Env {
       photos = PhotoStore(Directory('${root.path}/photos')) {
     repo = RecipeRepository(db);
     equipment = EquipmentRepository(db);
+    labels = LabelRepository(db);
     service = BackupService(
       repository: repo,
       equipment: equipment,
+      labels: labels,
       photos: photos,
       backupsDirectory: Directory('${root.path}/backups'),
       appVersion: '0.1.0',
@@ -32,6 +36,7 @@ class _Env {
   final PhotoStore photos;
   late final RecipeRepository repo;
   late final EquipmentRepository equipment;
+  late final LabelRepository labels;
   late final BackupService service;
 }
 
@@ -198,13 +203,13 @@ void main() {
     expect((await target.repo.getRecipe('old-1'))!.notes, contains('Précuire'));
   });
 
-  test('l’export est en version 6, sans champ « tips »', () async {
+  test('l’export est en version 7, sans champ « tips »', () async {
     await addRecipe(source, 'Tarte');
     final archive = ZipDecoder().decodeBytes(await source.service.exportZip());
     final json = jsonDecode(
       utf8.decode(archive.findFile(BackupFormat.dataFile)!.content),
     ) as Map<String, Object?>;
-    expect(json['version'], 6);
+    expect(json['version'], 7);
     final recipe = (json['recipes'] as List).single as Map<String, Object?>;
     expect(recipe.containsKey('tips'), isFalse);
   });
@@ -215,6 +220,16 @@ void main() {
       await source.photos.write('a.jpg', utf8.encode('a'));
       await source.photos.write('b.jpg', utf8.encode('b'));
       final base = await addRecipe(source, 'Quiche');
+      final plats = await source.labels.findOrCreate(
+        LabelKind.category,
+        'Plats',
+      );
+      final tartes = await source.labels.findOrCreate(
+        LabelKind.category,
+        'Tartes',
+        parentId: plats.id,
+      );
+      final hiver = await source.labels.findOrCreate(LabelKind.season, 'Hiver');
       final moule = await source.equipment.findOrCreate('Moule à tarte');
       final rouleau = await source.equipment.findOrCreate('Rouleau');
       final full = await source.repo.save(
@@ -222,9 +237,7 @@ void main() {
           isFavorite: true,
           rating: () => 4,
           status: () => RecipeStatus.validated,
-          course: 'Plat',
-          category: 'Tartes',
-          collections: ['Hiver', 'Été'],
+          labelIds: [tartes.id, hiver.id],
           mainPhoto: () => 'a.jpg',
           extraPhotos: ['b.jpg'],
           equipmentIds: [moule.id, rouleau.id],
@@ -254,9 +267,12 @@ void main() {
       expect(imported.isFavorite, isTrue);
       expect(imported.rating, 4);
       expect(imported.status, RecipeStatus.validated);
-      expect(imported.course, 'Plat');
-      expect(imported.category, 'Tartes');
-      expect(imported.collections, ['Hiver', 'Été']);
+      expect(imported.labelIds.toSet(), {tartes.id, hiver.id});
+      final importedLabels = {
+        for (final l in await target.labels.getAll()) l.id: l,
+      };
+      expect(importedLabels[tartes.id]!.name, 'Tartes');
+      expect(importedLabels[tartes.id]!.parentId, plats.id);
       expect(imported.extraPhotos, ['b.jpg']);
       expect(imported.linkedRecipeIds, ['pate']);
       expect(imported.equipmentIds, [moule.id, rouleau.id]);
@@ -338,6 +354,128 @@ void main() {
   );
 
   test(
+    'une sauvegarde v6 (test 0.2) : le classement en texte est converti',
+    () async {
+      Map<String, Object?> recipe(
+        String id,
+        String course,
+        String category,
+        List<String> collections,
+      ) => {
+        'id': id,
+        'title': id,
+        'course': course,
+        'category': category,
+        'collections': collections,
+        'ingredients': [],
+        'steps': [],
+        'createdAt': '2026-10-28T08:00:00Z',
+        'updatedAt': '2026-10-28T08:00:00Z',
+      };
+      final archive = Archive()
+        ..addFile(
+          ArchiveFile.string(
+            BackupFormat.dataFile,
+            jsonEncode({
+              'format': 'recettes-backup',
+              'version': 6,
+              'equipment': [],
+              'recipes': [
+                recipe('a', 'Dessert', 'Gâteaux', [
+                  'Automne',
+                  'Été',
+                  'Hiver',
+                  'Printemps',
+                ]),
+                recipe('b', 'Dessert', 'Gâteau', ['Été']),
+                recipe('c', 'Plat', 'Salades', []),
+              ],
+            }),
+          ),
+        );
+      final contents = target.service.readZip(ZipEncoder().encode(archive));
+      await target.service.import(contents, ImportMode.merge);
+
+      final byId = {for (final l in await target.labels.getAll()) l.id: l};
+      String path(String id) {
+        final l = byId[id]!;
+        return [
+          if (l.parentId != null) byId[l.parentId]!.name,
+          l.name,
+        ].join(' › ');
+      }
+
+      Future<List<String>> pathsOf(String recipeId) async => [
+        for (final id in (await target.repo.getRecipe(recipeId))!.labelIds)
+          path(id),
+      ];
+      expect(
+        await pathsOf('a'),
+        unorderedEquals(['Desserts › Gâteaux', 'Toute saison']),
+      );
+      expect(
+        await pathsOf('b'),
+        unorderedEquals(['Desserts › Gâteaux', 'Été']),
+      );
+      expect(await pathsOf('c'), ['Plats › Salades']);
+    },
+  );
+
+  test(
+    'une sauvegarde v7 (test 0.3) : étiquettes et occasions → collections',
+    () async {
+      Map<String, Object?> label(String id, String kind, String name) => {
+        'id': id,
+        'kind': kind,
+        'name': name,
+        'createdAt': '2026-10-29T08:00:00Z',
+        'updatedAt': '2026-10-29T08:00:00Z',
+      };
+      final archive = Archive()
+        ..addFile(
+          ArchiveFile.string(
+            BackupFormat.dataFile,
+            jsonEncode({
+              'format': 'recettes-backup',
+              'version': 7,
+              'equipment': [],
+              'labels': [
+                label('plats', 'category', 'Plats'),
+                label('rapide', 'tag', 'Rapide'),
+                label('paques', 'occasion', 'Pâques'),
+                label('diner', 'meal', 'Dîner'),
+              ],
+              'recipes': [
+                {
+                  'id': 'a',
+                  'title': 'A',
+                  'labels': ['plats', 'rapide', 'paques', 'diner'],
+                  'ingredients': [],
+                  'steps': [],
+                  'createdAt': '2026-10-29T08:00:00Z',
+                  'updatedAt': '2026-10-29T08:00:00Z',
+                },
+              ],
+            }),
+          ),
+        );
+      final contents = target.service.readZip(ZipEncoder().encode(archive));
+      await target.service.import(contents, ImportMode.merge);
+
+      final all = {for (final l in await target.labels.getAll()) l.id: l};
+      final recipe = (await target.repo.getRecipe('a'))!;
+      expect(
+        [
+          for (final id in recipe.labelIds)
+            '${all[id]!.kind.code}:${all[id]!.name}',
+        ]..sort(),
+        ['category:Plats', 'collection:Pâques', 'collection:Rapide'],
+      );
+      expect(all.values.any((l) => l.name == 'Dîner'), isFalse);
+    },
+  );
+
+  test(
     'une sauvegarde v2 (0.1.0) se lit encore : champs 0.2 neutres',
     () async {
       final archive = Archive()
@@ -367,7 +505,7 @@ void main() {
       expect(recipe.title, 'Ancienne');
       expect(recipe.isFavorite, isFalse);
       expect(recipe.rating, isNull);
-      expect(recipe.collections, isEmpty);
+      expect(recipe.labelIds, isEmpty);
       expect(recipe.extraPhotos, isEmpty);
     },
   );

@@ -7,6 +7,8 @@ import 'package:path/path.dart' as p;
 
 import '../../core/format/text_search.dart';
 import '../../domain/ingredient_text.dart';
+import '../../domain/label.dart';
+import '../../domain/legacy_classification.dart';
 import '../../domain/recipe.dart';
 import '../../domain/recipe_links.dart';
 import '../../domain/step_text.dart';
@@ -29,9 +31,14 @@ class RecipeKeeperExport {
     required this.recipes,
     required this.photos,
     required this.issues,
+    this.labels = const [],
   });
 
   final List<Recipe> recipes;
+
+  /// Les éléments de classement utilisés par les recettes (catégories,
+  /// sous-catégories, saisons, collections).
+  final List<Label> labels;
 
   /// Contenu des photos, par nom de fichier.
   final Map<String, List<int>> photos;
@@ -108,9 +115,21 @@ abstract final class RecipeKeeperImporter {
     }
     final titleOf = {for (final r in byTitle.values) r.id: r.title};
 
+    final entries = <LegacyEntry>[];
     for (final node in nodes) {
       final recipe = _recipe(node, images, photos, issues, stamp, byTitle);
       if (recipe == null || !seen.add(recipe.id)) continue;
+      entries.add(
+        LegacyEntry(
+          recipeId: recipe.id,
+          course: _text(node.querySelector('span[itemprop=recipeCourse]')),
+          categories: [
+            for (final c in _meta(node, 'recipeCategory'))
+              if (c != toTestCategory) c,
+          ],
+          collections: _meta(node, 'recipeCollection'),
+        ),
+      );
       recipes.add(
         RecipeLinks.attach(
           recipe,
@@ -119,7 +138,19 @@ abstract final class RecipeKeeperImporter {
         ),
       );
     }
-    return RecipeKeeperExport(recipes: recipes, photos: photos, issues: issues);
+
+    // Type de plat → catégorie, catégorie → sous-catégorie, collections de
+    // saisons → saisons (voir LegacyClassification).
+    final plan = LegacyClassification.plan(entries, stamp);
+    return RecipeKeeperExport(
+      recipes: [
+        for (final recipe in recipes)
+          recipe.copyWith(labelIds: plan.byRecipe[recipe.id] ?? const []),
+      ],
+      photos: photos,
+      issues: issues,
+      labels: plan.labels,
+    );
   }
 
   static Recipe? _recipe(
@@ -161,7 +192,6 @@ abstract final class RecipeKeeperImporter {
 
     final categories = _meta(node, 'recipeCategory');
     final toTest = categories.contains(toTestCategory);
-    final category = categories.where((c) => c != toTestCategory).join(', ');
 
     final (servings, servingsUnit, yieldNote) = _yield(
       _text(node.querySelector('[itemprop=recipeYield]')),
@@ -195,9 +225,6 @@ abstract final class RecipeKeeperImporter {
       extraPhotos: kept.skip(1).toList(),
       isFavorite: _meta(node, 'recipeIsFavourite').firstOrNull == 'True',
       status: toTest ? RecipeStatus.toTest : null,
-      course: _text(node.querySelector('span[itemprop=recipeCourse]')),
-      category: category,
-      collections: _meta(node, 'recipeCollection'),
       createdAt: now,
       updatedAt: now,
       ingredients: IngredientText.parseList(

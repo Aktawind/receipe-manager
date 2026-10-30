@@ -11,10 +11,13 @@ import '../../data/app_services.dart';
 import '../../data/photo_store.dart';
 import '../../data/recipe_repository.dart';
 import '../../domain/ingredient_text.dart';
+import '../../domain/label.dart';
 import '../../domain/recipe.dart';
 import '../../domain/step_text.dart';
 import '../../l10n/app_localizations.dart';
 import 'recipe_photo.dart';
+import '../classification/label_picker.dart';
+import '../classification/labels_providers.dart';
 import '../equipment/equipment_page.dart';
 import '../equipment/equipment_providers.dart';
 import 'recipe_providers.dart';
@@ -61,6 +64,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
   String? _photo;
   var _extraPhotos = <String>[];
   var _equipmentIds = <String>[];
+  var _labelIds = <String>[];
 
   /// Les autres recettes, pour lier une pâte ou une sauce dans les ingrédients.
   var _known = const <Recipe>[];
@@ -119,6 +123,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _videos.text = recipe.videoLinks.join('\n');
     _extraPhotos = [...recipe.extraPhotos];
     _equipmentIds = [...recipe.equipmentIds];
+    _labelIds = [...recipe.labelIds];
     for (final controller in _fieldControllers) {
       controller.addListener(_scheduleSave);
     }
@@ -185,6 +190,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
       mainPhoto: () => _photo,
       extraPhotos: _extraPhotos,
       equipmentIds: _equipmentIds,
+      labelIds: _labelIds,
       videoLinks: _lines(_videos),
       ingredients: IngredientText.parseList(
         _ingredients.text,
@@ -330,6 +336,32 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
         offset: before.length + insertion.length,
       ),
     );
+  }
+
+  /// Remplace le classement d'une famille par le choix de la personne ; les
+  /// autres familles ne bougent pas.
+  Future<void> _chooseLabels(LabelKind kind, List<Label> all) async {
+    final ofKind = {
+      for (final l in all)
+        if (l.kind == kind) l.id,
+    };
+    final chosen = await pickLabels(
+      context,
+      kind: kind,
+      selected: [
+        for (final id in _labelIds)
+          if (ofKind.contains(id)) id,
+      ],
+    );
+    if (chosen == null) return;
+    setState(() {
+      _labelIds = [
+        for (final id in _labelIds)
+          if (!ofKind.contains(id)) id,
+        ...chosen,
+      ];
+    });
+    _scheduleSave();
   }
 
   Future<void> _chooseEquipment() async {
@@ -605,6 +637,15 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                   label: l10n.fieldVideos,
                   minLines: 2,
                   capitalization: TextCapitalization.none,
+                ),
+                const SizedBox(height: 8),
+                _ClassificationField(
+                  labelIds: _labelIds,
+                  onChoose: _chooseLabels,
+                  onRemove: (id) {
+                    setState(() => _labelIds = [..._labelIds]..remove(id));
+                    _scheduleSave();
+                  },
                 ),
               ],
             ),
@@ -923,6 +964,64 @@ class _RecipePickerDialogState extends State<_RecipePickerDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.cancel),
         ),
+      ],
+    );
+  }
+}
+
+/// Le classement de la recette, une ligne par famille : les éléments choisis
+/// en pastilles et un bouton qui ouvre la liste à cocher.
+class _ClassificationField extends ConsumerWidget {
+  const _ClassificationField({
+    required this.labelIds,
+    required this.onChoose,
+    required this.onRemove,
+  });
+
+  final List<String> labelIds;
+  final void Function(LabelKind kind, List<Label> all) onChoose;
+  final ValueChanged<String> onRemove;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final all = ref.watch(labelsProvider).value ?? const <Label>[];
+    final byId = {for (final l in all) l.id: l};
+    const order = LabelKind.values;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final kind in order) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Text(
+              kind.title(l10n),
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              for (final id in labelIds)
+                if (byId[id] case final label? when label.kind == kind)
+                  InputChip(
+                    label: Text(labelPath(label, byId)),
+                    onDeleted: () => onRemove(id),
+                  ),
+              ActionChip(
+                key: ValueKey('classification-${kind.code}'),
+                avatar: const Icon(Icons.checklist, size: 18),
+                label: Text(l10n.chooseLabels),
+                onPressed: () => onChoose(kind, all),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

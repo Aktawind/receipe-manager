@@ -57,7 +57,7 @@ class RecipeKeeperActions {
 
     try {
       final result = await service.import(
-        BackupContents(export.recipes, export.photos),
+        BackupContents(export.recipes, export.photos, labels: export.labels),
         ImportMode.addMissing,
       );
       if (context.mounted) {

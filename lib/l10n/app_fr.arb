@@ -357,7 +357,6 @@
   "statusToImprove": "À améliorer",
   "addToFavorites": "Ajouter aux favoris",
   "removeFromFavorites": "Retirer des favoris",
-  "collectionsLabel": "Collections",
   "morePhotos": "Autres photos",
   "fieldServingsUnit": "Unité des portions",
   "fieldServingsUnitHint": "personnes",
@@ -419,6 +418,97 @@
     "placeholders": {
       "name": {
         "type": "String"
+      }
+    }
+  },
+  "classificationTitle": "Classement",
+  "classificationSubtitle": "Catégories, collections, étiquettes, saisons…",
+  "kindCategory": "Catégories",
+  "kindCollection": "Collections",
+  "kindCuisine": "Origine culinaire",
+  "kindSeason": "Saison",
+  "kindCategorySingular": "catégorie",
+  "kindCollectionSingular": "collection",
+  "kindCuisineSingular": "origine",
+  "kindSeasonSingular": "saison",
+  "addLabel": "Ajouter",
+  "addSubcategory": "Ajouter une sous-catégorie",
+  "labelName": "Nom",
+  "labelExists": "Ce nom existe déjà ici",
+  "mergeInto": "Fusionner dans…",
+  "mergeWith": "Fusionner « {name} » avec",
+  "merged": "Fusionné",
+  "labelStyle": "Icône et couleur",
+  "labelIcon": "Icône",
+  "labelColor": "Couleur",
+  "noColor": "Aucune",
+  "chooseLabels": "Choisir",
+  "searchOrAddLabel": "Rechercher ou ajouter",
+  "classificationEmpty": "Rien à choisir pour l’instant",
+  "colorPrimary": "Vert profond",
+  "colorTeal": "Vert canard",
+  "colorCaramel": "Caramel",
+  "colorButter": "Jaune doux",
+  "deleteLabelConfirm": "Supprimer « {name} » ? Il sera retiré des recettes qui l’utilisent.",
+  "deleteLabelWithChildren": "Supprimer « {name} » et ses sous-catégories ? Ils seront retirés des recettes qui les utilisent.",
+  "labelUsed": "{count, plural, =0{Aucune recette} =1{1 recette} other{{count} recettes}}",
+  "@labelUsed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@mergeWith": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@deleteLabelConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@deleteLabelWithChildren": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "quickAll": "Toutes",
+  "quickFavorites": "Favoris",
+  "quickRecent": "Récemment consultées",
+  "quickAdded": "Récemment ajoutées",
+  "filterTitle": "Filtrer",
+  "filterClear": "Tout effacer",
+  "filterDone": "Terminé",
+  "filterNoRecipes": "Aucune recette ne correspond à ces filtres",
+  "displayOptions": "Affichage",
+  "viewMode": "Vue",
+  "viewList": "Liste",
+  "viewGrid": "Grille",
+  "viewCards": "Cartes",
+  "sortBy": "Trier par",
+  "sortTitle": "Titre",
+  "sortAdded": "Ajout (récent d’abord)",
+  "sortViewed": "Consultation (récent d’abord)",
+  "sortManual": "Ordre de la collection",
+  "orderRecipes": "Ordonner les recettes",
+  "orderRecipesHint": "Maintiens la poignée et glisse une recette pour la déplacer.",
+  "orderEmpty": "Aucune recette dans cette collection",
+  "dragHandle": "Déplacer",
+  "filterNone": "Pas de filtre",
+  "filterShow": "Afficher",
+  "filterSelected": "{count, plural, =1{1 choisi} other{{count} choisis}}",
+  "@filterSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   }

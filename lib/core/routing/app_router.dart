@@ -1,6 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/label.dart';
+import '../../features/classification/collection_order_page.dart';
+import '../../features/classification/labels_page.dart';
 import '../../features/equipment/equipment_page.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/planning/planning_page.dart';
@@ -55,6 +58,29 @@ GoRouter buildRouter() => GoRouter(
               path: '/reglages',
               builder: (context, state) => const SettingsPage(),
               routes: [
+                GoRoute(
+                  path: 'classement',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const ClassificationPage(),
+                  routes: [
+                    GoRoute(
+                      path: 'ordre/:id',
+                      parentNavigatorKey: _rootKey,
+                      builder: (context, state) => CollectionOrderPage(
+                        labelId: state.pathParameters['id']!,
+                      ),
+                    ),
+                    GoRoute(
+                      path: ':kind',
+                      parentNavigatorKey: _rootKey,
+                      builder: (context, state) => LabelsPage(
+                        kind:
+                            LabelKind.fromCode(state.pathParameters['kind']) ??
+                            LabelKind.collection,
+                      ),
+                    ),
+                  ],
+                ),
                 GoRoute(
                   path: 'materiel',
                   parentNavigatorKey: _rootKey,
