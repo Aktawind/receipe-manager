@@ -12,6 +12,8 @@ import 'equipment_repository.dart';
 import 'label_repository.dart';
 import 'photo_store.dart';
 import 'recipe_repository.dart';
+import 'sync/hybrid_clock.dart';
+import 'sync/sync_engine.dart';
 
 /// Les services de données de l'app, ouverts une fois au démarrage.
 class AppServices {
@@ -22,6 +24,7 @@ class AppServices {
     required this.labels,
     required this.photos,
     required this.backups,
+    required this.clock,
   });
 
   final AppDatabase database;
@@ -30,6 +33,9 @@ class AppServices {
   final LabelRepository labels;
   final PhotoStore photos;
   final BackupService backups;
+
+  /// L'horloge qui date les modifications (voir [HybridClock]).
+  final HybridClock clock;
 
   /// Durée de conservation dans la corbeille.
   static const trashRetention = Duration(days: 30);
@@ -78,9 +84,11 @@ class AppServices {
             ),
           ),
     );
-    final recipes = RecipeRepository(database);
-    final equipment = EquipmentRepository(database);
-    final labels = LabelRepository(database);
+    // Les modifications sont datées par l'horloge corrigée de la synchro.
+    final clock = await SyncEngine.loadClock(database);
+    final recipes = RecipeRepository(database, clock: clock.now);
+    final equipment = EquipmentRepository(database, clock: clock.now);
+    final labels = LabelRepository(database, clock: clock.now);
     final photos = PhotoStore(Directory(p.join(root.path, 'photos')));
     final services = AppServices(
       database: database,
@@ -88,6 +96,7 @@ class AppServices {
       equipment: equipment,
       labels: labels,
       photos: photos,
+      clock: clock,
       backups: BackupService(
         repository: recipes,
         equipment: equipment,

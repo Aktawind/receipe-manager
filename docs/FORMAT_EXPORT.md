@@ -167,3 +167,10 @@ Réglages → Importer depuis Recipe Keeper, avec le ZIP produit par Recipe Keep
 | photos | `mainPhoto` (la première) et `extraPhotos` |
 | recettes liées | lignes d'ingrédients liées (`linkedRecipe`) : le renvoi `[recipe:Nom]` d'une ligne devient le lien, un lien absent du texte est ajouté à la fin de la liste ; dans les notes, le renvoi devient le simple nom |
 | valeurs nutritionnelles | ajoutées en texte à la fin des notes |
+
+## Synchronisation (0.4)
+
+Le dossier Drive utilise le même format : chaque fichier de `recipes/`, `labels/` et `equipment/`
+est un document `recettes-backup` de la version courante qui ne contient **qu'un seul élément**,
+et `media/` contient les photos sous leur nom. Les versions écartées d'un conflit sont dans
+`history/`. Les anciennes versions du format restent lisibles de la même façon.
