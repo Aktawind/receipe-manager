@@ -11,7 +11,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.1](#01--saisir-ses-recettes-et-les-sauvegarder) | Saisir ses recettes et les sauvegarder | ✅ |
 | [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | ✅ |
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ✅ |
-| [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ⬜ |
+| [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | 🟨 |
 | [0.5](#05--recherche-et-filtres) | Recherche et filtres | ⬜ |
 | [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ⬜ |
 | [0.7](#07--mode-cuisine-et-suivi-des-recettes) | Mode cuisine et suivi des recettes | ⬜ |
@@ -168,8 +168,22 @@ Détails techniques : [décision 0002](decisions/0002-synchronisation-google-dri
 - Suppression complète des données (appareil et/ou Drive)
 - Identifiants de connexion chiffrés sur l'appareil
 
-**Ce qu'il te faudra faire** : créer un identifiant OAuth dans Google Cloud (gratuit, je te
-guiderai pas à pas, ~10 minutes).
+**Ce qu'il te faudra faire** : déclarer l'application dans la Google Cloud Console avec ton
+compte (gratuit, je te guiderai pas à pas, ~10 minutes). Pour toi, la connexion se résume à
+choisir ton compte Google et à accepter l'accès au dossier.
+
+*Décisions du 2026-10-30* : synchro automatique (à l'ouverture et après chaque modification) avec
+un bouton « Synchroniser maintenant » en plus. Les photos gardent leur nom de fichier (unique et
+jamais modifié, comme une empreinte) au lieu d'un `sha256`.
+
+*Avancement* : trois étapes.
+- **Étape 1 (faite, invisible)** : le moteur de synchro, sans Google — suivi de ce qui a changé
+  (base v9), un fichier par élément dans le format des sauvegardes, conflits, suppressions, photos
+  envoyées une seule fois, horloge corrigée des écarts entre appareils. Testé sur deux appareils
+  simulés.
+- **Étape 2** : connexion Google et dossier Drive réel (nécessite la déclaration ci-dessus).
+- **Étape 3** : réglages (état, bouton, sauvegarde automatique), arrière-plan, suppression des
+  données.
 
 **À tester** : modifier sur le téléphone, voir le changement sur la tablette ; modifier en mode
 avion puis reconnecter ; modifier la même recette sur les deux appareils.

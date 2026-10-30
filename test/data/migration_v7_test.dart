@@ -9,7 +9,7 @@ import 'package:recettes/domain/label.dart';
 import 'generated_migrations/app/generated/schema.dart';
 import 'generated_migrations/app/generated/schema_v6.dart' as v6;
 
-/// Migration v6 → v8 (en passant par v7) avec les données de l'APK de test : le type de plat, la
+/// Migration v6 → v9 (en passant par v7 et v8) avec les données de l'APK de test : le type de plat, la
 /// catégorie et les collections en texte libre deviennent le classement commun.
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -73,7 +73,7 @@ void main() {
       await oldDb.close();
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 8);
+      await verifier.migrateAndValidate(db, 9);
       final repo = RecipeRepository(db);
       final labels = {
         for (final l in await LabelRepository(db).getAll()) l.id: l,

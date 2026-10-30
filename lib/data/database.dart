@@ -173,6 +173,31 @@ class RecipeLabels extends Table {
   Set<Column<Object>> get primaryKey => {recipeId, labelId};
 }
 
+/// Ce que cet appareil sait de la synchronisation, par élément (recette,
+/// classement, matériel, photo) ; v9. [syncedUpdatedAt] est la date de
+/// modification de l'élément au moment de la dernière synchro : s'il a changé
+/// depuis, l'élément est à envoyer. Propre à l'appareil, jamais exporté.
+@DataClassName('SyncEntryRow')
+class SyncEntries extends Table {
+  TextColumn get kind => text()();
+  TextColumn get id => text()();
+  DateTimeColumn get syncedUpdatedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {kind, id};
+}
+
+/// Réglages de synchronisation propres à l'appareil (jeton des changements,
+/// horloge) ; v9.
+@DataClassName('SyncSettingRow')
+class SyncSettings extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
 @DriftDatabase(
   tables: [
     Recipes,
@@ -183,6 +208,8 @@ class RecipeLabels extends Table {
     RecipeEquipment,
     Labels,
     RecipeLabels,
+    SyncEntries,
+    SyncSettings,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -190,7 +217,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 8;
+  static const latestSchemaVersion = 9;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -289,6 +316,11 @@ UPDATE recipes SET
       // occasions deviennent des collections, le type de repas disparaît.
       from7To8: (m, schema) async {
         await _foldRemovedLabelKinds();
+      },
+      // v9 : suivi de la synchronisation Google Drive (0.4).
+      from8To9: (m, schema) async {
+        await m.createTable(schema.syncEntries);
+        await m.createTable(schema.syncSettings);
       },
     ),
     beforeOpen: (details) async {
