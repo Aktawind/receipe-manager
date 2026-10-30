@@ -10,7 +10,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.0](#00--fondations) | Fondations | ✅ |
 | [0.1](#01--saisir-ses-recettes-et-les-sauvegarder) | Saisir ses recettes et les sauvegarder | ✅ |
 | [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | ✅ |
-| [0.3](#03--organisation-et-classement) | Organisation et classement | 🟦 |
+| [0.3](#03--organisation-et-classement) | Organisation et classement | ✅ |
 | [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ⬜ |
 | [0.5](#05--recherche-et-filtres) | Recherche et filtres | ⬜ |
 | [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ⬜ |
@@ -131,7 +131,7 @@ Objectif : retrouver toute ta bibliothèque et pouvoir lâcher Recipe Keeper pou
   planning, 0.11 ; les occasions sont des collections)
 - Accès rapide aux favoris
 - Recettes récemment consultées, récemment ajoutées
-- Vues liste, grille et cartes ; affichage avec ou sans photos
+- Vues liste, grille et cartes (photos toujours affichées)
 
 *Décisions du 2026-10-29* : les types de plat de Recipe Keeper (Plat, Dessert, Goûter…) deviennent
 les catégories par défaut et leurs catégories les sous-catégories ; les noms qui se ressemblent sont
@@ -142,13 +142,13 @@ saison n'a pas d'importance (les quatre ensemble à l'import).
 - **Étape 1** : classement commun (catégories et sous-catégories, collections, étiquettes, origine,
   type de repas, occasion, saison) géré dans Réglages → Classement, choisi dans le formulaire,
   affiché sur la fiche ; conversion de tes recettes et de l'import Recipe Keeper.
-- **Étape 2 (en test)** : filtrer la liste par classement (listes à cocher), favoris, récemment consultées et
+- **Étape 2** : filtrer la liste par classement (listes à cocher), favoris, récemment consultées et
   ajoutées, vues liste / grille / cartes, ordre personnalisé d'une collection.
 - **Retours du 2026-10-29** : quatre familles seulement (catégories, saisons, collections, origine),
   classement rangé dans « À propos », filtres en listes, accès rapides dans le filtre, photos
   toujours affichées.
 
-**À tester** : ranger ta bibliothèque, créer tes collections, vérifier les fusions.
+*Validée le 2026-10-30.*
 
 ## 0.4 — Synchronisation Google Drive
 
