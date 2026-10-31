@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 
 /// L'identifiant client « Application Web » du projet Google Cloud « Recettes ».
 /// Il n'a rien de secret (il identifie l'application, comme son nom) ; Android
@@ -29,14 +32,26 @@ class GoogleDriveAuth implements DriveAuth {
     serverClientId: googleServerClientId,
   );
 
+  /// On ne demande que l'autorisation d'accéder au dossier : pas de
+  /// « connexion » séparée (Credential Manager), seulement le sélecteur de
+  /// compte et l'écran de consentement de Google. L'adresse du compte est lue
+  /// ensuite dans Drive.
   @override
   Future<String> signIn() async {
     await _init();
-    final account = await GoogleSignIn.instance.authenticate(
-      scopeHint: const [driveFileScope],
+    final authorization = await GoogleSignIn.instance.authorizationClient
+        .authorizeScopes(const [driveFileScope]);
+    final response = await http.get(
+      Uri.https('www.googleapis.com', '/drive/v3/about', {
+        'fields': 'user(emailAddress)',
+      }),
+      headers: {'Authorization': 'Bearer ${authorization.accessToken}'},
     );
-    await account.authorizationClient.authorizeScopes(const [driveFileScope]);
-    return account.email;
+    if (response.statusCode != 200) {
+      throw StateError('Drive a répondu ${response.statusCode}');
+    }
+    final user = (jsonDecode(response.body) as Map)['user'] as Map?;
+    return (user?['emailAddress'] as String?) ?? '';
   }
 
   @override
