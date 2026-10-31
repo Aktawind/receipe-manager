@@ -511,5 +511,69 @@
         "type": "int"
       }
     }
+  },
+  "syncTitle": "Synchronisation Google Drive",
+  "syncSubtitle": "Recettes à jour sur tous tes appareils, et sauvegarde dans ton Drive",
+  "syncSubtitleOn": "Connecté : {email}",
+  "@syncSubtitleOn": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "syncIntroTitle": "Garde tes recettes à jour partout",
+  "syncIntroBody": "Tes recettes et leurs photos sont copiées dans un dossier « {folder} » de ton Google Drive. Tes autres appareils y retrouvent les mêmes recettes, et tu as une sauvegarde permanente.",
+  "@syncIntroBody": {
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "syncPrivacy": "L’application n’a accès qu’à ce dossier, qu’elle crée elle-même : jamais au reste de ton Drive. Rien n’est envoyé ailleurs.",
+  "syncAutoNote": "La synchronisation se fait toute seule à l’ouverture et après chaque modification.",
+  "syncConnect": "Se connecter avec Google",
+  "syncConnectedAs": "Connecté : {email}",
+  "@syncConnectedAs": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "syncStatusIdle": "À jour",
+  "syncStatusSyncing": "Synchronisation en cours…",
+  "syncStatusError": "La dernière synchronisation a échoué. Elle sera retentée.",
+  "syncStatusSignIn": "Connexion à Google à refaire",
+  "syncLastSync": "Dernière synchronisation : {date}",
+  "@syncLastSync": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncNever": "Pas encore synchronisé",
+  "syncNow": "Synchroniser maintenant",
+  "syncSignInAgain": "Se reconnecter",
+  "syncDisconnect": "Se déconnecter",
+  "syncDisconnectTitle": "Se déconnecter de Google ?",
+  "syncDisconnectBody": "Les recettes de cet appareil et le dossier Drive restent tels quels. La synchronisation s’arrête sur cet appareil.",
+  "syncConflicts": "{count, plural, =1{1 recette modifiée des deux côtés : la plus récente est gardée, l’autre version est conservée dans Drive.} other{{count} éléments modifiés des deux côtés : les plus récents sont gardés, les autres versions sont conservées dans Drive.}}",
+  "@syncConflicts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncErrorDetail": "Détail : {error}",
+  "@syncErrorDetail": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -5,6 +5,7 @@ import '../../domain/label.dart';
 import '../../features/classification/collection_order_page.dart';
 import '../../features/classification/labels_page.dart';
 import '../../features/equipment/equipment_page.dart';
+import '../../features/sync/sync_page.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/planning/planning_page.dart';
 import '../../features/recipes/recipe_detail_page.dart';
@@ -80,6 +81,11 @@ GoRouter buildRouter() => GoRouter(
                       ),
                     ),
                   ],
+                ),
+                GoRoute(
+                  path: 'synchronisation',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const SyncPage(),
                 ),
                 GoRoute(
                   path: 'materiel',

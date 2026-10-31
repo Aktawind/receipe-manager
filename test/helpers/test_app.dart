@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/app.dart';
 import 'package:recettes/core/settings/theme_mode_controller.dart';
@@ -12,13 +13,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Une app complète sur une base en mémoire, pour les tests de widgets.
 class TestApp {
-  TestApp._(this.prefs, this.services, this.root);
+  TestApp._(this.prefs, this.services, this.root, this.overrides);
 
   final SharedPreferences prefs;
   final AppServices services;
   final Directory root;
 
-  static Future<TestApp> create({Map<String, Object> prefs = const {}}) async {
+  /// Remplacements de fournisseurs propres à un test (connexion Google…).
+  final List<Override> overrides;
+
+  static Future<TestApp> create({
+    Map<String, Object> prefs = const {},
+    List<Override> overrides = const [],
+  }) async {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     SharedPreferences.setMockInitialValues(prefs);
     final preferences = await SharedPreferences.getInstance();
@@ -36,13 +43,14 @@ class TestApp {
     // The in-memory database is dropped with the test; closing it from the
     // fake-async teardown zone would hang.
     addTearDown(() => root.deleteSync(recursive: true));
-    return TestApp._(preferences, services, root);
+    return TestApp._(preferences, services, root, overrides);
   }
 
   Widget get widget => ProviderScope(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       appServicesProvider.overrideWithValue(services),
+      ...overrides,
     ],
     child: const RecettesApp(),
   );

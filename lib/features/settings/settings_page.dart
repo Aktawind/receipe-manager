@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/settings/theme_mode_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../recipes/recipe_providers.dart';
+import '../sync/sync_providers.dart';
 import 'backup_actions.dart';
 import 'recipe_keeper_actions.dart';
 
@@ -21,6 +22,7 @@ class SettingsPage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final themeMode = ref.watch(themeModeProvider);
     final info = ref.watch(_packageInfoProvider).value;
+    final sync = ref.watch(syncControllerProvider);
     final trashCount = ref.watch(trashProvider).value?.length ?? 0;
 
     return Scaffold(
@@ -80,6 +82,16 @@ class SettingsPage extends ConsumerWidget {
             title: Text(l10n.importRecipeKeeper),
             subtitle: Text(l10n.importRecipeKeeperSubtitle),
             onTap: () => RecipeKeeperActions(context, ref).import(),
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_sync_outlined),
+            title: Text(l10n.syncTitle),
+            subtitle: Text(
+              sync.email == null
+                  ? l10n.syncSubtitle
+                  : l10n.syncSubtitleOn(sync.email!),
+            ),
+            onTap: () => context.push('/reglages/synchronisation'),
           ),
           ListTile(
             leading: const Icon(Icons.category_outlined),
