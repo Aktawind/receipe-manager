@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart' show TableUpdate, TableUpdateQuery;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -40,6 +41,7 @@ class SyncState {
     this.lastSync,
     this.error,
     this.lastConflicts = 0,
+    this.connectFailed = false,
   });
 
   final SyncPhase phase;
@@ -52,6 +54,9 @@ class SyncState {
   /// Conflits résolus à la dernière synchro (la version écartée est gardée).
   final int lastConflicts;
 
+  /// La dernière tentative de connexion n'a pas abouti.
+  final bool connectFailed;
+
   bool get enabled => phase != SyncPhase.off;
 
   SyncState copyWith({
@@ -61,12 +66,14 @@ class SyncState {
     String? error,
     bool clearError = false,
     int? lastConflicts,
+    bool? connectFailed,
   }) => SyncState(
     phase: phase ?? this.phase,
     email: email ?? this.email,
     lastSync: lastSync ?? this.lastSync,
     error: clearError ? null : error ?? this.error,
     lastConflicts: lastConflicts ?? this.lastConflicts,
+    connectFailed: connectFailed ?? this.connectFailed,
   );
 }
 
@@ -116,13 +123,16 @@ class SyncController extends Notifier<SyncState> {
       _listen();
       unawaited(syncNow());
     } on GoogleSignInException catch (error) {
-      if (error.code == GoogleSignInExceptionCode.canceled) return;
+      // Annuler n'est pas une erreur, mais Android renvoie aussi « annulé »
+      // quand Google bloque l'accès : on affiche donc toujours le détail.
+      debugPrint('Connexion Google : ${error.code.name} ${error.description}');
       state = state.copyWith(
         phase: state.enabled ? state.phase : SyncPhase.off,
         error: '${error.code.name} ${error.description ?? ''}'.trim(),
+        connectFailed: true,
       );
     } on Object catch (error) {
-      state = state.copyWith(error: '$error');
+      state = state.copyWith(error: '$error', connectFailed: true);
     }
   }
 
