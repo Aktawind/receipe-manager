@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:recettes/data/sync/drive_auth.dart';
 import 'package:recettes/data/sync/sync_remote.dart';
 import 'package:recettes/features/sync/sync_providers.dart';
@@ -18,7 +19,42 @@ class _FakeAuth implements DriveAuth {
   Future<void> signOut() async {}
 }
 
+class _RefusedAuth extends _FakeAuth {
+  @override
+  Future<String> signIn() async => throw const GoogleSignInException(
+    code: GoogleSignInExceptionCode.canceled,
+    description: 'Access blocked',
+  );
+}
+
 void main() {
+  testWidgets(
+    'connexion refusée par Google : le message et le détail s’affichent',
+    (tester) async {
+      usePhoneSize(tester);
+      final app = (await tester.runAsync(
+        () => TestApp.create(
+          overrides: [driveAuthProvider.overrideWithValue(_RefusedAuth())],
+        ),
+      ))!;
+      await app.pump(tester);
+      await tester.tap(find.text('Réglages').last);
+      await settle(tester);
+      await scrollTo(tester, find.text('Synchronisation Google Drive'));
+      await tester.tap(find.text('Synchronisation Google Drive'));
+      await settle(tester);
+
+      await tester.tap(find.byKey(const ValueKey('sync-connect')));
+      await settle(tester);
+      expect(
+        find.textContaining('La connexion n’a pas abouti'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('canceled Access blocked'), findsOneWidget);
+      expect(app.prefs.getBool('sync_enabled'), isNull);
+    },
+  );
+
   testWidgets(
     'Réglages → Synchronisation : explication, connexion, déconnexion',
     (tester) async {

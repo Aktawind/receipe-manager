@@ -575,5 +575,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "syncConnectFailed": "La connexion n’a pas abouti : elle a été interrompue ou refusée par Google."
 }

@@ -43,9 +43,11 @@ class SyncPage extends ConsumerWidget {
               icon: const Icon(Icons.login),
               label: Text(l10n.syncConnect),
             ),
-            if (state.error != null) ...[
+            if (state.connectFailed) ...[
               const SizedBox(height: 12),
-              _Error(l10n.syncErrorDetail(state.error!)),
+              _Error(l10n.syncConnectFailed),
+              if (state.error != null)
+                _Error(l10n.syncErrorDetail(state.error!)),
             ],
           ] else ...[
             ListTile(
