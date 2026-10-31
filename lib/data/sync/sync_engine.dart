@@ -155,6 +155,16 @@ class SyncEngine {
     );
   }
 
+  /// Oublie tout ce qu'on sait du dossier distant (déconnexion, autre compte) :
+  /// la prochaine synchro relit tout et renvoie ce qui manque. Les données de
+  /// l'appareil ne sont pas touchées.
+  Future<void> reset() async {
+    await _db.delete(_db.syncEntries).go();
+    await (_db.delete(
+      _db.syncSettings,
+    )..where((s) => s.key.isIn([_tokenKey, _lastSyncKey]))).go();
+  }
+
   /// La date de la dernière synchro réussie, `null` si jamais.
   Future<DateTime?> lastSync() async {
     final value = await _setting(_lastSyncKey);

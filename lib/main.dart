@@ -10,6 +10,7 @@ import 'app.dart';
 import 'core/settings/theme_mode_controller.dart';
 import 'core/startup/startup_error_app.dart';
 import 'data/app_services.dart';
+import 'features/sync/sync_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +31,9 @@ Future<void> main() async {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           appServicesProvider.overrideWithValue(services),
+          syncFolderNameProvider.overrideWithValue(
+            info.packageName.endsWith('.dev') ? 'Recettes (test)' : 'Recettes',
+          ),
         ],
         child: const RecettesApp(),
       ),

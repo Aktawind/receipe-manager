@@ -181,9 +181,12 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
   (base v9), un fichier par élément dans le format des sauvegardes, conflits, suppressions, photos
   envoyées une seule fois, horloge corrigée des écarts entre appareils. Testé sur deux appareils
   simulés.
-- **Étape 2** : connexion Google et dossier Drive réel (nécessite la déclaration ci-dessus).
-- **Étape 3** : réglages (état, bouton, sauvegarde automatique), arrière-plan, suppression des
-  données.
+- **Étape 2 (à tester)** : Réglages → Synchronisation Google Drive : explication, connexion avec ton
+  compte, dossier « Recettes » (« Recettes (test) » pour la version de test) dans ton Drive,
+  synchro automatique à l'ouverture, au retour dans l'app et après chaque modification, bouton
+  « Synchroniser maintenant », déconnexion.
+- **Étape 3** : sauvegarde automatique et restauration, synchro en arrière-plan, suppression des
+  données (appareil et/ou Drive), ordre des collections.
 
 **À tester** : modifier sur le téléphone, voir le changement sur la tablette ; modifier en mode
 avion puis reconnecter ; modifier la même recette sur les deux appareils.
