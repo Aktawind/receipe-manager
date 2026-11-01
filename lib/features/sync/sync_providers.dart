@@ -165,6 +165,11 @@ class SyncController extends Notifier<SyncState> {
     });
     final prefs = ref.read(sharedPreferencesProvider);
     if (prefs.getBool(SyncPrefs.enabled) != true) return const SyncState();
+    // Appareil déjà connecté avant que le compte soit mémorisé.
+    final connected = prefs.getString(SyncPrefs.email);
+    if (connected != null && prefs.getString(SyncPrefs.account) == null) {
+      unawaited(prefs.setString(SyncPrefs.account, connected));
+    }
     _listen();
     _schedule(_atStartup);
     unawaited(ref.read(backgroundSchedulerProvider).schedule());
@@ -187,10 +192,14 @@ class SyncController extends Notifier<SyncState> {
     final prefs = ref.read(sharedPreferencesProvider);
     try {
       final account = await ref.read(driveAuthProvider).signIn();
-      // Un autre compte ou une reconnexion : on repart d'une lecture complète,
-      // sans rien garder d'une synchro précédente (jeton, requête bloquée…).
+      // Nouvelle synchro, sans rien garder d'une requête bloquée.
       _abandonRun();
-      await _engineFor().reset();
+      // Même compte qu'avant : on reprend où on en était (seul le changé
+      // circule). Un autre compte a un autre dossier : on relit tout.
+      if (prefs.getString(SyncPrefs.account) != account.email) {
+        await _engineFor().reset();
+        await prefs.setString(SyncPrefs.account, account.email);
+      }
       await prefs.setBool(SyncPrefs.enabled, true);
       await prefs.setString(SyncPrefs.email, account.email);
       await prefs.setString(SyncPrefs.name, account.name);
@@ -250,7 +259,6 @@ class SyncController extends Notifier<SyncState> {
     } on Object {
       // Déjà déconnecté : sans importance.
     }
-    await _engineFor().reset();
     state = const SyncState();
   }
 
@@ -452,6 +460,9 @@ class SyncController extends Notifier<SyncState> {
   /// Met le dossier Drive à la corbeille, puis arrête la synchronisation.
   Future<void> deleteDriveData() async {
     await _folderFor().deleteAll();
+    // Le dossier n'existe plus : une reconnexion repartira de zéro.
+    await _engineFor().reset();
+    await ref.read(sharedPreferencesProvider).remove(SyncPrefs.account);
     await disconnect();
   }
 
