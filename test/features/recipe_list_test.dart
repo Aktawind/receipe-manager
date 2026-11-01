@@ -198,6 +198,59 @@ void main() {
     expect(find.text('Axoa'), findsOneWidget);
   });
 
+  testWidgets(
+    'recherche dans les ingrédients, faute de frappe tolérée, historique',
+    (tester) async {
+      usePhoneSize(tester);
+      final app = (await tester.runAsync(TestApp.create))!;
+      await tester.runAsync(() async {
+        Future<void> add(String title, List<String> ingredients) async {
+          final created = await app.services.recipes.create();
+          await app.services.recipes.save(
+            created.copyWith(
+              title: title,
+              ingredients: [
+                for (final (i, name) in ingredients.indexed)
+                  IngredientLine(id: '$title$i', name: name),
+              ],
+            ),
+          );
+        }
+
+        await add('Brownie', ['chocolat noir', 'beurre', 'œufs']);
+        await add('Blinis', ['yaourt nature', 'farine', 'œufs']);
+        await add('Salade', ['tomates', 'basilic']);
+      });
+      await app.pump(tester);
+
+      await tester.tap(find.byTooltip('Rechercher'));
+      await settle(tester);
+      await tester.enterText(find.byType(TextField), 'oeuf');
+      await settle(tester);
+      expect(find.text('Brownie'), findsOneWidget);
+      expect(find.text('Blinis'), findsOneWidget);
+      expect(find.text('Salade'), findsNothing);
+
+      // Une faute de frappe est tolérée ; les mots peuvent venir dans le désordre.
+      await tester.enterText(find.byType(TextField), 'chocolta beurre');
+      await settle(tester);
+      expect(find.text('Brownie'), findsOneWidget);
+      expect(find.text('Blinis'), findsNothing);
+
+      // Laissée affichée un instant, la recherche entre dans l'historique.
+      await tester.pump(const Duration(seconds: 2));
+      expect(app.prefs.getStringList('search_history'), ['chocolta beurre']);
+      await tester.tap(find.byTooltip('Fermer la recherche'));
+      await settle(tester);
+      await tester.tap(find.byTooltip('Rechercher'));
+      await settle(tester);
+      expect(find.text('Recherches récentes'), findsOneWidget);
+      await tester.tap(find.text('chocolta beurre'));
+      await settle(tester);
+      expect(find.text('Brownie'), findsOneWidget);
+    },
+  );
+
   testWidgets('le nombre de recettes est en haut de la liste', (tester) async {
     await setUpLibrary(tester);
     expect(find.text('3 recettes'), findsOneWidget);

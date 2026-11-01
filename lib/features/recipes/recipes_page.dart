@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,17 +24,36 @@ class RecipesPage extends ConsumerStatefulWidget {
 class _RecipesPageState extends ConsumerState<RecipesPage> {
   final _searchController = TextEditingController();
   bool _searching = false;
+  Timer? _remember;
 
   @override
   void dispose() {
+    _remember?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
   void _closeSearch() {
+    _remember?.cancel();
     setState(() => _searching = false);
     _searchController.clear();
     ref.read(recipeSearchProvider.notifier).set('');
+  }
+
+  void _onQueryChanged(String query) {
+    ref.read(recipeSearchProvider.notifier).set(query);
+    // Une recherche qu'on laisse affichée un instant est gardée dans
+    // l'historique ; ce qu'on tape lettre à lettre ne l'est pas.
+    _remember?.cancel();
+    _remember = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) ref.read(searchHistoryProvider.notifier).add(query);
+    });
+  }
+
+  void _useSearch(String query) {
+    _searchController.text = query;
+    _searchController.selection = TextSelection.collapsed(offset: query.length);
+    ref.read(recipeSearchProvider.notifier).set(query);
   }
 
   Future<void> _createRecipe() async {
@@ -61,7 +82,9 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                   focusedBorder: InputBorder.none,
                 ),
                 textInputAction: TextInputAction.search,
-                onChanged: ref.read(recipeSearchProvider.notifier).set,
+                onChanged: _onQueryChanged,
+                onSubmitted: (query) =>
+                    ref.read(searchHistoryProvider.notifier).add(query),
               )
             : Text(l10n.navRecipes),
         actions: [
@@ -94,34 +117,100 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
         icon: const Icon(Icons.add),
         label: Text(l10n.newRecipe),
       ),
-      body: recipes.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('$error')),
-        data: (recipes) {
-          if (recipes.isEmpty) {
-            final query = ref.watch(recipeSearchProvider).trim();
-            return _EmptyState(
-              message: query.isNotEmpty
-                  ? l10n.noSearchResults(query)
-                  : filter.isActive
-                  ? l10n.filterNoRecipes
-                  : null,
-            );
-          }
-          return Column(
+      body: _searching && ref.watch(recipeSearchProvider).trim().isEmpty
+          ? _SearchHistoryList(
+              onPick: _useSearch,
+              fallback: _list(l10n, view, filter, recipes),
+            )
+          : _list(l10n, view, filter, recipes),
+    );
+  }
+
+  Widget _list(
+    AppLocalizations l10n,
+    RecipesView view,
+    RecipeFilter filter,
+    AsyncValue<List<Recipe>> recipes,
+  ) {
+    return recipes.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(child: Text('$error')),
+      data: (recipes) {
+        if (recipes.isEmpty) {
+          final query = ref.watch(recipeSearchProvider).trim();
+          return _EmptyState(
+            message: query.isNotEmpty
+                ? l10n.noSearchResults(query)
+                : filter.isActive
+                ? l10n.filterNoRecipes
+                : null,
+          );
+        }
+        return Column(
+          children: [
+            _CountLine(shown: recipes.length),
+            Expanded(
+              child: switch (view) {
+                RecipesView.grid => _RecipeGrid(recipes: recipes),
+                RecipesView.list => _RecipeList(recipes: recipes),
+                RecipesView.cards => _RecipeCards(recipes: recipes),
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// L'historique des recherches, affiché quand on ouvre la recherche sans rien
+/// avoir tapé. Sans historique, c'est la liste des recettes.
+class _SearchHistoryList extends ConsumerWidget {
+  const _SearchHistoryList({required this.onPick, required this.fallback});
+
+  final ValueChanged<String> onPick;
+  final Widget fallback;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final history = ref.watch(searchHistoryProvider);
+    if (history.isEmpty) return fallback;
+    final l10n = AppLocalizations.of(context);
+    final notifier = ref.read(searchHistoryProvider.notifier);
+    return ListView(
+      padding: EdgeInsets.only(
+        bottom: 24 + MediaQuery.paddingOf(context).bottom,
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+          child: Row(
             children: [
-              _CountLine(shown: recipes.length),
               Expanded(
-                child: switch (view) {
-                  RecipesView.grid => _RecipeGrid(recipes: recipes),
-                  RecipesView.list => _RecipeList(recipes: recipes),
-                  RecipesView.cards => _RecipeCards(recipes: recipes),
-                },
+                child: Text(
+                  l10n.searchHistory,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              TextButton(
+                onPressed: notifier.clear,
+                child: Text(l10n.searchHistoryClear),
               ),
             ],
-          );
-        },
-      ),
+          ),
+        ),
+        for (final query in history)
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: Text(query),
+            trailing: IconButton(
+              tooltip: l10n.searchHistoryRemove,
+              icon: const Icon(Icons.close),
+              onPressed: () => notifier.remove(query),
+            ),
+            onTap: () => onPick(query),
+          ),
+      ],
     );
   }
 }
