@@ -62,6 +62,10 @@ class SyncPage extends ConsumerWidget {
                     )
                   : null,
             ),
+            if (state.phase == SyncPhase.syncing && state.progressTotal > 0)
+              LinearProgressIndicator(
+                value: state.progressDone / state.progressTotal,
+              ),
             if (state.lastConflicts > 0) ...[
               const SizedBox(height: 8),
               Text(l10n.syncConflicts(state.lastConflicts)),
@@ -103,7 +107,9 @@ class SyncPage extends ConsumerWidget {
   String _status(BuildContext context, AppLocalizations l10n, SyncState state) {
     switch (state.phase) {
       case SyncPhase.syncing:
-        return l10n.syncStatusSyncing;
+        return state.progressTotal == 0
+            ? l10n.syncStatusSyncing
+            : l10n.syncStatusProgress(state.progressDone, state.progressTotal);
       case SyncPhase.error:
         return l10n.syncStatusError;
       case SyncPhase.signInRequired:

@@ -42,6 +42,8 @@ class SyncState {
     this.error,
     this.lastConflicts = 0,
     this.connectFailed = false,
+    this.progressDone = 0,
+    this.progressTotal = 0,
   });
 
   final SyncPhase phase;
@@ -57,6 +59,10 @@ class SyncState {
   /// La dernière tentative de connexion n'a pas abouti.
   final bool connectFailed;
 
+  /// Avancement de la synchro en cours : fichiers traités / connus.
+  final int progressDone;
+  final int progressTotal;
+
   bool get enabled => phase != SyncPhase.off;
 
   SyncState copyWith({
@@ -67,6 +73,8 @@ class SyncState {
     bool clearError = false,
     int? lastConflicts,
     bool? connectFailed,
+    int? progressDone,
+    int? progressTotal,
   }) => SyncState(
     phase: phase ?? this.phase,
     email: email ?? this.email,
@@ -74,6 +82,8 @@ class SyncState {
     error: clearError ? null : error ?? this.error,
     lastConflicts: lastConflicts ?? this.lastConflicts,
     connectFailed: connectFailed ?? this.connectFailed,
+    progressDone: progressDone ?? this.progressDone,
+    progressTotal: progressTotal ?? this.progressTotal,
   );
 }
 
@@ -163,9 +173,21 @@ class SyncController extends Notifier<SyncState> {
     }
     _running = true;
     _timer?.cancel();
-    state = state.copyWith(phase: SyncPhase.syncing, clearError: true);
+    state = state.copyWith(
+      phase: SyncPhase.syncing,
+      clearError: true,
+      progressDone: 0,
+      progressTotal: 0,
+    );
     try {
-      final report = await _engineFor().sync();
+      final report = await _engineFor().sync(
+        onProgress: (done, total) {
+          // Pas à chaque fichier : l'écran n'a pas besoin d'être plus vif.
+          if (done == total || done % 5 == 0 || total - done < 5) {
+            state = state.copyWith(progressDone: done, progressTotal: total);
+          }
+        },
+      );
       if (report.ok) {
         state = state.copyWith(
           phase: SyncPhase.idle,

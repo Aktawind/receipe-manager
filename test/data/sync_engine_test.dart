@@ -105,7 +105,9 @@ class _Time {
   DateTime value;
 }
 
-DateTime t(int minute) => DateTime.utc(2026, 11, 1, 10, minute);
+/// Les dates des tests sont dans le futur : les éléments par défaut sont datés
+/// de l'heure réelle et ne doivent jamais paraître plus récents.
+DateTime t(int minute) => DateTime.utc(2035, 1, 1, 10, minute);
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -384,6 +386,33 @@ void main() {
       expect(await b.engine.lastSync(), isNotNull);
     },
   );
+
+  test('beaucoup de recettes : envoyées en parallèle, une photo partagée une fois, progression', () async {
+    await a.photos.write('commune.jpg', [7]);
+    for (var i = 0; i < 40; i++) {
+      final created = await a.addRecipe('Recette $i');
+      await a.recipes.save(created.copyWith(mainPhoto: () => 'commune.jpg'));
+    }
+    final steps = <(int, int)>[];
+    final sent = await a.engine.sync(onProgress: (d, t) => steps.add((d, t)));
+    expect(sent.ok, isTrue, reason: '${sent.errors}');
+    expect(remote.count('write media/commune.jpg'), 1);
+    expect(
+      remote.files.keys.where((k) => k.startsWith('recipes/')),
+      hasLength(40),
+    );
+    expect(steps.last.$1, steps.last.$2, reason: 'tout est traité à la fin');
+    expect(steps.last.$2, greaterThanOrEqualTo(40));
+
+    final received = <(int, int)>[];
+    final report = await b.engine.sync(
+      onProgress: (d, t) => received.add((d, t)),
+    );
+    expect(report.ok, isTrue, reason: '${report.errors}');
+    expect((await b.recipes.getAllWithDetails()).length, 40);
+    expect(await b.photos.file('commune.jpg').readAsBytes(), [7]);
+    expect(received.last.$1, received.last.$2);
+  });
 
   test('un chemin distant inconnu est ignoré', () async {
     await remote.write('history/x.json', Uint8List(0));

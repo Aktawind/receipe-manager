@@ -22,9 +22,12 @@ class DriveRemote implements SyncRemote {
     required this.folderName,
     required this.cache,
     http.Client? client,
-  }) : _api = drive.DriveApi(_AuthClient(auth, client ?? http.Client()));
+  }) : _auth = _AuthClient(auth, client ?? http.Client()) {
+    _api = drive.DriveApi(_auth);
+  }
 
-  final drive.DriveApi _api;
+  final _AuthClient _auth;
+  late final drive.DriveApi _api;
   final String folderName;
 
   /// Petit stockage propre à l'appareil (identifiants des dossiers Drive).
@@ -46,12 +49,24 @@ class DriveRemote implements SyncRemote {
   /// Chemin → identifiant Drive, rempli à la demande (liste d'un dossier).
   final Map<String, String> _ids = {};
   final Set<String> _listed = {};
+  final Map<String, Future<List<drive.File>>> _listings = {};
 
   // ------------------------------------------------------------------- dossiers
+
+  /// Plusieurs requêtes peuvent le demander en même temps : une seule travaille.
+  Future<Map<String, String>>? _foldersLoading;
 
   Future<Map<String, String>> _ensureFolders() async {
     final known = _folders;
     if (known != null) return known;
+    try {
+      return await (_foldersLoading ??= _loadFolders());
+    } finally {
+      _foldersLoading = null;
+    }
+  }
+
+  Future<Map<String, String>> _loadFolders() async {
     final stored = await cache.read(_foldersKey);
     if (stored != null && stored.isNotEmpty) {
       final decoded = (jsonDecode(stored) as Map).cast<String, String>();
@@ -95,22 +110,51 @@ class DriveRemote implements SyncRemote {
     _folders = null;
     _ids.clear();
     _listed.clear();
+    _listings.clear();
+    _auth.invalidate();
     await cache.write(_foldersKey, '');
   }
 
+  /// Rejoue une requête que Drive refuse pour une raison passagère : jeton
+  /// expiré (on en redemande un), trop de requêtes ou panne momentanée.
   Future<T> _guard<T>(Future<T> Function() action) async {
-    try {
-      return await action();
-    } on drive.DetailedApiRequestError catch (error) {
-      if (error.status == 404) await _forgetFolders();
-      rethrow;
+    for (var attempt = 1; ; attempt++) {
+      try {
+        return await action();
+      } on drive.DetailedApiRequestError catch (error) {
+        final status = error.status ?? 0;
+        if (status == 404) await _forgetFolders();
+        final transient =
+            status == 429 ||
+            status == 403 && _isRateLimit(error) ||
+            status >= 500;
+        if (status == 401 && attempt == 1) {
+          _auth.invalidate();
+        } else if (!transient || attempt >= 4) {
+          rethrow;
+        } else {
+          await Future<void>.delayed(
+            Duration(milliseconds: 500 * attempt * attempt),
+          );
+        }
+      }
     }
   }
 
+  static bool _isRateLimit(drive.DetailedApiRequestError error) => error.errors
+      .any((e) => (e.reason ?? '').toLowerCase().contains('ratelimit'));
+
   // ------------------------------------------------------------------- lecture
 
-  /// Les fichiers d'un sous-dossier, avec leur version.
-  Future<List<drive.File>> _list(String folder) async {
+  /// Les fichiers d'un sous-dossier, avec leur version (un seul listage à la
+  /// fois par dossier, même si plusieurs envois le demandent ensemble).
+  Future<List<drive.File>> _list(String folder) =>
+      _listings[folder] ??= _listFolder(folder).whenComplete(() {
+        // Un bloc : une flèche renverrait ce même Future, qui s'attendrait lui-même.
+        _listings.remove(folder);
+      });
+
+  Future<List<drive.File>> _listFolder(String folder) async {
     final folders = await _ensureFolders();
     final result = <drive.File>[];
     String? pageToken;
@@ -281,17 +325,47 @@ abstract class DriveCache {
   Future<void> write(String key, String value);
 }
 
-/// Ajoute l'autorisation Google (renouvelée au besoin) à chaque requête.
+/// Ajoute l'autorisation Google à chaque requête. Le jeton est gardé en
+/// mémoire : le redemander à Android pour chaque fichier ralentirait tout.
 class _AuthClient extends http.BaseClient {
   _AuthClient(this._auth, this._inner);
 
   final DriveAuth _auth;
   final http.Client _inner;
+  static const _lifetime = Duration(minutes: 30);
+
+  Future<Map<String, String>?>? _headers;
+  DateTime? _since;
+
+  void invalidate() {
+    _headers = null;
+    _since = null;
+  }
+
+  Future<Map<String, String>?> _current() {
+    final since = _since;
+    if (_headers == null ||
+        since == null ||
+        DateTime.now().difference(since) > _lifetime) {
+      _since = DateTime.now();
+      _headers = _auth.headers();
+    }
+    return _headers!;
+  }
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final headers = await _auth.headers();
-    if (headers == null) throw const DriveSignInRequired();
+    final Map<String, String>? headers;
+    try {
+      headers = await _current();
+    } on Object {
+      invalidate();
+      rethrow;
+    }
+    if (headers == null) {
+      invalidate();
+      throw const DriveSignInRequired();
+    }
     request.headers.addAll(headers);
     return _inner.send(request);
   }
