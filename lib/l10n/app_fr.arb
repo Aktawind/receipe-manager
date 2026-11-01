@@ -576,5 +576,16 @@
       }
     }
   },
-  "syncConnectFailed": "La connexion n’a pas abouti : elle a été interrompue ou refusée par Google."
+  "syncConnectFailed": "La connexion n’a pas abouti : elle a été interrompue ou refusée par Google.",
+  "syncStatusProgress": "Synchronisation en cours… {done} / {total}",
+  "@syncStatusProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  }
 }

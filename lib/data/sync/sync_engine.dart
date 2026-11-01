@@ -141,6 +141,44 @@ class SyncEngine {
   /// Les versions de nos propres envois, pour ne pas les relire.
   final Map<String, String> _own = {};
 
+  /// Photos en cours d'envoi (deux recettes peuvent partager une photo).
+  final Map<String, Future<void>> _mediaUploads = {};
+
+  /// Nombre de fichiers lus ou envoyés en même temps : Drive répond en une
+  /// fraction de seconde, mais chaque requête attend son tour sur le réseau.
+  static const _parallel = 6;
+
+  void Function(int done, int total)? _onProgress;
+  int _done = 0;
+  int _total = 0;
+
+  void _plan(int count) {
+    _total += count;
+    _onProgress?.call(_done, _total);
+  }
+
+  void _step() {
+    _done++;
+    _onProgress?.call(_done, _total);
+  }
+
+  /// Exécute [task] sur chaque élément, [_parallel] à la fois.
+  static Future<void> _forEach<T>(
+    List<T> items,
+    Future<void> Function(T item) task,
+  ) async {
+    var next = 0;
+    Future<void> worker() async {
+      while (next < items.length) {
+        await task(items[next++]);
+      }
+    }
+
+    await Future.wait([
+      for (var i = 0; i < _parallel && i < items.length; i++) worker(),
+    ]);
+  }
+
   /// Charge l'horloge corrigée de cet appareil (à l'ouverture de l'app).
   static Future<HybridClock> loadClock(
     AppDatabase database, {
@@ -173,9 +211,17 @@ class SyncEngine {
 
   /// Une synchro complète : réception, envoi, puis relecture du dossier pour
   /// avancer le jeton au-delà de nos propres envois.
-  Future<SyncReport> sync() async {
+  ///
+  /// [onProgress] reçoit le nombre de fichiers traités et le total connu.
+  Future<SyncReport> sync({
+    void Function(int done, int total)? onProgress,
+  }) async {
     final report = SyncReport();
     _own.clear();
+    _mediaUploads.clear();
+    _onProgress = onProgress;
+    _done = 0;
+    _total = 0;
     try {
       if (!await _pull(report)) return report;
       final sent = await _push(report);
@@ -196,20 +242,36 @@ class SyncEngine {
   Future<bool> _pull(SyncReport report) async {
     final changes = await _remote.changes(await _setting(_tokenKey));
     final before = report.errors.length;
-    for (final change in changes.items) {
-      final parsed = SyncKind.parse(change.path);
-      if (parsed == null || parsed.$1 == SyncKind.media) continue;
-      if (!change.deleted && _own[change.path] == change.version) continue;
-      try {
-        if (change.deleted) {
-          await _applyRemoteDelete(parsed.$1, parsed.$2, report);
-        } else {
-          final bytes = await _remote.read(change.path);
-          await _applyRemote(parsed.$1, parsed.$2, bytes, report);
-        }
-      } on Object catch (error) {
-        report.errors.add('${change.path} : $error');
-      }
+    final wanted = [
+      for (final change in changes.items)
+        if (SyncKind.parse(change.path) case (final kind, final id)?
+            when kind != SyncKind.media &&
+                (change.deleted || _own[change.path] != change.version))
+          (change, kind, id),
+    ];
+    _plan(wanted.length);
+    // Le classement et le matériel d'abord, puis les recettes.
+    for (final recipes in [false, true]) {
+      await _forEach(
+        [
+          for (final item in wanted)
+            if ((item.$2 == SyncKind.recipe) == recipes) item,
+        ],
+        (item) async {
+          final (change, kind, id) = item;
+          try {
+            if (change.deleted) {
+              await _applyRemoteDelete(kind, id, report);
+            } else {
+              final bytes = await _remote.read(change.path);
+              await _applyRemote(kind, id, bytes, report);
+            }
+          } on Object catch (error) {
+            report.errors.add('${change.path} : $error');
+          }
+          _step();
+        },
+      );
     }
     final seen = _clock.lastSeen;
     if (seen != null) {
@@ -329,24 +391,37 @@ class SyncEngine {
       final stamps = await adapter.stamps();
       final entries = await _entries(adapter.kind);
       final cache = adapter.loadAll == null ? null : await adapter.loadAll!();
+      final dirty = <String>[];
       for (final MapEntry(key: id, value: stamp) in stamps.entries) {
         final synced = entries[id]?.syncedUpdatedAt;
-        if (synced != null && _same(stamp, synced)) continue;
+        if (synced == null || !_same(stamp, synced)) dirty.add(id);
+      }
+      final gone = adapter.kind == SyncKind.recipe
+          ? [
+              for (final id in entries.keys)
+                if (!stamps.containsKey(id)) id,
+            ]
+          : const <String>[];
+      _plan(dirty.length + gone.length);
+
+      await _forEach(dirty, (id) async {
         try {
           final item = cache != null ? cache[id] : await adapter.load(id);
-          if (item == null) continue;
-          if (item is Recipe) await _pushPhotos(item, report);
-          final path = adapter.kind.path(id);
-          _own[path] = await _remote.write(path, adapter.encode(item));
-          await _markSynced(adapter.kind, id, adapter.updatedAt(item));
-          sent++;
-          report.uploaded++;
+          if (item != null) {
+            if (item is Recipe) await _pushPhotos(item, report);
+            final path = adapter.kind.path(id);
+            _own[path] = await _remote.write(path, adapter.encode(item));
+            await _markSynced(adapter.kind, id, adapter.updatedAt(item));
+            sent++;
+            report.uploaded++;
+          }
         } on Object catch (error) {
           report.errors.add('${adapter.kind.path(id)} : $error');
         }
-      }
-      if (adapter.kind != SyncKind.recipe) continue;
-      for (final id in entries.keys.where((id) => !stamps.containsKey(id))) {
+        _step();
+      });
+
+      await _forEach(gone, (id) async {
         try {
           await _remote.delete(adapter.kind.path(id));
           await _forget(adapter.kind, id);
@@ -355,21 +430,26 @@ class SyncEngine {
         } on Object catch (error) {
           report.errors.add('${adapter.kind.path(id)} : $error');
         }
-      }
+        _step();
+      });
     }
     return sent;
   }
 
   Future<void> _pushPhotos(Recipe recipe, SyncReport report) async {
     for (final name in recipe.allPhotos) {
-      if (await _entry(SyncKind.media, name) != null) continue;
-      final file = _photos.file(name);
-      if (!file.existsSync()) continue;
-      final path = SyncKind.media.path(name);
-      _own[path] = await _remote.write(path, await file.readAsBytes());
-      await _markSynced(SyncKind.media, name, null);
-      report.uploaded++;
+      await (_mediaUploads[name] ??= _pushPhoto(name, report));
     }
+  }
+
+  Future<void> _pushPhoto(String name, SyncReport report) async {
+    if (await _entry(SyncKind.media, name) != null) return;
+    final file = _photos.file(name);
+    if (!file.existsSync()) return;
+    final path = SyncKind.media.path(name);
+    _own[path] = await _remote.write(path, await file.readAsBytes());
+    await _markSynced(SyncKind.media, name, null);
+    report.uploaded++;
   }
 
   // ------------------------------------------------------------------- détails
