@@ -136,19 +136,6 @@ class RecipeRepository {
     return copy;
   }
 
-  Future<void> incrementTimesCooked(String id, int delta) async {
-    await _db.customUpdate(
-      'UPDATE recipes SET times_cooked = MAX(0, times_cooked + ?), '
-      'updated_at = ? WHERE id = ?',
-      variables: [
-        Variable.withInt(delta),
-        Variable.withString(_clock().toIso8601String()),
-        Variable.withString(id),
-      ],
-      updates: {_db.recipes},
-    );
-  }
-
   Future<void> setFavorite(String id, bool value) {
     return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
       RecipesCompanion(isFavorite: Value(value), updatedAt: Value(_clock())),

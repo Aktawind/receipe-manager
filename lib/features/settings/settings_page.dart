@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/settings/theme_mode_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../recipes/recipe_providers.dart';
+import '../sync/sync_page.dart';
 import '../sync/sync_providers.dart';
 import 'backup_actions.dart';
 import 'recipe_keeper_actions.dart';
@@ -66,12 +67,6 @@ class SettingsPage extends ConsumerWidget {
             onTap: () => BackupActions(context, ref).export(),
           ),
           ListTile(
-            leading: const Icon(Icons.share_outlined),
-            title: Text(l10n.shareBackup),
-            subtitle: Text(l10n.shareBackupSubtitle),
-            onTap: () => BackupActions(context, ref).share(),
-          ),
-          ListTile(
             leading: const Icon(Icons.upload_file),
             title: Text(l10n.importBackup),
             subtitle: Text(l10n.importBackupSubtitle),
@@ -84,7 +79,9 @@ class SettingsPage extends ConsumerWidget {
             onTap: () => RecipeKeeperActions(context, ref).import(),
           ),
           ListTile(
-            leading: const Icon(Icons.cloud_sync_outlined),
+            leading: sync.enabled
+                ? AccountAvatar(state: sync, radius: 16)
+                : const Icon(Icons.cloud_sync_outlined),
             title: Text(l10n.syncTitle),
             subtitle: Text(
               sync.email == null

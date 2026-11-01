@@ -201,27 +201,40 @@ Pour la pâte :
     expect(restored!.isDeleted, isFalse);
   });
 
-  testWidgets('« J’ai fait cette recette » incrémente le compteur', (
+  testWidgets('statut « À retester » et notes vides sans texte inutile', (
     tester,
   ) async {
     usePhoneSize(tester);
     final app = (await tester.runAsync(TestApp.create))!;
-    await tester.runAsync(() async {
+    final id = (await tester.runAsync(() async {
       final created = await app.services.recipes.create();
-      await app.services.recipes.save(
+      return (await app.services.recipes.save(
         created.copyWith(
           title: 'Soupe',
           ingredients: const [IngredientLine(id: 'i', name: 'poireaux')],
         ),
-      );
-    });
+      )).id;
+    }))!;
     await app.pump(tester);
 
     await tester.tap(find.text('Soupe'));
     await settle(tester);
-    expect(find.text('Jamais réalisée'), findsOneWidget);
-    await tester.tap(find.byTooltip("J'ai fait cette recette"));
+    // Plus de compteur de réalisations.
+    expect(find.textContaining('Jamais réalisée'), findsNothing);
+    expect(find.byTooltip("J'ai fait cette recette"), findsNothing);
+
+    await tester.tap(find.byTooltip('Statut'));
     await settle(tester);
-    expect(find.text('Réalisée 1 fois'), findsOneWidget);
+    await tester.tap(find.text('À retester'));
+    await settle(tester);
+    final status = (await tester.runAsync(
+      () => app.services.recipes.getRecipe(id),
+    ))!.status;
+    expect(status, RecipeStatus.toRetest);
+
+    // Sans note : seulement le bouton pour en ajouter.
+    await scrollTo(tester, find.text('Ajouter une note'));
+    expect(find.textContaining('Aucune note'), findsNothing);
+    expect(find.text('Ajouter une note'), findsOneWidget);
   });
 }

@@ -12,7 +12,7 @@ recettes-2026-10-27-1430.zip
 
 ## Règles de compatibilité
 
-- Le champ `version` indique la version du format (actuellement **7**).
+- Le champ `version` indique la version du format (actuellement **8**).
 - Toute version de l'application sait lire **toutes les versions précédentes** du format.
 - Une sauvegarde d'une version **plus récente** que l'application est refusée, sans rien
   modifier (message : « Mets l'application à jour »).
@@ -30,6 +30,7 @@ recettes-2026-10-27-1430.zip
 | 5 | 0.2.0 (test) | Ajout de `equipment` (noms), `videoLinks` et `ingredients[].substitutes` |
 | 6 | 0.2.0 | Liste commune du matériel (`equipment` du document, `equipment` des recettes = identifiants) ; recettes liées dans les ingrédients (`ingredients[].linkedRecipe`), `linkedRecipes` disparaît |
 | 7 | 0.3.0 | Classement commun : `labels` (document) et `labels` (recettes = identifiants) remplacent `course`, `category` et `collections`. Quatre familles ; les étiquettes (`tag`) et occasions (`occasion`) des versions de test sont lues comme des collections, le type de repas (`meal`) est ignoré |
+| 8 | 0.4.0 | Nouveau statut `toRetest` (« à retester »). Le nombre de réalisations (`timesCooked`) n'est plus affiché mais reste écrit et lu |
 
 Lecture d'une version 6 (et 3 à 5) : `course`, `category` et `collections` en texte libre deviennent
 le classement commun. Le type de plat devient la catégorie (« Plat » → « Plats »), la catégorie la
@@ -52,12 +53,12 @@ Lecture d'une version 2 : les champs ajoutés par la version 3 prennent leur val
 Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une ligne vide) ; les
 étapes n'ont pas de titre.
 
-## `recettes.json` — version 7
+## `recettes.json` — version 8
 
 ```json
 {
   "format": "recettes-backup",
-  "version": 7,
+  "version": 8,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
   "equipment": [

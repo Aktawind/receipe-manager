@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/domain/label.dart';
+import 'package:recettes/domain/recipe.dart';
 
 import '../helpers/test_app.dart';
 
@@ -86,7 +87,7 @@ Future<void> pickFor(
   await settle(tester);
 }
 
-/// Choisit « Afficher » : Toutes, Favoris, Récemment consultées…
+/// Choisit « Afficher » : Toutes ou Favoris.
 Future<void> showOnly(WidgetTester tester, String what) async {
   await tester.tap(find.text('Afficher'));
   await settle(tester);
@@ -175,37 +176,95 @@ void main() {
     expect(find.text('Agneau'), findsNothing);
   });
 
-  testWidgets('accès rapides : favoris et récemment consultées', (
+  testWidgets('accès rapide : favoris ; plus de filtre « récemment »', (
     tester,
   ) async {
     await setUpLibrary(tester);
 
     await openFilters(tester);
-    await showOnly(tester, 'Favoris');
+    await tester.tap(find.text('Afficher'));
+    await settle(tester);
+    expect(find.text('Récemment consultées'), findsNothing);
+    expect(find.text('Récemment ajoutées'), findsNothing);
+    await tester.tap(find.text('Favoris'));
+    await settle(tester);
     await done(tester);
     expect(find.text('Boulgour'), findsOneWidget);
     expect(find.text('Axoa'), findsNothing);
 
-    // Aucune fiche ouverte : rien de récent.
-    await openFilters(tester);
-    await showOnly(tester, 'Récemment consultées');
-    await done(tester);
-    expect(find.text('Axoa'), findsNothing);
-    expect(find.text('Boulgour'), findsNothing);
-
-    // On ouvre « Axoa » : elle devient la première récente.
     await openFilters(tester);
     await showOnly(tester, 'Toutes');
     await done(tester);
-    await tester.tap(find.text('Axoa'));
-    await settle(tester);
-    await tester.tap(find.byIcon(Icons.arrow_back));
-    await settle(tester);
-    await openFilters(tester);
-    await showOnly(tester, 'Récemment consultées');
-    await done(tester);
     expect(find.text('Axoa'), findsOneWidget);
-    expect(find.text('Cake citron'), findsNothing);
+  });
+
+  testWidgets('le nombre de recettes est en haut de la liste', (tester) async {
+    await setUpLibrary(tester);
+    expect(find.text('3 recettes'), findsOneWidget);
+
+    await openFilters(tester);
+    await pickFor(tester, 'Saison', ['Hiver']);
+    await done(tester);
+    expect(find.text('2 sur 3 recettes'), findsOneWidget);
+  });
+
+  testWidgets('catégories : seulement les principales dans le filtre', (
+    tester,
+  ) async {
+    await setUpLibrary(tester);
+    await openFilters(tester);
+    await tester.tap(find.text('Catégories'));
+    await settle(tester);
+    expect(find.widgetWithText(CheckboxListTile, 'Plats'), findsOneWidget);
+    expect(find.widgetWithText(CheckboxListTile, 'Desserts'), findsOneWidget);
+    expect(find.widgetWithText(CheckboxListTile, 'Viandes'), findsNothing);
+    expect(find.widgetWithText(CheckboxListTile, 'Salades'), findsNothing);
+  });
+
+  testWidgets('statut : filtrer et trier', (tester) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(TestApp.create))!;
+    await tester.runAsync(() async {
+      Future<void> add(String title, RecipeStatus? status) async {
+        final created = await app.services.recipes.create();
+        await app.services.recipes.save(
+          created.copyWith(title: title, status: () => status),
+        );
+      }
+
+      await add('Axoa', RecipeStatus.validated);
+      await add('Blinis', RecipeStatus.toTest);
+      await add('Cake', RecipeStatus.toRetest);
+      await add('Dahl', null);
+    });
+    await app.pump(tester);
+
+    await openFilters(tester);
+    await pickFor(tester, 'Statut', ['À tester', 'À retester']);
+    await done(tester);
+    expect(find.text('Blinis'), findsOneWidget);
+    expect(find.text('Cake'), findsOneWidget);
+    expect(find.text('Axoa'), findsNothing);
+    expect(find.text('Dahl'), findsNothing);
+
+    await openFilters(tester);
+    await tester.tap(find.text('Tout effacer'));
+    await settle(tester);
+    await done(tester);
+
+    // Tri par statut : à tester, à retester, … validée, puis sans statut.
+    await tester.tap(find.byTooltip('Affichage'));
+    await settle(tester);
+    await tester.tap(find.text('Statut').last, warnIfMissed: false);
+    await settle(tester);
+    double top(String title) {
+      final p = tester.getTopLeft(find.text(title));
+      return p.dy * 1000 + p.dx;
+    }
+
+    expect(top('Blinis') < top('Cake'), isTrue);
+    expect(top('Cake') < top('Axoa'), isTrue);
+    expect(top('Axoa') < top('Dahl'), isTrue);
   });
 
   testWidgets('la rangée de pastilles a disparu du haut de la liste', (

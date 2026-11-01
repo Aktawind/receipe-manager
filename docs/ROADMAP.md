@@ -130,7 +130,7 @@ Objectif : retrouver toute ta bibliothèque et pouvoir lâcher Recipe Keeper pou
 - Classements complémentaires : origine culinaire, saison (le type de repas viendra avec le
   planning, 0.11 ; les occasions sont des collections)
 - Accès rapide aux favoris
-- Recettes récemment consultées, récemment ajoutées
+- Tri par consultation et par ajout (pas de filtre « récentes », retiré le 2026-11-01)
 - Vues liste, grille et cartes (photos toujours affichées)
 
 *Décisions du 2026-10-29* : les types de plat de Recipe Keeper (Plat, Dessert, Goûter…) deviennent
@@ -185,6 +185,12 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
   compte, dossier « Recettes » (« Recettes (test) » pour la version de test) dans ton Drive,
   synchro automatique à l'ouverture, au retour dans l'app et après chaque modification, bouton
   « Synchroniser maintenant », déconnexion.
+- **Retours du 2026-11-01** (synchro validée sur téléphone et tablette) : statut « À retester » ;
+  filtre et tri par statut ; nombre de réalisations retiré de l'affichage (la donnée reste dans les
+  sauvegardes) ; « Aucune note » retiré ; « Partager une sauvegarde » retiré (l'export suffit) ;
+  filtre par catégories principales ; filtres « récemment consultées/ajoutées » retirés (les tris
+  restent) ; nombre de recettes en haut de la liste ; photo du compte Google dans la synchro ;
+  numéro de version mis à jour dans le projet à chaque version.
 - **Étape 3** : sauvegarde automatique et restauration, synchro en arrière-plan, suppression des
   données (appareil et/ou Drive), ordre des collections.
 

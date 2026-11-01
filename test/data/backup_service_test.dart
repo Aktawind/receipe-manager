@@ -109,6 +109,19 @@ void main() {
     expect((await target.repo.getRecipe(soup.id))!.isDeleted, isTrue);
   });
 
+  test('le statut « à retester » fait l’aller-retour', () async {
+    final cake = await addRecipe(source, 'Cake');
+    await source.repo.setStatus(cake.id, RecipeStatus.toRetest);
+
+    final contents = target.service.readZip(await source.service.exportZip());
+    await target.service.import(contents, ImportMode.merge);
+
+    expect(
+      (await target.repo.getRecipe(cake.id))!.status,
+      RecipeStatus.toRetest,
+    );
+  });
+
   test('fusion : garde la version la plus récente, ne supprime rien', () async {
     final shared = await addRecipe(source, 'Version sauvegarde');
     final zip = await source.service.exportZip();
@@ -203,13 +216,13 @@ void main() {
     expect((await target.repo.getRecipe('old-1'))!.notes, contains('Précuire'));
   });
 
-  test('l’export est en version 7, sans champ « tips »', () async {
+  test('l’export est en version 8, sans champ « tips »', () async {
     await addRecipe(source, 'Tarte');
     final archive = ZipDecoder().decodeBytes(await source.service.exportZip());
     final json = jsonDecode(
       utf8.decode(archive.findFile(BackupFormat.dataFile)!.content),
     ) as Map<String, Object?>;
-    expect(json['version'], 7);
+    expect(json['version'], 8);
     final recipe = (json['recipes'] as List).single as Map<String, Object?>;
     expect(recipe.containsKey('tips'), isFalse);
   });

@@ -1,24 +1,18 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../data/app_services.dart';
 import '../../data/backup/backup_format.dart';
 import '../../data/backup/backup_service.dart';
 import '../../l10n/app_localizations.dart';
 
-/// Accès aux fichiers du système (sélecteur, partage). Remplaçable en test.
+/// Accès aux fichiers du système (sélecteur). Remplaçable en test.
 abstract class FileGateway {
   /// Enregistre [bytes] à l'endroit choisi par l'utilisateur. `false` si annulé.
   Future<bool> save(String fileName, Uint8List bytes);
-
-  Future<void> share(String fileName, Uint8List bytes);
 
   /// Contenu du fichier choisi, ou `null` si annulé.
   Future<Uint8List?> pickZip();
@@ -31,16 +25,6 @@ class SystemFileGateway implements FileGateway {
   Future<bool> save(String fileName, Uint8List bytes) async {
     final uri = await FilePicker.saveFile(fileName: fileName, bytes: bytes);
     return uri != null;
-  }
-
-  @override
-  Future<void> share(String fileName, Uint8List bytes) async {
-    final dir = await getTemporaryDirectory();
-    final file = File(p.join(dir.path, fileName));
-    await file.writeAsBytes(bytes, flush: true);
-    await SharePlus.instance.share(
-      ShareParams(files: [XFile(file.path, mimeType: 'application/zip')]),
-    );
   }
 
   @override
@@ -58,7 +42,7 @@ final fileGatewayProvider = Provider<FileGateway>(
   (ref) => const SystemFileGateway(),
 );
 
-/// Les actions « Exporter », « Partager » et « Importer » des réglages.
+/// Les actions « Exporter » et « Importer » des réglages.
 class BackupActions {
   BackupActions(this.context, this.ref);
 
@@ -79,18 +63,6 @@ class BackupActions {
           .read(fileGatewayProvider)
           .save(service.exportFileName(), bytes);
       if (saved && context.mounted) _snack(_l10n.backupSaved);
-    } on Object catch (error) {
-      if (context.mounted) _snack(_l10n.backupFailed('$error'));
-    }
-  }
-
-  Future<void> share() async {
-    final service = ref.read(backupServiceProvider);
-    try {
-      final bytes = Uint8List.fromList(await service.exportZip());
-      await ref
-          .read(fileGatewayProvider)
-          .share(service.exportFileName(), bytes);
     } on Object catch (error) {
       if (context.mounted) _snack(_l10n.backupFailed('$error'));
     }

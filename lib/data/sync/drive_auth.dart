@@ -12,11 +12,22 @@ const googleServerClientId =
 /// Le seul droit demandé : les fichiers que l'application crée elle-même.
 const driveFileScope = 'https://www.googleapis.com/auth/drive.file';
 
+/// Le compte Google connecté : de quoi l'afficher dans les réglages.
+class DriveAccount {
+  const DriveAccount({required this.email, this.name = '', this.photoUrl});
+
+  final String email;
+  final String name;
+
+  /// Adresse de la photo de profil, si le compte en a une.
+  final String? photoUrl;
+}
+
 /// La connexion à Google, séparée pour pouvoir être remplacée dans les tests.
 abstract class DriveAuth {
-  /// Ouvre la connexion Google (fenêtres du système) et renvoie l'adresse du
-  /// compte. Lève une exception si l'utilisateur annule ou si ça échoue.
-  Future<String> signIn();
+  /// Ouvre la connexion Google (fenêtres du système) et renvoie le compte.
+  /// Lève une exception si l'utilisateur annule ou si ça échoue.
+  Future<DriveAccount> signIn();
 
   /// Les en-têtes d'autorisation, sans rien afficher. `null` si la connexion
   /// est à refaire.
@@ -37,13 +48,13 @@ class GoogleDriveAuth implements DriveAuth {
   /// compte et l'écran de consentement de Google. L'adresse du compte est lue
   /// ensuite dans Drive.
   @override
-  Future<String> signIn() async {
+  Future<DriveAccount> signIn() async {
     await _init();
     final authorization = await GoogleSignIn.instance.authorizationClient
         .authorizeScopes(const [driveFileScope]);
     final response = await http.get(
       Uri.https('www.googleapis.com', '/drive/v3/about', {
-        'fields': 'user(emailAddress)',
+        'fields': 'user(emailAddress,displayName,photoLink)',
       }),
       headers: {'Authorization': 'Bearer ${authorization.accessToken}'},
     );
@@ -51,7 +62,11 @@ class GoogleDriveAuth implements DriveAuth {
       throw StateError('Drive a répondu ${response.statusCode}');
     }
     final user = (jsonDecode(response.body) as Map)['user'] as Map?;
-    return (user?['emailAddress'] as String?) ?? '';
+    return DriveAccount(
+      email: (user?['emailAddress'] as String?) ?? '',
+      name: (user?['displayName'] as String?) ?? '',
+      photoUrl: user?['photoLink'] as String?,
+    );
   }
 
   @override

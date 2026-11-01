@@ -20,11 +20,12 @@ import '../photo_store.dart';
 /// - v6 : liste commune du matériel (`equipment` au niveau du document, et
 ///   `equipment` des recettes = identifiants) ; recettes liées dans les
 ///   ingrédients (`linkedRecipe`) au lieu de `linkedRecipes`.
+/// - v8 : le statut « à retester » (`toRetest`) ; rien d'autre ne change.
 /// - v7 : classement commun (`labels` du document, `labels` des recettes =
 ///   identifiants) à la place de `course`, `category` et `collections`.
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 7;
+  static const currentVersion = 8;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 

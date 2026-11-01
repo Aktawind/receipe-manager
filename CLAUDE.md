@@ -12,6 +12,8 @@ téléphone et tablette. Nom provisoire : « Recettes ».
 - On parle **français** avec la personne qui porte le projet et dans la doc, les messages de commit, les PR
   et l'interface. Le code (identifiants) et ses commentaires techniques sont en anglais, sauf
   docstrings existantes en français : suivre le style du fichier.
+- À chaque nouvelle version de la roadmap, mettre à jour `version:` dans `pubspec.yaml` (le numéro
+  est affiché dans Réglages → À propos, y compris dans les APK de test ; la release le fixe aussi).
 - Une version de la roadmap à la fois. On ne commence la suivante qu'après validation.
 - Retours de test : GitHub Issues (modèles Bug / Amélioration / Idée).
 - Branches : travail sur une branche de fonctionnalité → PR vers `develop` (CI verte obligatoire)
