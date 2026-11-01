@@ -46,22 +46,16 @@ class RecipeSearch extends Notifier<String> {
   void set(String query) => state = query;
 }
 
-/// Accès rapides au-dessus de la liste.
-enum QuickFilter {
-  all,
-  favorites,
-
-  /// Les dernières fiches ouvertes, la plus récente d'abord.
-  recent,
-
-  /// Les dernières recettes ajoutées, la plus récente d'abord.
-  added,
-}
+/// Toutes les recettes, ou seulement les favorites.
+enum QuickFilter { all, favorites }
 
 enum RecipeSort {
   title,
   added,
   viewed,
+
+  /// À tester, à retester, à améliorer, validée, sans statut.
+  status,
 
   /// L'ordre choisi dans une collection (quand une seule est filtrée).
   manual,
@@ -73,25 +67,33 @@ class RecipeFilter {
   const RecipeFilter({
     this.quick = QuickFilter.all,
     this.labelIds = const {},
+    this.statuses = const {},
     this.sort = RecipeSort.title,
   });
 
   final QuickFilter quick;
   final Set<String> labelIds;
+
+  /// Statuts retenus (l'un ou l'autre) ; vide = tous.
+  final Set<RecipeStatus> statuses;
   final RecipeSort sort;
 
-  bool get isActive => quick != QuickFilter.all || labelIds.isNotEmpty;
+  bool get isActive =>
+      quick != QuickFilter.all || labelIds.isNotEmpty || statuses.isNotEmpty;
 
   /// Nombre de critères actifs (pastille sur l'icône du filtre).
-  int get activeCount => labelIds.length + (quick == QuickFilter.all ? 0 : 1);
+  int get activeCount =>
+      labelIds.length + statuses.length + (quick == QuickFilter.all ? 0 : 1);
 
   RecipeFilter copyWith({
     QuickFilter? quick,
     Set<String>? labelIds,
+    Set<RecipeStatus>? statuses,
     RecipeSort? sort,
   }) => RecipeFilter(
     quick: quick ?? this.quick,
     labelIds: labelIds ?? this.labelIds,
+    statuses: statuses ?? this.statuses,
     sort: sort ?? this.sort,
   );
 }
@@ -116,6 +118,9 @@ class RecipeFilterController extends Notifier<RecipeFilter> {
   void setQuick(QuickFilter quick) => state = state.copyWith(quick: quick);
 
   void setLabels(Set<String> ids) => state = state.copyWith(labelIds: ids);
+
+  void setStatuses(Set<RecipeStatus> statuses) =>
+      state = state.copyWith(statuses: statuses);
 
   /// Remplace le choix d'une famille ([ofKind] : ses éléments) par [chosen].
   void replaceLabels(Set<String> ofKind, Iterable<String> chosen) {
@@ -190,7 +195,7 @@ final visibleRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
         return false;
       }
       if (filter.quick == QuickFilter.favorites && !r.isFavorite) return false;
-      if (filter.quick == QuickFilter.recent && r.lastViewedAt == null) {
+      if (filter.statuses.isNotEmpty && !filter.statuses.contains(r.status)) {
         return false;
       }
       return true;
@@ -222,35 +227,33 @@ final visibleRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
 
     int byTitle(Recipe a, Recipe b) =>
         normalizeForSearch(a.title).compareTo(normalizeForSearch(b.title));
-    switch (filter.quick) {
-      case QuickFilter.recent:
-        shown.sort((a, b) => b.lastViewedAt!.compareTo(a.lastViewedAt!));
-        shown = shown.take(50).toList();
-      case QuickFilter.added:
+    switch (filter.sort) {
+      case RecipeSort.title:
+        break; // déjà trié par titre
+      case RecipeSort.added:
         shown.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        shown = shown.take(50).toList();
-      case QuickFilter.all || QuickFilter.favorites:
-        switch (filter.sort) {
-          case RecipeSort.title:
-            break; // déjà trié par titre
-          case RecipeSort.added:
-            shown.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          case RecipeSort.viewed:
-            shown.sort((a, b) {
-              final x = a.lastViewedAt, y = b.lastViewedAt;
-              if (x == null && y == null) return byTitle(a, b);
-              if (x == null) return 1;
-              if (y == null) return -1;
-              return y.compareTo(x);
-            });
-          case RecipeSort.manual:
-            if (collection != null) {
-              int rank(Recipe r) => links[r.id]?[collection.id] ?? 1 << 30;
-              shown.sort((a, b) {
-                final byRank = rank(a).compareTo(rank(b));
-                return byRank != 0 ? byRank : byTitle(a, b);
-              });
-            }
+      case RecipeSort.viewed:
+        shown.sort((a, b) {
+          final x = a.lastViewedAt, y = b.lastViewedAt;
+          if (x == null && y == null) return byTitle(a, b);
+          if (x == null) return 1;
+          if (y == null) return -1;
+          return y.compareTo(x);
+        });
+      case RecipeSort.status:
+        // À tester, à retester, à améliorer, validée ; sans statut à la fin.
+        int rank(Recipe r) => r.status?.index ?? RecipeStatus.values.length;
+        shown.sort((a, b) {
+          final byRank = rank(a).compareTo(rank(b));
+          return byRank != 0 ? byRank : byTitle(a, b);
+        });
+      case RecipeSort.manual:
+        if (collection != null) {
+          int rank(Recipe r) => links[r.id]?[collection.id] ?? 1 << 30;
+          shown.sort((a, b) {
+            final byRank = rank(a).compareTo(rank(b));
+            return byRank != 0 ? byRank : byTitle(a, b);
+          });
         }
     }
     return shown;

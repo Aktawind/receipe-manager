@@ -83,7 +83,7 @@ void main() {
       await oldDb.close();
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 8);
+      await verifier.migrateAndValidate(db, 9);
       final repo = RecipeRepository(db);
       final labels = {
         for (final l in await LabelRepository(db).getAll()) l.id: l,

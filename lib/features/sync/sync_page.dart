@@ -1,0 +1,222 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../l10n/app_localizations.dart';
+import 'backup_section.dart';
+import 'sync_providers.dart';
+
+/// Réglages → Synchronisation Google Drive : explication et consentement avant
+/// la connexion, puis état de la synchro, bouton « Synchroniser maintenant » et
+/// déconnexion.
+class SyncPage extends ConsumerWidget {
+  const SyncPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final state = ref.watch(syncControllerProvider);
+    final controller = ref.read(syncControllerProvider.notifier);
+    final folder = ref.watch(syncFolderNameProvider);
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.syncTitle)),
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          8,
+          16,
+          24 + MediaQuery.paddingOf(context).bottom,
+        ),
+        children: [
+          if (!state.enabled) ...[
+            Text(l10n.syncIntroTitle, style: theme.textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Text(l10n.syncIntroBody(folder)),
+            const SizedBox(height: 12),
+            Text(l10n.syncPrivacy),
+            const SizedBox(height: 12),
+            Text(l10n.syncAutoNote),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              key: const ValueKey('sync-connect'),
+              onPressed: controller.connect,
+              icon: const Icon(Icons.login),
+              label: Text(l10n.syncConnect),
+            ),
+            if (state.connectFailed) ...[
+              const SizedBox(height: 12),
+              _Error(l10n.syncConnectFailed),
+              if (state.error != null)
+                _Error(l10n.syncErrorDetail(state.error!)),
+            ],
+          ] else ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: AccountAvatar(state: state),
+              title: Text(
+                state.name.isEmpty ? (state.email ?? '') : state.name,
+              ),
+              subtitle: Text(_status(context, l10n, state)),
+              trailing: state.phase == SyncPhase.syncing
+                  ? const SizedBox.square(
+                      dimension: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : null,
+            ),
+            if (state.phase == SyncPhase.syncing && state.progressTotal > 0)
+              LinearProgressIndicator(
+                value: state.progressDone / state.progressTotal,
+              ),
+            if (state.lastConflicts > 0) ...[
+              const SizedBox(height: 8),
+              Text(l10n.syncConflicts(state.lastConflicts)),
+            ],
+            if (state.error != null) ...[
+              const SizedBox(height: 8),
+              _Error(l10n.syncErrorDetail(state.error!)),
+            ],
+            const SizedBox(height: 16),
+            if (state.phase == SyncPhase.signInRequired)
+              FilledButton.icon(
+                onPressed: controller.connect,
+                icon: const Icon(Icons.login),
+                label: Text(l10n.syncSignInAgain),
+              )
+            else
+              FilledButton.icon(
+                key: const ValueKey('sync-now'),
+                onPressed: state.phase == SyncPhase.syncing
+                    ? null
+                    : () => _syncNow(context, ref),
+                icon: const Icon(Icons.sync),
+                label: Text(l10n.syncNow),
+              ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              key: const ValueKey('sync-disconnect'),
+              onPressed: () => _confirmDisconnect(context, controller),
+              child: Text(l10n.syncDisconnect),
+            ),
+            const SizedBox(height: 16),
+            Text(l10n.syncAutoNote, style: theme.textTheme.bodySmall),
+            const BackupSection(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Lance une synchro et dit ce qui s'est passé : sans cela, une synchro où
+  /// rien n'a changé ressemble à un bouton qui ne fait rien.
+  Future<void> _syncNow(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
+    await ref.read(syncControllerProvider.notifier).syncNow();
+    final result = ref.read(syncControllerProvider);
+    final text = switch (result.phase) {
+      SyncPhase.idle when result.lastUploaded + result.lastDownloaded == 0 =>
+        l10n.syncResultUpToDate,
+      SyncPhase.idle => l10n.syncResultDone(
+        result.lastUploaded,
+        result.lastDownloaded,
+      ),
+      _ => l10n.syncResultFailed,
+    };
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(persist: false, content: Text(text)));
+  }
+
+  String _status(BuildContext context, AppLocalizations l10n, SyncState state) {
+    switch (state.phase) {
+      case SyncPhase.syncing:
+        return state.progressTotal == 0
+            ? l10n.syncStatusSyncing
+            : l10n.syncStatusProgress(state.progressDone, state.progressTotal);
+      case SyncPhase.error:
+        return l10n.syncStatusError;
+      case SyncPhase.signInRequired:
+        return l10n.syncStatusSignIn;
+      case SyncPhase.off:
+      case SyncPhase.idle:
+        final last = state.lastSync;
+        if (last == null) return l10n.syncNever;
+        final material = MaterialLocalizations.of(context);
+        final date = material.formatMediumDate(last);
+        final time = material.formatTimeOfDay(TimeOfDay.fromDateTime(last));
+        final counts = state.lastUploaded + state.lastDownloaded == 0
+            ? ''
+            : ' · ${l10n.syncLastCounts(state.lastUploaded, state.lastDownloaded)}';
+        return '${l10n.syncStatusIdle} · ${l10n.syncLastSync('$date $time')}$counts';
+    }
+  }
+
+  Future<void> _confirmDisconnect(
+    BuildContext context,
+    SyncController controller,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.syncDisconnectTitle),
+        content: Text(l10n.syncDisconnectBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.syncDisconnect),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await controller.disconnect();
+  }
+}
+
+class _Error extends StatelessWidget {
+  const _Error(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.bodySmall
+          ?.copyWith(color: scheme.error),
+    );
+  }
+}
+
+/// La photo du compte Google, ou son initiale quand elle n'est pas disponible
+/// (hors connexion, compte sans photo).
+class AccountAvatar extends StatelessWidget {
+  const AccountAvatar({super.key, required this.state, this.radius = 22});
+
+  final SyncState state;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final source = state.name.isNotEmpty ? state.name : (state.email ?? '');
+    final initial = source.isEmpty
+        ? '?'
+        : source.characters.first.toUpperCase();
+    final photo = state.photoUrl;
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: scheme.primaryContainer,
+      foregroundImage: photo == null ? null : NetworkImage(photo),
+      onForegroundImageError: photo == null ? null : (_, _) {},
+      child: Text(initial, style: TextStyle(color: scheme.onPrimaryContainer)),
+    );
+  }
+}

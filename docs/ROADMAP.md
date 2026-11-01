@@ -11,7 +11,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.1](#01--saisir-ses-recettes-et-les-sauvegarder) | Saisir ses recettes et les sauvegarder | ✅ |
 | [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | ✅ |
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ✅ |
-| [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ⬜ |
+| [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ✅ |
 | [0.5](#05--recherche-et-filtres) | Recherche et filtres | ⬜ |
 | [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ⬜ |
 | [0.7](#07--mode-cuisine-et-suivi-des-recettes) | Mode cuisine et suivi des recettes | ⬜ |
@@ -130,7 +130,7 @@ Objectif : retrouver toute ta bibliothèque et pouvoir lâcher Recipe Keeper pou
 - Classements complémentaires : origine culinaire, saison (le type de repas viendra avec le
   planning, 0.11 ; les occasions sont des collections)
 - Accès rapide aux favoris
-- Recettes récemment consultées, récemment ajoutées
+- Tri par consultation et par ajout (pas de filtre « récentes », retiré le 2026-11-01)
 - Vues liste, grille et cartes (photos toujours affichées)
 
 *Décisions du 2026-10-29* : les types de plat de Recipe Keeper (Plat, Dessert, Goûter…) deviennent
@@ -168,11 +168,39 @@ Détails techniques : [décision 0002](decisions/0002-synchronisation-google-dri
 - Suppression complète des données (appareil et/ou Drive)
 - Identifiants de connexion chiffrés sur l'appareil
 
-**Ce qu'il te faudra faire** : créer un identifiant OAuth dans Google Cloud (gratuit, je te
-guiderai pas à pas, ~10 minutes).
+**Ce qu'il te faudra faire** : déclarer l'application dans la Google Cloud Console avec ton
+compte (gratuit, je te guiderai pas à pas, ~10 minutes). Pour toi, la connexion se résume à
+choisir ton compte Google et à accepter l'accès au dossier.
 
-**À tester** : modifier sur le téléphone, voir le changement sur la tablette ; modifier en mode
-avion puis reconnecter ; modifier la même recette sur les deux appareils.
+*Décisions du 2026-10-30* : synchro automatique (à l'ouverture et après chaque modification) avec
+un bouton « Synchroniser maintenant » en plus. Les photos gardent leur nom de fichier (unique et
+jamais modifié, comme une empreinte) au lieu d'un `sha256`.
+
+*Avancement* : trois étapes.
+- **Étape 1 (faite, invisible)** : le moteur de synchro, sans Google — suivi de ce qui a changé
+  (base v9), un fichier par élément dans le format des sauvegardes, conflits, suppressions, photos
+  envoyées une seule fois, horloge corrigée des écarts entre appareils. Testé sur deux appareils
+  simulés.
+- **Étape 2 (à tester)** : Réglages → Synchronisation Google Drive : explication, connexion avec ton
+  compte, dossier « Recettes » (« Recettes (test) » pour la version de test) dans ton Drive,
+  synchro automatique à l'ouverture, au retour dans l'app et après chaque modification, bouton
+  « Synchroniser maintenant », déconnexion.
+- **Retours du 2026-11-01** (synchro validée sur téléphone et tablette) : statut « À retester » ;
+  filtre et tri par statut ; nombre de réalisations retiré de l'affichage (la donnée reste dans les
+  sauvegardes) ; « Aucune note » retiré ; « Partager une sauvegarde » retiré (l'export suffit) ;
+  filtre par catégories principales ; filtres « récemment consultées/ajoutées » retirés (les tris
+  restent) ; nombre de recettes en haut de la liste ; photo du compte Google dans la synchro ;
+  numéro de version mis à jour dans le projet à chaque version.
+- **Étape 3 (à tester)** : sauvegardes automatiques dans Drive (fréquence réglable, les 10
+  dernières gardées) et restauration ; synchro en arrière-plan toutes les heures (WorkManager) ;
+  suppression des données dans Drive ; « Synchroniser maintenant » qui dit ce qui s'est passé ;
+  correction d'une synchro qui pouvait rester bloquée après une coupure réseau (délais d'attente,
+  reprise automatique).
+- Reste pour plus tard : l'ordre personnalisé des collections ne se synchronise pas encore ;
+  aucun identifiant n'est gardé par l'application (c'est Google qui conserve la connexion), donc
+  rien à chiffrer.
+
+*Validée le 2026-11-01.*
 
 ## 0.5 — Recherche et filtres
 

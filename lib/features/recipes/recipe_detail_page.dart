@@ -111,24 +111,6 @@ class _RecipeDetail extends ConsumerWidget {
     }
   }
 
-  Future<void> _markCooked(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
-    final repository = ref.read(recipeRepositoryProvider);
-    await repository.incrementTimesCooked(recipe.id, 1);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        // With an action, a SnackBar stays until dismissed unless told not to.
-        persist: false,
-        content: Text(l10n.cookedCountIncremented(recipe.timesCooked + 1)),
-        action: SnackBarAction(
-          label: l10n.undo,
-          onPressed: () => repository.incrementTimesCooked(recipe.id, -1),
-        ),
-      ),
-    );
-  }
-
   void _edit(BuildContext context) =>
       context.push('/recettes/${recipe.id}/modifier');
 
@@ -236,7 +218,6 @@ class _RecipeDetail extends ConsumerWidget {
                 children: [
                   _Header(
                     recipe: recipe,
-                    onCooked: () => _markCooked(context, ref),
                     onStatus: (status) => ref
                         .read(recipeRepositoryProvider)
                         .setStatus(recipe.id, status),
@@ -300,7 +281,6 @@ class _RecipeDetail extends ConsumerWidget {
                     children: [
                       _Header(
                         recipe: recipe,
-                        onCooked: () => _markCooked(context, ref),
                         onStatus: (status) => ref
                             .read(recipeRepositoryProvider)
                             .setStatus(recipe.id, status),
@@ -432,13 +412,11 @@ Color _tint(BuildContext context) =>
 class _Header extends StatelessWidget {
   const _Header({
     required this.recipe,
-    required this.onCooked,
     required this.onStatus,
     required this.onRating,
   });
 
   final Recipe recipe;
-  final VoidCallback onCooked;
   final ValueChanged<RecipeStatus?> onStatus;
   final ValueChanged<int?> onRating;
 
@@ -477,7 +455,7 @@ class _Header extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 14),
-        _StatusRow(recipe: recipe, onCooked: onCooked, onStatus: onStatus),
+        _StatusRow(recipe: recipe, onStatus: onStatus),
         const SizedBox(height: 8),
         _StarRating(rating: recipe.rating, onChanged: onRating),
         if (times.isNotEmpty) ...[
@@ -717,11 +695,12 @@ class _IngredientRow extends StatelessWidget {
             ),
         ],
       ),
-      style: theme.textTheme.bodyLarge,
+      style: theme.textTheme.bodyLarge?.copyWith(height: 1.25),
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9),
+      // Des lignes serrées : une liste d'ingrédients se lit d'un coup d'œil.
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -853,14 +832,13 @@ class _NotesSection extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                hasNotes ? recipe.notes : l10n.noteEmpty,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  height: 1.4,
-                  color: hasNotes ? null : theme.colorScheme.onSurfaceVariant,
+              if (hasNotes) ...[
+                const SizedBox(height: 8),
+                Text(
+                  recipe.notes,
+                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
                 ),
-              ),
+              ],
               const SizedBox(height: 8),
               TextButton(
                 onPressed: onEdit,
@@ -1027,17 +1005,11 @@ void _showPhoto(BuildContext context, String name) {
   );
 }
 
-/// Où en est la recette : son statut (qu'on change d'un geste) et le nombre de
-/// fois où elle a été réalisée (un geste pour ajouter une fois).
+/// Où en est la recette : son statut, qu'on change d'un geste.
 class _StatusRow extends StatelessWidget {
-  const _StatusRow({
-    required this.recipe,
-    required this.onCooked,
-    required this.onStatus,
-  });
+  const _StatusRow({required this.recipe, required this.onStatus});
 
   final Recipe recipe;
-  final VoidCallback onCooked;
   final ValueChanged<RecipeStatus?> onStatus;
 
   @override
@@ -1046,8 +1018,9 @@ class _StatusRow extends StatelessWidget {
     final theme = Theme.of(context);
     String statusLabel(RecipeStatus status) => switch (status) {
       RecipeStatus.toTest => l10n.statusToTest,
-      RecipeStatus.validated => l10n.statusValidated,
+      RecipeStatus.toRetest => l10n.statusToRetest,
       RecipeStatus.toImprove => l10n.statusToImprove,
+      RecipeStatus.validated => l10n.statusValidated,
     };
     final status = recipe.status;
 
@@ -1089,23 +1062,6 @@ class _StatusRow extends StatelessWidget {
             ),
             visualDensity: VisualDensity.compact,
           ),
-        ),
-        ActionChip(
-          avatar: Icon(
-            recipe.timesCooked > 0
-                ? Icons.check_circle
-                : Icons.check_circle_outline,
-            size: 18,
-            color: theme.colorScheme.primary,
-          ),
-          label: Text(
-            recipe.timesCooked > 0
-                ? l10n.timesCooked(recipe.timesCooked)
-                : l10n.neverCooked,
-          ),
-          tooltip: l10n.iCookedThis,
-          onPressed: onCooked,
-          visualDensity: VisualDensity.compact,
         ),
       ],
     );
