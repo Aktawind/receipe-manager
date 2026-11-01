@@ -215,12 +215,16 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
 - Performance : index plein texte, listes paginées, chargement progressif des images
 
 *Avancement* : trois étapes.
-- **Étape 1 (à tester)** : la recherche de la liste couvre titres, ingrédients, préparation, notes et
+- **Étape 1 (validée le 2026-11-01)** : la recherche de la liste couvre titres, ingrédients, préparation, notes et
   description ; insensible aux accents et au pluriel, le début d'un mot suffit, une faute de frappe
   est tolérée, tous les mots doivent se retrouver (dans le désordre), classement par pertinence
   (titre > ingrédients > préparation) ; historique des recherches récentes.
-- **Étape 2** : filtres de temps (total, préparation, cuisson), matériel disponible, recherche par
-  ingrédients (tous / au moins un / exclure, « ce que j'ai sous la main »), tris par durée et par note.
+- **Étape 2 (à tester)** : filtre de durée (total, préparation, cuisson : « au plus X min »), matériel
+  dont on dispose (seules restent les recettes qui n'ont besoin que de lui), recherche par
+  ingrédients (avec tous / au moins un / sans) et « ce que j'ai sous la main » (réserve gardée sur
+  l'appareil, recettes classées par ce qu'il leur manque, jusqu'à 5 ingrédients tolérés, avec la
+  liste de ce qui manque), tris par durée et par note ; champ de recherche qui annonce qu'il cherche
+  partout ; en-tête du filtre fixe pendant qu'on fait défiler.
 - **Étape 3** : recherches enregistrées, listes paginées et chargement progressif des images.
 
 ## 0.6 — Portions, quantités et conversions

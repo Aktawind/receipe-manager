@@ -116,6 +116,28 @@ class RecipeSearchIndex {
   ];
 }
 
+/// Les briques de la recherche, partagées avec la recherche par ingrédients :
+/// mots sans accents, retrait du pluriel, qualité d'une correspondance.
+abstract final class SearchText {
+  /// Les mots d'un texte, sans accents ni ponctuation.
+  static List<String> tokens(String text) => RecipeSearchIndex._tokens(text);
+
+  /// Retire le pluriel (« tomates » → « tomate », « gâteaux » → « gateau »).
+  static String stem(String word) => _Doc._stem(word);
+
+  /// Les mots d'un texte, au singulier : de quoi comparer deux textes.
+  static Set<String> stems(String text) => {
+    for (final t in tokens(text)) stem(t),
+  };
+
+  /// 3 = mot entier, 2 = début de mot, 1 = faute de frappe, 0 = absent.
+  ///
+  /// [minFuzzy] : longueur minimale d'un mot pour tolérer une faute (une
+  /// recherche d'ingrédient est plus stricte : « oeuf » n'est pas « boeuf »).
+  static int quality(String stem, Set<String> tokens, {int minFuzzy = 4}) =>
+      _Doc._quality(stem, tokens, minFuzzy: minFuzzy);
+}
+
 class _Match {
   const _Match(this.score, this.field);
 
@@ -170,7 +192,7 @@ class _Doc {
   }
 
   /// 3 = mot entier, 2 = début de mot, 1 = faute de frappe, 0 = absent.
-  static int _quality(String stem, Set<String> tokens) {
+  static int _quality(String stem, Set<String> tokens, {int minFuzzy = 4}) {
     if (tokens.contains(stem)) return 3;
     var prefix = false;
     for (final t in tokens) {
@@ -180,7 +202,7 @@ class _Doc {
       }
     }
     if (prefix) return 2;
-    if (stem.length < 4) return 0;
+    if (stem.length < minFuzzy) return 0;
     final allowed = stem.length >= 8 ? 2 : 1;
     for (final t in tokens) {
       if ((t.length - stem.length).abs() > allowed) continue;

@@ -678,5 +678,62 @@
   "driveDeleted": "Dossier mis à la corbeille de Drive.",
   "searchHistory": "Recherches récentes",
   "searchHistoryClear": "Effacer",
-  "searchHistoryRemove": "Retirer de l’historique"
+  "searchHistoryRemove": "Retirer de l’historique",
+  "searchAnything": "Titre, ingrédient, préparation, notes…",
+  "sortDuration": "Durée (la plus courte d’abord)",
+  "sortRating": "Note (la meilleure d’abord)",
+  "filterDuration": "Durée",
+  "filterDurationTotal": "Durée totale, au plus",
+  "filterDurationPrep": "Préparation, au plus",
+  "filterDurationCook": "Cuisson, au plus",
+  "durationAny": "Peu importe",
+  "durationNote": "Les recettes dont la durée n’est pas renseignée n’apparaissent pas quand une limite est choisie.",
+  "filterEquipment": "Matériel",
+  "filterEquipmentTitle": "Matériel dont je dispose",
+  "filterEquipmentHelp": "Seules restent les recettes qui n’ont besoin que du matériel coché (ou d’aucun matériel).",
+  "filterEquipmentNone": "Aucun matériel dans ta liste. Ajoute-en dans Réglages → Matériel.",
+  "filterEquipmentSelected": "{count, plural, =1{1 matériel} other{{count} matériels}}",
+  "@filterEquipmentSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filterIngredients": "Ingrédients",
+  "ingredientsPageTitle": "Chercher par ingrédients",
+  "ingredientsAll": "Avec tous ces ingrédients",
+  "ingredientsAny": "Avec au moins un de ces ingrédients",
+  "ingredientsNone": "Sans ces ingrédients",
+  "ingredientsAdd": "Ajouter un ingrédient",
+  "ingredientsOnHandTitle": "Ce que j’ai sous la main",
+  "ingredientsOnHandSwitch": "Ne garder que ce que je peux faire",
+  "ingredientsOnHandHelp": "Ajoute ce que tu as chez toi : les recettes auxquelles il manque le moins d’ingrédients passent en premier. L’eau, le sel, le poivre et les ingrédients facultatifs ne comptent pas.",
+  "ingredientsPantry": "Dans mes placards",
+  "ingredientsMaxMissing": "Il peut me manquer",
+  "ingredientsMaxMissingValue": "{count, plural, =0{aucun ingrédient} =1{1 ingrédient} other{{count} ingrédients}}",
+  "@ingredientsMaxMissingValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ingredientsSummary": "{count, plural, =1{1 critère} other{{count} critères}}",
+  "@ingredientsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ingredientsMissing": "Il manque : {list}",
+  "@ingredientsMissing": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "ingredientsNothingMissing": "Rien à acheter"
 }

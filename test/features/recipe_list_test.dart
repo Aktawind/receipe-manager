@@ -77,6 +77,8 @@ Future<void> pickFor(
   String family,
   List<String> items,
 ) async {
+  await tester.ensureVisible(find.text(family));
+  await tester.pump();
   await tester.tap(find.text(family));
   await settle(tester);
   for (final item in items) {

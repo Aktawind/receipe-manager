@@ -11,6 +11,7 @@ import '../../domain/recipe.dart';
 import '../../l10n/app_localizations.dart';
 import '../classification/label_picker.dart';
 import '../classification/labels_providers.dart';
+import 'filter_dialogs.dart';
 import 'recipe_photo.dart';
 import 'recipe_providers.dart';
 
@@ -76,7 +77,7 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                 controller: _searchController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: l10n.searchRecipes,
+                  hintText: l10n.searchAnything,
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -250,6 +251,8 @@ enum _DisplayChoice {
   sortTitle,
   sortAdded,
   sortViewed,
+  sortDuration,
+  sortRating,
   sortStatus,
   sortManual,
 }
@@ -297,6 +300,10 @@ class _DisplayMenu extends ConsumerWidget {
             sort.setSort(RecipeSort.added);
           case _DisplayChoice.sortViewed:
             sort.setSort(RecipeSort.viewed);
+          case _DisplayChoice.sortDuration:
+            sort.setSort(RecipeSort.duration);
+          case _DisplayChoice.sortRating:
+            sort.setSort(RecipeSort.rating);
           case _DisplayChoice.sortStatus:
             sort.setSort(RecipeSort.status);
           case _DisplayChoice.sortManual:
@@ -324,6 +331,16 @@ class _DisplayMenu extends ConsumerWidget {
           _DisplayChoice.sortViewed,
           l10n.sortViewed,
           filter.sort == RecipeSort.viewed,
+        ),
+        choice(
+          _DisplayChoice.sortDuration,
+          l10n.sortDuration,
+          filter.sort == RecipeSort.duration,
+        ),
+        choice(
+          _DisplayChoice.sortRating,
+          l10n.sortRating,
+          filter.sort == RecipeSort.rating,
         ),
         choice(
           _DisplayChoice.sortStatus,
@@ -390,6 +407,36 @@ class _FilterSheet extends ConsumerWidget {
     );
     if (chosen != null) {
       ref.read(recipeFilterProvider.notifier).setStatuses(chosen);
+    }
+  }
+
+  Future<void> _chooseTimes(BuildContext context, WidgetRef ref) async {
+    final chosen = await showTimeLimitsDialog(
+      context,
+      ref.read(recipeFilterProvider).times,
+    );
+    if (chosen != null) {
+      ref.read(recipeFilterProvider.notifier).setTimes(chosen);
+    }
+  }
+
+  Future<void> _chooseEquipment(BuildContext context, WidgetRef ref) async {
+    final chosen = await showEquipmentFilterDialog(
+      context,
+      ref.read(recipeFilterProvider).equipmentIds,
+    );
+    if (chosen != null) {
+      ref.read(recipeFilterProvider.notifier).setEquipment(chosen);
+    }
+  }
+
+  Future<void> _chooseIngredients(BuildContext context, WidgetRef ref) async {
+    final chosen = await showIngredientFilterPage(
+      context,
+      ref.read(recipeFilterProvider).ingredients,
+    );
+    if (chosen != null) {
+      ref.read(recipeFilterProvider.notifier).setIngredients(chosen);
     }
   }
 
@@ -464,84 +511,140 @@ class _FilterSheet extends ConsumerWidget {
     };
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                children: [
-                  Text(l10n.filterTitle, style: theme.textTheme.titleLarge),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      if (filter.isActive)
-                        TextButton(
-                          onPressed: ref
-                              .read(recipeFilterProvider.notifier)
-                              .clear,
-                          child: Text(l10n.filterClear),
-                        ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(l10n.filterDone),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              children: [
+                Text(l10n.filterTitle, style: theme.textTheme.titleLarge),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    if (filter.isActive)
+                      TextButton(
+                        onPressed: ref
+                            .read(recipeFilterProvider.notifier)
+                            .clear,
+                        child: Text(l10n.filterClear),
                       ),
-                    ],
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(l10n.filterDone),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // L'en-tête reste en haut ; seules les lignes défilent.
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.visibility_outlined),
+                    title: Text(l10n.filterShow),
+                    subtitle: Text(quickName(filter.quick)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _chooseQuick(context, ref),
                   ),
+                  ListTile(
+                    leading: const Icon(Icons.flag_outlined),
+                    title: Text(l10n.statusLabel),
+                    subtitle: Text(
+                      filter.statuses.isEmpty
+                          ? l10n.filterNone
+                          : [
+                              for (final status in RecipeStatus.values)
+                                if (filter.statuses.contains(status))
+                                  statusName(status),
+                            ].join(', '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _chooseStatuses(context, ref),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.timer_outlined),
+                    title: Text(l10n.filterDuration),
+                    subtitle: Text(
+                      filter.times.isActive
+                          ? [
+                              if (filter.times.total case final m?)
+                                '${l10n.filterDurationTotal} ${formatMinutes(l10n, m)}',
+                              if (filter.times.prep case final m?)
+                                '${l10n.filterDurationPrep} ${formatMinutes(l10n, m)}',
+                              if (filter.times.cook case final m?)
+                                '${l10n.filterDurationCook} ${formatMinutes(l10n, m)}',
+                            ].join(' · ')
+                          : l10n.filterNone,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _chooseTimes(context, ref),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.restaurant_menu),
+                    title: Text(l10n.filterIngredients),
+                    subtitle: Text(
+                      filter.ingredients.isActive
+                          ? l10n.ingredientsSummary(filter.ingredients.count)
+                          : l10n.filterNone,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _chooseIngredients(context, ref),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.kitchen_outlined),
+                    title: Text(l10n.filterEquipment),
+                    subtitle: Text(
+                      filter.equipmentIds.isEmpty
+                          ? l10n.filterNone
+                          : l10n.filterEquipmentSelected(
+                              filter.equipmentIds.length,
+                            ),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _chooseEquipment(context, ref),
+                  ),
+                  for (final kind in LabelKind.values)
+                    () {
+                      final selected = [
+                        for (final l in all)
+                          if (l.kind == kind && filter.labelIds.contains(l.id))
+                            l,
+                      ];
+                      return ListTile(
+                        leading: Icon(kind.icon),
+                        title: Text(kind.title(l10n)),
+                        subtitle: Text(
+                          selected.isEmpty
+                              ? l10n.filterNone
+                              : selected
+                                    .map((l) => labelPath(l, byId))
+                                    .join(', '),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () =>
+                            _chooseLabels(context, ref, kind, all, relevant),
+                      );
+                    }(),
                 ],
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.visibility_outlined),
-              title: Text(l10n.filterShow),
-              subtitle: Text(quickName(filter.quick)),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _chooseQuick(context, ref),
-            ),
-            ListTile(
-              leading: const Icon(Icons.flag_outlined),
-              title: Text(l10n.statusLabel),
-              subtitle: Text(
-                filter.statuses.isEmpty
-                    ? l10n.filterNone
-                    : [
-                        for (final status in RecipeStatus.values)
-                          if (filter.statuses.contains(status))
-                            statusName(status),
-                      ].join(', '),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _chooseStatuses(context, ref),
-            ),
-            for (final kind in LabelKind.values)
-              () {
-                final selected = [
-                  for (final l in all)
-                    if (l.kind == kind && filter.labelIds.contains(l.id)) l,
-                ];
-                return ListTile(
-                  leading: Icon(kind.icon),
-                  title: Text(kind.title(l10n)),
-                  subtitle: Text(
-                    selected.isEmpty
-                        ? l10n.filterNone
-                        : selected.map((l) => labelPath(l, byId)).join(', '),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _chooseLabels(context, ref, kind, all, relevant),
-                );
-              }(),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -610,7 +713,17 @@ void _openRecipe(BuildContext context, Recipe recipe) =>
 String _recipeTitle(AppLocalizations l10n, Recipe recipe) =>
     recipe.title.trim().isEmpty ? l10n.untitledRecipe : recipe.title;
 
-String? _recipeSummary(AppLocalizations l10n, Recipe recipe) {
+String? _recipeSummary(
+  AppLocalizations l10n,
+  Recipe recipe, {
+  List<String>? missing,
+}) {
+  // Avec « ce que j'ai sous la main » : ce qu'il manque, plutôt que la durée.
+  if (missing != null) {
+    return missing.isEmpty
+        ? l10n.ingredientsNothingMissing
+        : l10n.ingredientsMissing(missing.join(', '));
+  }
   final parts = [
     if (recipe.totalMinutes case final total?) formatMinutes(l10n, total),
     if (recipe.servings case final servings?)
@@ -621,7 +734,7 @@ String? _recipeSummary(AppLocalizations l10n, Recipe recipe) {
   return parts.isEmpty ? null : parts.join(' · ');
 }
 
-class _RecipeGrid extends StatelessWidget {
+class _RecipeGrid extends ConsumerWidget {
   const _RecipeGrid({required this.recipes});
 
   final List<Recipe> recipes;
@@ -632,7 +745,8 @@ class _RecipeGrid extends StatelessWidget {
   static const _padding = 12.0;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final missingFor = ref.watch(missingIngredientsProvider);
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return LayoutBuilder(
@@ -658,7 +772,11 @@ class _RecipeGrid extends StatelessWidget {
           itemCount: recipes.length,
           itemBuilder: (context, index) {
             final recipe = recipes[index];
-            final summary = _recipeSummary(l10n, recipe);
+            final summary = _recipeSummary(
+              l10n,
+              recipe,
+              missing: missingFor[recipe.id],
+            );
             return Card(
               clipBehavior: Clip.antiAlias,
               margin: EdgeInsets.zero,
@@ -706,13 +824,14 @@ class _RecipeGrid extends StatelessWidget {
   }
 }
 
-class _RecipeList extends StatelessWidget {
+class _RecipeList extends ConsumerWidget {
   const _RecipeList({required this.recipes});
 
   final List<Recipe> recipes;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final missingFor = ref.watch(missingIngredientsProvider);
     final l10n = AppLocalizations.of(context);
     return ListView.builder(
       padding: EdgeInsets.only(
@@ -721,7 +840,11 @@ class _RecipeList extends StatelessWidget {
       itemCount: recipes.length,
       itemBuilder: (context, index) {
         final recipe = recipes[index];
-        final summary = _recipeSummary(l10n, recipe);
+        final summary = _recipeSummary(
+          l10n,
+          recipe,
+          missing: missingFor[recipe.id],
+        );
         return ListTile(
           leading: ClipRRect(
             borderRadius: BorderRadius.circular(8),
@@ -759,6 +882,7 @@ class _RecipeCards extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final missingFor = ref.watch(missingIngredientsProvider);
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -792,7 +916,11 @@ class _RecipeCards extends ConsumerWidget {
           itemCount: recipes.length,
           itemBuilder: (context, index) {
             final recipe = recipes[index];
-            final summary = _recipeSummary(l10n, recipe);
+            final summary = _recipeSummary(
+              l10n,
+              recipe,
+              missing: missingFor[recipe.id],
+            );
             final names = [
               for (final id in links[recipe.id]?.keys ?? const <String>[])
                 if (byId[id] case final label?
