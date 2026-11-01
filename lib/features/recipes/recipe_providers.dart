@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show TableUpdateQuery;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format/text_search.dart';
@@ -5,6 +6,7 @@ import '../../core/settings/theme_mode_controller.dart';
 import '../../data/app_services.dart';
 import '../../domain/label.dart';
 import '../../domain/recipe.dart';
+import '../../domain/recipe_search.dart';
 import '../classification/labels_providers.dart';
 
 /// Recettes hors corbeille, triées par titre (sans tenir compte des accents).
@@ -181,9 +183,37 @@ Set<String> _expanded(Iterable<Label> selected, List<Label> all) {
   return ids;
 }
 
+/// L'index de recherche (titres, ingrédients, préparation, notes). Construit à
+/// la première recherche, puis refait quand les recettes changent.
+final searchIndexProvider = StreamProvider<RecipeSearchIndex>((ref) async* {
+  final repository = ref.watch(recipeRepositoryProvider);
+  final db = ref.watch(appServicesProvider).database;
+  yield RecipeSearchIndex(await repository.getAllWithDetails());
+  final changes = db.tableUpdates(
+    TableUpdateQuery.onAllTables([db.recipes, db.ingredients, db.recipeSteps]),
+  );
+  await for (final _ in changes) {
+    // Laisse finir une série d'écritures (une recette = plusieurs tables).
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    yield RecipeSearchIndex(await repository.getAllWithDetails());
+  }
+});
+
 /// Recettes affichées : recherche, accès rapide, classement et tri appliqués.
 final visibleRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
-  final query = normalizeForSearch(ref.watch(recipeSearchProvider).trim());
+  final query = ref.watch(recipeSearchProvider).trim();
+  final index = query.isEmpty ? null : ref.watch(searchIndexProvider);
+  if (index != null && !index.hasValue) {
+    return index.hasError
+        ? AsyncError(index.error!, index.stackTrace!)
+        : const AsyncLoading();
+  }
+  // Classement par pertinence : id → rang.
+  final relevance = <String, int>{
+    if (index != null)
+      for (final (rank, hit) in index.requireValue.search(query).indexed)
+        hit.recipeId: rank,
+  };
   final filter = ref.watch(recipeFilterProvider);
   final all = ref.watch(labelsProvider).value ?? const <Label>[];
   final links = ref.watch(recipeLabelLinksProvider).value ?? const {};
@@ -191,9 +221,7 @@ final visibleRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
 
   return ref.watch(recipesProvider).whenData((recipes) {
     var shown = recipes.where((r) {
-      if (query.isNotEmpty && !normalizeForSearch(r.title).contains(query)) {
-        return false;
-      }
+      if (query.isNotEmpty && !relevance.containsKey(r.id)) return false;
       if (filter.quick == QuickFilter.favorites && !r.isFavorite) return false;
       if (filter.statuses.isNotEmpty && !filter.statuses.contains(r.status)) {
         return false;
@@ -227,6 +255,11 @@ final visibleRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
 
     int byTitle(Recipe a, Recipe b) =>
         normalizeForSearch(a.title).compareTo(normalizeForSearch(b.title));
+    if (query.isNotEmpty) {
+      // Une recherche classe par pertinence, quel que soit le tri choisi.
+      shown.sort((a, b) => relevance[a.id]!.compareTo(relevance[b.id]!));
+      return shown;
+    }
     switch (filter.sort) {
       case RecipeSort.title:
         break; // déjà trié par titre
@@ -279,5 +312,43 @@ class RecipesViewController extends Notifier<RecipesView> {
   Future<void> set(RecipesView view) async {
     state = view;
     await ref.read(sharedPreferencesProvider).setString(_key, view.name);
+  }
+}
+
+/// Les dernières recherches, la plus récente d'abord (gardées sur l'appareil).
+final searchHistoryProvider = NotifierProvider<SearchHistory, List<String>>(
+  SearchHistory.new,
+);
+
+class SearchHistory extends Notifier<List<String>> {
+  static const _key = 'search_history';
+  static const maxEntries = 10;
+
+  @override
+  List<String> build() =>
+      ref.watch(sharedPreferencesProvider).getStringList(_key) ?? const [];
+
+  Future<void> add(String query) async {
+    final clean = query.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (clean.length < 2) return;
+    final key = normalizeForSearch(clean);
+    final next = [
+      clean,
+      for (final old in state)
+        if (normalizeForSearch(old) != key) old,
+    ].take(maxEntries).toList();
+    await _save(next);
+  }
+
+  Future<void> remove(String query) => _save([
+    for (final old in state)
+      if (old != query) old,
+  ]);
+
+  Future<void> clear() => _save(const []);
+
+  Future<void> _save(List<String> next) async {
+    state = next;
+    await ref.read(sharedPreferencesProvider).setStringList(_key, next);
   }
 }

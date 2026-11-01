@@ -12,7 +12,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | ✅ |
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ✅ |
 | [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ✅ |
-| [0.5](#05--recherche-et-filtres) | Recherche et filtres | ⬜ |
+| [0.5](#05--recherche-et-filtres) | Recherche et filtres | 🟨 |
 | [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ⬜ |
 | [0.7](#07--mode-cuisine-et-suivi-des-recettes) | Mode cuisine et suivi des recettes | ⬜ |
 | [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ⬜ |
@@ -213,6 +213,15 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
 - Tri : date d'ajout, durée, nombre de réalisations, note, ordre alphabétique
 - Historique des recherches, recherches fréquentes enregistrées
 - Performance : index plein texte, listes paginées, chargement progressif des images
+
+*Avancement* : trois étapes.
+- **Étape 1 (à tester)** : la recherche de la liste couvre titres, ingrédients, préparation, notes et
+  description ; insensible aux accents et au pluriel, le début d'un mot suffit, une faute de frappe
+  est tolérée, tous les mots doivent se retrouver (dans le désordre), classement par pertinence
+  (titre > ingrédients > préparation) ; historique des recherches récentes.
+- **Étape 2** : filtres de temps (total, préparation, cuisson), matériel disponible, recherche par
+  ingrédients (tous / au moins un / exclure, « ce que j'ai sous la main »), tris par durée et par note.
+- **Étape 3** : recherches enregistrées, listes paginées et chargement progressif des images.
 
 ## 0.6 — Portions, quantités et conversions
 

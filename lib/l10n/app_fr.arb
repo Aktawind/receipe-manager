@@ -675,5 +675,8 @@
     }
   },
   "driveDeleteAction": "Supprimer",
-  "driveDeleted": "Dossier mis à la corbeille de Drive."
+  "driveDeleted": "Dossier mis à la corbeille de Drive.",
+  "searchHistory": "Recherches récentes",
+  "searchHistoryClear": "Effacer",
+  "searchHistoryRemove": "Retirer de l’historique"
 }
