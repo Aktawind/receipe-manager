@@ -133,6 +133,38 @@ class BackupService {
     return ZipEncoder().encode(archive);
   }
 
+  /// La sauvegarde sans les photos (données seules), pour Drive : les photos y
+  /// sont déjà, dans `media/`, et ne sont jamais supprimées.
+  Future<List<int>> exportJson() async {
+    final json = const JsonEncoder.withIndent('  ').convert(
+      BackupFormat.encode(
+        await repository.getAllWithDetails(),
+        equipment: await equipment.getAll(),
+        labels: await labels.getAll(),
+        exportedAt: _clock(),
+        appVersion: appVersion,
+      ),
+    );
+    return utf8.encode(json);
+  }
+
+  /// Lit et valide une sauvegarde de données seules (sans photos).
+  BackupContents readJson(List<int> bytes) {
+    final Object? json;
+    try {
+      json = jsonDecode(utf8.decode(bytes));
+    } on Object {
+      throw const BackupFormatException(BackupError.invalid, 'json');
+    }
+    final decoded = BackupFormat.decode(json);
+    return BackupContents(
+      decoded.recipes,
+      const {},
+      equipment: decoded.equipment,
+      labels: decoded.labels,
+    );
+  }
+
   /// Nom de fichier proposé pour un export.
   String exportFileName() {
     final now = _clock();

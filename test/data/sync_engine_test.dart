@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:recettes/data/backup/backup_service.dart';
 import 'package:recettes/data/database.dart';
+import 'package:recettes/data/sync/drive_backup.dart';
 import 'package:recettes/data/equipment_repository.dart';
 import 'package:recettes/data/label_repository.dart';
 import 'package:recettes/data/photo_store.dart';
@@ -27,6 +29,7 @@ class Device {
     this.photos,
     this.clock,
     this.engine,
+    this.backups,
     this._time,
   );
 
@@ -37,6 +40,7 @@ class Device {
   final PhotoStore photos;
   final HybridClock clock;
   final SyncEngine engine;
+  final BackupService backups;
   final _Time _time;
 
   static Future<Device> create(
@@ -63,6 +67,15 @@ class Device {
       clock: clock,
       now: () => time.value,
     );
+    final backups = BackupService(
+      repository: recipes,
+      equipment: equipment,
+      labels: labels,
+      photos: photos,
+      backupsDirectory: Directory.systemTemp.createTempSync('recettes-bak'),
+      appVersion: 'test',
+      clock: () => time.value,
+    );
     return Device._(
       db,
       recipes,
@@ -71,6 +84,7 @@ class Device {
       photos,
       clock,
       engine,
+      backups,
       time,
     );
   }
@@ -412,6 +426,97 @@ void main() {
     expect((await b.recipes.getAllWithDetails()).length, 40);
     expect(await b.photos.file('commune.jpg').readAsBytes(), [7]);
     expect(received.last.$1, received.last.$2);
+  });
+
+  DriveBackupService backupOf(Device device) => DriveBackupService(
+    remote: remote,
+    sync: remote,
+    backups: device.backups,
+    photos: device.photos,
+    clock: device.clock,
+    now: () => device._time.value,
+  );
+
+  test(
+    'sauvegarde Drive : données seules, les plus anciennes sont triées',
+    () async {
+      await a.addRecipe('Quiche');
+      final service = backupOf(a);
+      for (var i = 0; i < DriveBackupService.keep + 2; i++) {
+        a.at(t(i));
+        await service.backupNow();
+      }
+      final all = await remote.listBackups();
+      expect(all, hasLength(DriveBackupService.keep));
+      expect(all.first.name, startsWith('sauvegarde-2035-01-01-'));
+      // Pas de photos dedans : un seul fichier JSON lisible.
+      final restored = a.backups.readJson(
+        await remote.downloadBackup(all.first.id),
+      );
+      expect(restored.recipes.single.title, 'Quiche');
+      expect(restored.photos, isEmpty);
+    },
+  );
+
+  test(
+    'restaurer une sauvegarde : tout revient, ici et sur l’autre appareil',
+    () async {
+      await a.photos.write('tarte.jpg', [1, 2]);
+      final tarte = await a.addRecipe('Tarte');
+      await a.recipes.save(tarte.copyWith(mainPhoto: () => 'tarte.jpg'));
+      final soupe = await a.addRecipe('Soupe');
+      a.at(t(1));
+      await a.engine.sync();
+      await b.engine.sync();
+      await backupOf(a).backupNow();
+      final backup = (await remote.listBackups()).single;
+
+      // Une erreur que la synchro propage : une recette supprimée, une autre abîmée.
+      a.at(t(10));
+      await a.recipes.deletePermanently([soupe.id]);
+      await a.edit(tarte.id, 'Tarte ratée');
+      await a.engine.sync();
+      await b.engine.sync();
+      expect(await b.titleOf(tarte.id), 'Tarte ratée');
+      expect(await b.recipes.getRecipe(soupe.id), isNull);
+
+      a.at(t(20));
+      final result = await backupOf(a).restore(backup);
+      expect(result.recipes, 2);
+      expect(result.missingPhotos, 0);
+      expect(await a.titleOf(tarte.id), 'Tarte');
+      expect(await a.titleOf(soupe.id), 'Soupe');
+      expect(await a.photos.file('tarte.jpg').readAsBytes(), [1, 2]);
+
+      // La version restaurée l'emporte sur celle de Drive, et gagne l'autre appareil.
+      final sent = await a.engine.sync();
+      expect(sent.ok, isTrue, reason: '${sent.errors}');
+      final received = await b.engine.sync();
+      expect(received.ok, isTrue, reason: '${received.errors}');
+      expect(await b.titleOf(tarte.id), 'Tarte');
+      expect(await b.titleOf(soupe.id), 'Soupe');
+    },
+  );
+
+  test('fréquence de sauvegarde : due ou non', () {
+    final now = DateTime.utc(2035, 1, 8);
+    expect(BackupFrequency.off.isDue(null, now), isFalse);
+    expect(BackupFrequency.daily.isDue(null, now), isTrue);
+    expect(
+      BackupFrequency.daily.isDue(DateTime.utc(2035, 1, 7, 12), now),
+      isFalse,
+    );
+    expect(BackupFrequency.daily.isDue(DateTime.utc(2035, 1, 7), now), isTrue);
+    expect(
+      BackupFrequency.weekly.isDue(DateTime.utc(2035, 1, 2), now),
+      isFalse,
+    );
+    expect(BackupFrequency.weekly.isDue(DateTime.utc(2035, 1, 1), now), isTrue);
+    expect(
+      BackupFrequency.monthly.isDue(DateTime.utc(2034, 12, 20), now),
+      isFalse,
+    );
+    expect(BackupFrequency.fromName('inconnu'), BackupFrequency.daily);
   });
 
   test('un chemin distant inconnu est ignoré', () async {

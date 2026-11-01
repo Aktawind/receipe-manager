@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:recettes/data/sync/drive_auth.dart';
-import 'package:recettes/data/sync/sync_remote.dart';
 import 'package:recettes/features/sync/sync_providers.dart';
 
 import '../helpers/memory_remote.dart';
@@ -66,7 +65,7 @@ void main() {
           overrides: [
             driveAuthProvider.overrideWithValue(_FakeAuth()),
             syncRemoteFactoryProvider.overrideWithValue(
-              (auth, folder, cache) => remote as SyncRemote,
+              (auth, folder, cache) => remote,
             ),
           ],
         ),
@@ -107,6 +106,51 @@ void main() {
       );
       expect(find.textContaining('À jour'), findsOneWidget);
 
+      // « Synchroniser maintenant » relance vraiment une synchro.
+      remote.calls.clear();
+      await tester.tap(find.byKey(const ValueKey('sync-now')));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await settle(tester);
+      expect(remote.calls, contains('changes'));
+
+      // La première synchro réussie déclenche la sauvegarde automatique (due).
+      expect(remote.backupFiles, hasLength(1));
+      await scrollTo(tester, find.byKey(const ValueKey('backup-now')));
+      await tester.tap(find.byKey(const ValueKey('backup-now')));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await settle(tester);
+      expect(remote.backupFiles, hasLength(2));
+      expect(find.text('Sauvegarde faite.'), findsOneWidget);
+
+      // Restaurer : liste, confirmation, résultat (la barre d'info disparaît).
+      await tester.pump(const Duration(seconds: 6));
+      await settle(tester);
+      await scrollTo(tester, find.byKey(const ValueKey('backup-restore')));
+      await tester.tap(find.byKey(const ValueKey('backup-restore')));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await settle(tester);
+      expect(find.text('Choisis la sauvegarde à restaurer'), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.history).first);
+      await settle(tester);
+      expect(find.text('Restaurer cette sauvegarde ?'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Restaurer'));
+      // Les écritures en base avancent avec les images : on alterne.
+      for (var i = 0; i < 15; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await settle(tester);
+      expect(find.text('1 recette restaurée.'), findsOneWidget);
+
+      await scrollTo(tester, find.byKey(const ValueKey('sync-disconnect')));
       await tester.tap(find.byKey(const ValueKey('sync-disconnect')));
       await settle(tester);
       await tester.tap(find.widgetWithText(FilledButton, 'Se déconnecter'));
@@ -122,6 +166,67 @@ void main() {
         hasLength(1),
       );
       // Laisse partir les minuteurs de la synchro.
+      await tester.pump(const Duration(seconds: 10));
+    },
+  );
+
+  testWidgets(
+    'supprimer mes données dans Drive : dossier à la corbeille, déconnexion',
+    (tester) async {
+      usePhoneSize(tester);
+      final remote = MemoryRemote();
+      final app = (await tester.runAsync(
+        () => TestApp.create(
+          overrides: [
+            driveAuthProvider.overrideWithValue(_FakeAuth()),
+            syncRemoteFactoryProvider.overrideWithValue(
+              (auth, folder, cache) => remote,
+            ),
+          ],
+        ),
+      ))!;
+      await tester.runAsync(() async {
+        final recipe = await app.services.recipes.create();
+        await app.services.recipes.save(recipe.copyWith(title: 'Quiche'));
+      });
+      await app.pump(tester);
+      await tester.tap(find.text('Réglages').last);
+      await settle(tester);
+      await scrollTo(tester, find.text('Synchronisation Google Drive'));
+      await tester.tap(find.text('Synchronisation Google Drive'));
+      await settle(tester);
+      await tester.tap(find.byKey(const ValueKey('sync-connect')));
+      for (var i = 0; i < 10; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await settle(tester);
+      expect(remote.files, isNotEmpty);
+
+      await scrollTo(tester, find.byKey(const ValueKey('drive-delete')));
+      await tester.tap(find.byKey(const ValueKey('drive-delete')));
+      await settle(tester);
+      expect(find.text('Supprimer les données dans Drive ?'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Supprimer'));
+      for (var i = 0; i < 10; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await settle(tester);
+
+      expect(remote.calls, contains('deleteAll'));
+      expect(remote.files, isEmpty);
+      expect(find.text('Garde tes recettes à jour partout'), findsOneWidget);
+      expect(app.prefs.getBool('sync_enabled'), isFalse);
+      // Les recettes de l'appareil, elles, sont toujours là.
+      final left = await tester.runAsync(
+        () => app.services.recipes.getAllWithDetails(),
+      );
+      expect(left!.map((r) => r.title), ['Quiche']);
       await tester.pump(const Duration(seconds: 10));
     },
   );

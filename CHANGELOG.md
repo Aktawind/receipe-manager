@@ -2,6 +2,9 @@
 
 Le détail de chaque version (avec sa checklist de test) est dans [docs/releases](docs/releases).
 
+## v0.4.0 — Synchronisation Google Drive
+Synchronisation téléphone / tablette via un dossier Google Drive (automatique, arrière-plan, conflits sans perte), sauvegardes et restauration dans Drive, statut « À retester », filtre et tri par statut, nombre de recettes.
+
 ## v0.3.0 — Organisation et classement
 Catégories et sous-catégories, collections, origine culinaire, saison ; filtres en listes à cocher, accès rapides (favoris, récentes), vues liste, grille et cartes, ordre d'une collection.
 

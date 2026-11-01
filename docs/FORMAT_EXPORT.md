@@ -174,4 +174,6 @@ Réglages → Importer depuis Recipe Keeper, avec le ZIP produit par Recipe Keep
 Le dossier Drive utilise le même format : chaque fichier de `recipes/`, `labels/` et `equipment/`
 est un document `recettes-backup` de la version courante qui ne contient **qu'un seul élément**,
 et `media/` contient les photos sous leur nom. Les versions écartées d'un conflit sont dans
-`history/`. Les anciennes versions du format restent lisibles de la même façon.
+`history/`. Les sauvegardes automatiques sont dans `backups/` : un seul fichier
+`sauvegarde-AAAA-MM-JJ-HHMM.json` par sauvegarde, au format `recettes-backup` **sans les photos**
+(elles sont dans `media/`, qui n'est jamais vidé). Les anciennes versions du format restent lisibles de la même façon.

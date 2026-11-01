@@ -4,7 +4,7 @@ import 'package:recettes/data/sync/sync_remote.dart';
 
 /// Un dossier distant en mémoire, qui se comporte comme Drive : chaque écriture
 /// a une version, et les changements se lisent depuis un jeton.
-class MemoryRemote implements SyncRemote {
+class MemoryRemote implements DriveFolder {
   final Map<String, Uint8List> files = {};
   final List<(int, RemoteChange)> _log = [];
   int _counter = 0;
@@ -52,6 +52,50 @@ class MemoryRemote implements SyncRemote {
     calls.add('delete $path');
     files.remove(path);
     _log.add((++_counter, RemoteChange(path, deleted: true)));
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    calls.add('deleteAll');
+    files.clear();
+    backupFiles.clear();
+  }
+
+  /// Sauvegardes : identifiant → (nom, contenu, date).
+  final Map<String, (String, Uint8List, DateTime)> backupFiles = {};
+  int _backupCounter = 0;
+
+  @override
+  Future<List<RemoteBackup>> listBackups() async {
+    final all = [
+      for (final e in backupFiles.entries)
+        RemoteBackup(
+          id: e.key,
+          name: e.value.$1,
+          createdAt: e.value.$3,
+          size: e.value.$2.length,
+        ),
+    ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return all;
+  }
+
+  @override
+  Future<void> uploadBackup(String name, Uint8List bytes) async {
+    calls.add('uploadBackup $name');
+    backupFiles['b${++_backupCounter}'] = (
+      name,
+      bytes,
+      DateTime.utc(2030, 1, 1).add(Duration(minutes: _backupCounter)),
+    );
+  }
+
+  @override
+  Future<Uint8List> downloadBackup(String id) async => backupFiles[id]!.$2;
+
+  @override
+  Future<void> deleteBackup(String id) async {
+    calls.add('deleteBackup $id');
+    backupFiles.remove(id);
   }
 
   int count(String prefix) => calls.where((c) => c.startsWith(prefix)).length;
