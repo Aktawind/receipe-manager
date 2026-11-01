@@ -36,6 +36,15 @@ abstract class SyncRemote {
   Future<void> delete(String path);
 }
 
+/// Le jeton des changements n'est plus valable (trop ancien) : il faut relire
+/// tout le dossier.
+class ChangesTokenExpired implements Exception {
+  const ChangesTokenExpired();
+
+  @override
+  String toString() => 'ChangesTokenExpired';
+}
+
 /// Une sauvegarde rangée dans le dossier distant.
 class RemoteBackup {
   const RemoteBackup({

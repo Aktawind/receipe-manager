@@ -519,6 +519,21 @@ void main() {
     expect(BackupFrequency.fromName('inconnu'), BackupFrequency.daily);
   });
 
+  test('jeton trop ancien : le dossier est relu, rien n’est perdu', () async {
+    final recipe = await a.addRecipe('Gratin');
+    await a.engine.sync();
+    await b.engine.sync();
+
+    a.at(t(10));
+    await a.edit(recipe.id, 'Gratin dauphinois');
+    await a.engine.sync();
+
+    remote.expireTokens = true;
+    final report = await b.engine.sync();
+    expect(report.ok, isTrue, reason: '${report.errors}');
+    expect(await b.titleOf(recipe.id), 'Gratin dauphinois');
+  });
+
   test('un chemin distant inconnu est ignoré', () async {
     await remote.write('history/x.json', Uint8List(0));
     await remote.write('autre/chose', Uint8List(0));

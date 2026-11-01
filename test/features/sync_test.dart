@@ -230,4 +230,65 @@ void main() {
       await tester.pump(const Duration(seconds: 10));
     },
   );
+
+  testWidgets('se reconnecter au même compte reprend où on en était', (
+    tester,
+  ) async {
+    usePhoneSize(tester);
+    final remote = MemoryRemote();
+    final app = (await tester.runAsync(
+      () => TestApp.create(
+        overrides: [
+          driveAuthProvider.overrideWithValue(_FakeAuth()),
+          syncRemoteFactoryProvider.overrideWithValue(
+            (auth, folder, cache) => remote,
+          ),
+        ],
+      ),
+    ))!;
+    await tester.runAsync(() async {
+      for (final title in ['Quiche', 'Tarte', 'Flan']) {
+        final recipe = await app.services.recipes.create();
+        await app.services.recipes.save(recipe.copyWith(title: title));
+      }
+    });
+    await app.pump(tester);
+    await tester.tap(find.text('Réglages').last);
+    await settle(tester);
+    await scrollTo(tester, find.text('Synchronisation Google Drive'));
+    await tester.tap(find.text('Synchronisation Google Drive'));
+    await settle(tester);
+
+    Future<void> wait() async {
+      for (var i = 0; i < 10; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await settle(tester);
+    }
+
+    await tester.tap(find.byKey(const ValueKey('sync-connect')));
+    await wait();
+    expect(
+      remote.files.keys.where((k) => k.startsWith('recipes/')),
+      hasLength(3),
+    );
+
+    // Déconnexion, puis reconnexion au même compte.
+    await scrollTo(tester, find.byKey(const ValueKey('sync-disconnect')));
+    await tester.tap(find.byKey(const ValueKey('sync-disconnect')));
+    await settle(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Se déconnecter'));
+    await wait();
+    remote.calls.clear();
+    await tester.tap(find.byKey(const ValueKey('sync-connect')));
+    await wait();
+
+    expect(remote.calls, contains('changes'));
+    expect(remote.count('read'), 0, reason: 'rien n’est relu');
+    expect(remote.count('write'), 0, reason: 'rien n’est renvoyé');
+    await tester.pump(const Duration(seconds: 10));
+  });
 }

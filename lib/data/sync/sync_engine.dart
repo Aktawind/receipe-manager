@@ -199,8 +199,9 @@ class SyncEngine {
   Future<void> reset() async {
     await _db.delete(_db.syncEntries).go();
     await (_db.delete(
-      _db.syncSettings,
-    )..where((s) => s.key.isIn([_tokenKey, _lastSyncKey]))).go();
+          _db.syncSettings,
+        )..where((s) => s.key.isIn([_tokenKey, _lastSyncKey, 'drive_folders'])))
+        .go();
   }
 
   /// La date de la dernière synchro réussie, `null` si jamais.
@@ -240,7 +241,14 @@ class SyncEngine {
   /// Renvoie `false` si la réception a échoué (on n'envoie alors rien : on
   /// risquerait d'écraser une version distante qu'on n'a pas pu lire).
   Future<bool> _pull(SyncReport report) async {
-    final changes = await _remote.changes(await _setting(_tokenKey));
+    RemoteChanges changes;
+    try {
+      changes = await _remote.changes(await _setting(_tokenKey));
+    } on ChangesTokenExpired {
+      // Jeton trop ancien : on relit tout le dossier (rien n'est perdu, les
+      // éléments identiques sont simplement reconnus).
+      changes = await _remote.changes(null);
+    }
     final before = report.errors.length;
     final wanted = [
       for (final change in changes.items)

@@ -12,12 +12,16 @@ class MemoryRemote implements DriveFolder {
   /// Appels reçus, pour vérifier ce qui circule.
   final List<String> calls = [];
 
+  /// Les jetons non nuls sont refusés (trop anciens).
+  bool expireTokens = false;
+
   /// Chemins dont la lecture échoue (réseau coupé…).
   final Set<String> failingReads = {};
 
   @override
   Future<RemoteChanges> changes(String? token) async {
     calls.add('changes');
+    if (expireTokens && token != null) throw const ChangesTokenExpired();
     final since = token == null ? 0 : int.parse(token);
     // Seul le dernier état de chaque fichier compte, comme avec Drive.
     final latest = <String, (int, RemoteChange)>{};

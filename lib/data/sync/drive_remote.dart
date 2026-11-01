@@ -210,15 +210,24 @@ class DriveRemote implements DriveFolder {
     String? pageToken = token;
     String next = token;
     while (pageToken != null) {
-      final page = await _api.changes.list(
-        pageToken,
-        spaces: 'drive',
-        includeRemoved: true,
-        pageSize: 1000,
-        $fields:
-            'nextPageToken, newStartPageToken, '
-            'changes(fileId, removed, file(id, name, parents, trashed, version))',
-      );
+      final drive.ChangeList page;
+      try {
+        page = await _api.changes.list(
+          pageToken,
+          spaces: 'drive',
+          includeRemoved: true,
+          pageSize: 1000,
+          $fields:
+              'nextPageToken, newStartPageToken, '
+              'changes(fileId, removed, file(id, name, parents, trashed, version))',
+        );
+      } on drive.DetailedApiRequestError catch (error) {
+        // Jeton refusé (trop ancien) : à l'appelant de relire tout le dossier.
+        if (error.status == 400 || error.status == 410) {
+          throw const ChangesTokenExpired();
+        }
+        rethrow;
+      }
       for (final change in page.changes ?? const <drive.Change>[]) {
         final file = change.file;
         if (file == null) {
