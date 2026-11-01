@@ -11,7 +11,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.1](#01--saisir-ses-recettes-et-les-sauvegarder) | Saisir ses recettes et les sauvegarder | ✅ |
 | [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | ✅ |
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ✅ |
-| [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | 🟦 |
+| [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ✅ |
 | [0.5](#05--recherche-et-filtres) | Recherche et filtres | ⬜ |
 | [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ⬜ |
 | [0.7](#07--mode-cuisine-et-suivi-des-recettes) | Mode cuisine et suivi des recettes | ⬜ |
@@ -200,8 +200,7 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
   aucun identifiant n'est gardé par l'application (c'est Google qui conserve la connexion), donc
   rien à chiffrer.
 
-**À tester** : modifier sur le téléphone, voir le changement sur la tablette ; modifier en mode
-avion puis reconnecter ; modifier la même recette sur les deux appareils.
+*Validée le 2026-11-01.*
 
 ## 0.5 — Recherche et filtres
 
