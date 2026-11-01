@@ -9,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/app.dart';
 import 'package:recettes/core/settings/theme_mode_controller.dart';
 import 'package:recettes/data/app_services.dart';
+import 'package:recettes/data/sync/background_sync.dart';
+import 'package:recettes/features/sync/sync_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Une app complète sur une base en mémoire, pour les tests de widgets.
@@ -50,6 +52,9 @@ class TestApp {
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       appServicesProvider.overrideWithValue(services),
+      backgroundSchedulerProvider.overrideWithValue(
+        const NoBackgroundScheduler(),
+      ),
       ...overrides,
     ],
     child: const RecettesApp(),

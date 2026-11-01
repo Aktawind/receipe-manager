@@ -25,6 +25,7 @@ class AppServices {
     required this.photos,
     required this.backups,
     required this.clock,
+    required this.root,
   });
 
   final AppDatabase database;
@@ -33,6 +34,9 @@ class AppServices {
   final LabelRepository labels;
   final PhotoStore photos;
   final BackupService backups;
+
+  /// Le dossier de l'application (base, photos, verrou de synchro).
+  final Directory root;
 
   /// L'horloge qui date les modifications (voir [HybridClock]).
   final HybridClock clock;
@@ -97,6 +101,7 @@ class AppServices {
       labels: labels,
       photos: photos,
       clock: clock,
+      root: root,
       backups: BackupService(
         repository: recipes,
         equipment: equipment,

@@ -11,7 +11,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.1](#01--saisir-ses-recettes-et-les-sauvegarder) | Saisir ses recettes et les sauvegarder | ✅ |
 | [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | ✅ |
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ✅ |
-| [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | 🟨 |
+| [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | 🟦 |
 | [0.5](#05--recherche-et-filtres) | Recherche et filtres | ⬜ |
 | [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ⬜ |
 | [0.7](#07--mode-cuisine-et-suivi-des-recettes) | Mode cuisine et suivi des recettes | ⬜ |
@@ -191,8 +191,14 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
   filtre par catégories principales ; filtres « récemment consultées/ajoutées » retirés (les tris
   restent) ; nombre de recettes en haut de la liste ; photo du compte Google dans la synchro ;
   numéro de version mis à jour dans le projet à chaque version.
-- **Étape 3** : sauvegarde automatique et restauration, synchro en arrière-plan, suppression des
-  données (appareil et/ou Drive), ordre des collections.
+- **Étape 3 (à tester)** : sauvegardes automatiques dans Drive (fréquence réglable, les 10
+  dernières gardées) et restauration ; synchro en arrière-plan toutes les heures (WorkManager) ;
+  suppression des données dans Drive ; « Synchroniser maintenant » qui dit ce qui s'est passé ;
+  correction d'une synchro qui pouvait rester bloquée après une coupure réseau (délais d'attente,
+  reprise automatique).
+- Reste pour plus tard : l'ordre personnalisé des collections ne se synchronise pas encore ;
+  aucun identifiant n'est gardé par l'application (c'est Google qui conserve la connexion), donc
+  rien à chiffrer.
 
 **À tester** : modifier sur le téléphone, voir le changement sur la tablette ; modifier en mode
 avion puis reconnecter ; modifier la même recette sur les deux appareils.

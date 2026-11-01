@@ -35,3 +35,39 @@ abstract class SyncRemote {
 
   Future<void> delete(String path);
 }
+
+/// Une sauvegarde rangée dans le dossier distant.
+class RemoteBackup {
+  const RemoteBackup({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+    required this.size,
+  });
+
+  final String id;
+  final String name;
+  final DateTime createdAt;
+  final int size;
+}
+
+/// Les sauvegardes du dossier distant : un fichier de données (le même format
+/// que l'export, sans les photos, qui restent dans `media/`).
+abstract class BackupRemote {
+  /// Les sauvegardes, la plus récente d'abord.
+  Future<List<RemoteBackup>> listBackups();
+
+  Future<void> uploadBackup(String name, Uint8List bytes);
+
+  Future<Uint8List> downloadBackup(String id);
+
+  /// Met la sauvegarde à la corbeille du dossier distant.
+  Future<void> deleteBackup(String id);
+}
+
+/// Le dossier distant complet : synchro et sauvegardes.
+abstract class DriveFolder implements SyncRemote, BackupRemote {
+  /// Met tout le dossier distant (recettes, photos, sauvegardes) à la
+  /// corbeille. Rien n'est touché sur l'appareil.
+  Future<void> deleteAll();
+}

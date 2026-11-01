@@ -695,11 +695,12 @@ class _IngredientRow extends StatelessWidget {
             ),
         ],
       ),
-      style: theme.textTheme.bodyLarge,
+      style: theme.textTheme.bodyLarge?.copyWith(height: 1.25),
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9),
+      // Des lignes serrées : une liste d'ingrédients se lit d'un coup d'œil.
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

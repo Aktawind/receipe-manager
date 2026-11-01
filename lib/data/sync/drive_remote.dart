@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:googleapis/drive/v3.dart' as drive;
@@ -16,7 +17,7 @@ import 'sync_remote.dart';
 /// ```
 /// Avec le droit `drive.file`, l'application ne voit que ce qu'elle a créé :
 /// les fichiers du dossier, et rien d'autre dans le Drive.
-class DriveRemote implements SyncRemote {
+class DriveRemote implements DriveFolder {
   DriveRemote({
     required DriveAuth auth,
     required this.folderName,
@@ -39,6 +40,7 @@ class DriveRemote implements SyncRemote {
     'equipment',
     'media',
     'history',
+    'backups',
   ];
   static const _folderMime = 'application/vnd.google-apps.folder';
   static const _foldersKey = 'drive_folders';
@@ -121,7 +123,16 @@ class DriveRemote implements SyncRemote {
     for (var attempt = 1; ; attempt++) {
       try {
         return await action();
-      } on drive.DetailedApiRequestError catch (error) {
+      } on Object catch (error) {
+        // Réseau coupé, délai dépassé : on réessaie quelques fois.
+        if (error is TimeoutException ||
+            error is SocketException ||
+            error is http.ClientException) {
+          if (attempt >= 3) rethrow;
+          await Future<void>.delayed(Duration(seconds: attempt * 2));
+          continue;
+        }
+        if (error is! drive.DetailedApiRequestError) rethrow;
         final status = error.status ?? 0;
         if (status == 404) await _forgetFolders();
         final transient =
@@ -297,6 +308,82 @@ class DriveRemote implements SyncRemote {
     _ids.remove(path);
   });
 
+  /// Met le dossier à la corbeille de Drive : récupérable depuis Drive.
+  @override
+  Future<void> deleteAll() => _guard(() async {
+    final folders = await _ensureFolders();
+    await _api.files.update(
+      drive.File(trashed: true),
+      folders['']!,
+      $fields: 'id',
+    );
+    await _forgetFolders();
+  });
+
+  // ---------------------------------------------------------------- sauvegardes
+
+  @override
+  Future<List<RemoteBackup>> listBackups() => _guard(() async {
+    final folders = await _ensureFolders();
+    final result = <RemoteBackup>[];
+    String? pageToken;
+    do {
+      final page = await _api.files.list(
+        q: "'${folders['backups']}' in parents and trashed = false",
+        spaces: 'drive',
+        $fields: 'nextPageToken, files(id, name, createdTime, size)',
+        pageSize: 200,
+        pageToken: pageToken,
+      );
+      for (final file in page.files ?? const <drive.File>[]) {
+        result.add(
+          RemoteBackup(
+            id: file.id!,
+            name: file.name ?? '',
+            createdAt:
+                file.createdTime ?? DateTime.fromMillisecondsSinceEpoch(0),
+            size: int.tryParse(file.size ?? '') ?? 0,
+          ),
+        );
+      }
+      pageToken = page.nextPageToken;
+    } while (pageToken != null);
+    result.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return result;
+  });
+
+  @override
+  Future<void> uploadBackup(String name, Uint8List bytes) => _guard(() async {
+    final folders = await _ensureFolders();
+    await _api.files.create(
+      drive.File(name: name, parents: [folders['backups']!]),
+      uploadMedia: drive.Media(
+        Stream.value(bytes),
+        bytes.length,
+        contentType: 'application/json',
+      ),
+      $fields: 'id',
+    );
+  });
+
+  @override
+  Future<Uint8List> downloadBackup(String id) => _guard(() async {
+    final media = await _api.files.get(
+      id,
+      downloadOptions: drive.DownloadOptions.fullMedia,
+    ) as drive.Media;
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in media.stream) {
+      builder.add(chunk);
+    }
+    return builder.takeBytes();
+  });
+
+  @override
+  Future<void> deleteBackup(String id) => _guard(() async {
+    await _api.files.update(drive.File(trashed: true), id, $fields: 'id');
+  });
+
   Future<String?> _idOf(String path) async {
     final known = _ids[path];
     if (known != null) return known;
@@ -353,11 +440,16 @@ class _AuthClient extends http.BaseClient {
     return _headers!;
   }
 
+  /// Sans limite de temps, une connexion qui se fige (réseau perdu en plein
+  /// transfert) bloquerait la synchro pour toujours.
+  static const _requestTimeout = Duration(seconds: 90);
+  static const _chunkTimeout = Duration(seconds: 60);
+
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     final Map<String, String>? headers;
     try {
-      headers = await _current();
+      headers = await _current().timeout(_requestTimeout);
     } on Object {
       invalidate();
       rethrow;
@@ -367,7 +459,17 @@ class _AuthClient extends http.BaseClient {
       throw const DriveSignInRequired();
     }
     request.headers.addAll(headers);
-    return _inner.send(request);
+    final response = await _inner.send(request).timeout(_requestTimeout);
+    return http.StreamedResponse(
+      response.stream.timeout(_chunkTimeout),
+      response.statusCode,
+      contentLength: response.contentLength,
+      request: response.request,
+      headers: response.headers,
+      isRedirect: response.isRedirect,
+      persistentConnection: response.persistentConnection,
+      reasonPhrase: response.reasonPhrase,
+    );
   }
 }
 

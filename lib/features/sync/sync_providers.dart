@@ -1,15 +1,22 @@
 import 'dart:async';
+import 'dart:io';
 
-import 'package:drift/drift.dart' show TableUpdate, TableUpdateQuery;
+import 'package:drift/drift.dart'
+    show Table, TableInfo, TableUpdate, TableUpdateQuery;
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:path/path.dart' as p;
 
 import '../../core/settings/theme_mode_controller.dart';
 import '../../data/app_services.dart';
 import '../../data/sync/drive_auth.dart';
+import '../../data/sync/drive_backup.dart';
 import '../../data/sync/drive_remote.dart';
+import '../../data/sync/background_sync.dart';
 import '../../data/sync/sync_engine.dart';
+import '../../data/sync/sync_gate.dart';
+import '../../data/sync/sync_prefs.dart';
 import '../../data/sync/sync_remote.dart';
 import '../../data/sync/sync_settings_store.dart';
 
@@ -19,7 +26,12 @@ final syncFolderNameProvider = Provider<String>((ref) => 'Recettes');
 
 final driveAuthProvider = Provider<DriveAuth>((ref) => GoogleDriveAuth());
 
-typedef SyncRemoteFactory = SyncRemote Function(
+/// La synchro quand l'application est fermée (remplacée dans les tests).
+final backgroundSchedulerProvider = Provider<BackgroundScheduler>(
+  (ref) => const WorkmanagerScheduler(),
+);
+
+typedef SyncRemoteFactory = DriveFolder Function(
   DriveAuth auth,
   String folderName,
   DriveCache cache,
@@ -46,6 +58,12 @@ class SyncState {
     this.connectFailed = false,
     this.progressDone = 0,
     this.progressTotal = 0,
+    this.lastUploaded = 0,
+    this.lastDownloaded = 0,
+    this.backupFrequency = BackupFrequency.daily,
+    this.lastBackup,
+    this.backupBusy = false,
+    this.backupError,
   });
 
   final SyncPhase phase;
@@ -67,6 +85,16 @@ class SyncState {
   final int progressDone;
   final int progressTotal;
 
+  /// Ce que la dernière synchro réussie a envoyé et reçu.
+  final int lastUploaded;
+  final int lastDownloaded;
+
+  /// Sauvegarde automatique dans Drive : fréquence, dernière faite, état.
+  final BackupFrequency backupFrequency;
+  final DateTime? lastBackup;
+  final bool backupBusy;
+  final String? backupError;
+
   bool get enabled => phase != SyncPhase.off;
 
   SyncState copyWith({
@@ -81,6 +109,13 @@ class SyncState {
     bool? connectFailed,
     int? progressDone,
     int? progressTotal,
+    int? lastUploaded,
+    int? lastDownloaded,
+    BackupFrequency? backupFrequency,
+    DateTime? lastBackup,
+    bool? backupBusy,
+    String? backupError,
+    bool clearBackupError = false,
   }) => SyncState(
     phase: phase ?? this.phase,
     email: email ?? this.email,
@@ -92,6 +127,12 @@ class SyncState {
     connectFailed: connectFailed ?? this.connectFailed,
     progressDone: progressDone ?? this.progressDone,
     progressTotal: progressTotal ?? this.progressTotal,
+    lastUploaded: lastUploaded ?? this.lastUploaded,
+    lastDownloaded: lastDownloaded ?? this.lastDownloaded,
+    backupFrequency: backupFrequency ?? this.backupFrequency,
+    lastBackup: lastBackup ?? this.lastBackup,
+    backupBusy: backupBusy ?? this.backupBusy,
+    backupError: clearBackupError ? null : backupError ?? this.backupError,
   );
 }
 
@@ -103,10 +144,6 @@ final syncControllerProvider = NotifierProvider<SyncController, SyncState>(
 /// un petit délai pour regrouper les changements), au retour dans l'app, et à
 /// la demande.
 class SyncController extends Notifier<SyncState> {
-  static const _enabledKey = 'sync_enabled';
-  static const _emailKey = 'sync_email';
-  static const _nameKey = 'sync_name';
-  static const _photoKey = 'sync_photo';
   static const _afterChange = Duration(seconds: 5);
   static const _atStartup = Duration(seconds: 2);
   static const _minBetweenResumes = Duration(seconds: 30);
@@ -114,8 +151,11 @@ class SyncController extends Notifier<SyncState> {
   StreamSubscription<Set<TableUpdate>>? _watch;
   Timer? _timer;
   SyncEngine? _engine;
+  DriveFolder? _folder;
   bool _running = false;
   bool _again = false;
+  int _runId = 0;
+  DateTime _lastProgress = DateTime.now();
 
   @override
   SyncState build() {
@@ -124,14 +164,21 @@ class SyncController extends Notifier<SyncState> {
       _watch?.cancel();
     });
     final prefs = ref.read(sharedPreferencesProvider);
-    if (prefs.getBool(_enabledKey) != true) return const SyncState();
+    if (prefs.getBool(SyncPrefs.enabled) != true) return const SyncState();
     _listen();
     _schedule(_atStartup);
+    unawaited(ref.read(backgroundSchedulerProvider).schedule());
     return SyncState(
       phase: SyncPhase.idle,
-      email: prefs.getString(_emailKey),
-      name: prefs.getString(_nameKey) ?? '',
-      photoUrl: prefs.getString(_photoKey),
+      email: prefs.getString(SyncPrefs.email),
+      name: prefs.getString(SyncPrefs.name) ?? '',
+      photoUrl: prefs.getString(SyncPrefs.photo),
+      backupFrequency: BackupFrequency.fromName(
+        prefs.getString(SyncPrefs.backupFrequency),
+      ),
+      lastBackup: DateTime.tryParse(
+        prefs.getString(SyncPrefs.lastBackup) ?? '',
+      ),
     );
   }
 
@@ -140,16 +187,18 @@ class SyncController extends Notifier<SyncState> {
     final prefs = ref.read(sharedPreferencesProvider);
     try {
       final account = await ref.read(driveAuthProvider).signIn();
-      // Un autre compte ou une reconnexion : on repart d'une lecture complète.
+      // Un autre compte ou une reconnexion : on repart d'une lecture complète,
+      // sans rien garder d'une synchro précédente (jeton, requête bloquée…).
+      _abandonRun();
       await _engineFor().reset();
-      await prefs.setBool(_enabledKey, true);
-      await prefs.setString(_emailKey, account.email);
-      await prefs.setString(_nameKey, account.name);
+      await prefs.setBool(SyncPrefs.enabled, true);
+      await prefs.setString(SyncPrefs.email, account.email);
+      await prefs.setString(SyncPrefs.name, account.name);
       final photo = account.photoUrl;
       if (photo == null) {
-        await prefs.remove(_photoKey);
+        await prefs.remove(SyncPrefs.photo);
       } else {
-        await prefs.setString(_photoKey, photo);
+        await prefs.setString(SyncPrefs.photo, photo);
       }
       state = SyncState(
         phase: SyncPhase.idle,
@@ -158,6 +207,7 @@ class SyncController extends Notifier<SyncState> {
         photoUrl: photo,
       );
       _listen();
+      unawaited(ref.read(backgroundSchedulerProvider).schedule());
       unawaited(syncNow());
     } on GoogleSignInException catch (error) {
       // Annuler n'est pas une erreur, mais Android renvoie aussi « annulé »
@@ -173,17 +223,28 @@ class SyncController extends Notifier<SyncState> {
     }
   }
 
+  /// Oublie la synchro en cours et le moteur : ils repartiront à neuf.
+  void _abandonRun() {
+    _runId++;
+    _running = false;
+    _again = false;
+    _engine = null;
+    _folder = null;
+  }
+
   /// Se déconnecte de Google. Les recettes de l'appareil ne sont pas touchées,
   /// ni le dossier Drive.
   Future<void> disconnect() async {
     final prefs = ref.read(sharedPreferencesProvider);
     _timer?.cancel();
+    _abandonRun();
+    unawaited(ref.read(backgroundSchedulerProvider).cancel());
     await _watch?.cancel();
     _watch = null;
-    await prefs.setBool(_enabledKey, false);
-    await prefs.remove(_emailKey);
-    await prefs.remove(_nameKey);
-    await prefs.remove(_photoKey);
+    await prefs.setBool(SyncPrefs.enabled, false);
+    await prefs.remove(SyncPrefs.email);
+    await prefs.remove(SyncPrefs.name);
+    await prefs.remove(SyncPrefs.photo);
     try {
       await ref.read(driveAuthProvider).signOut();
     } on Object {
@@ -193,14 +254,31 @@ class SyncController extends Notifier<SyncState> {
     state = const SyncState();
   }
 
+  /// Une synchro sans nouvelles depuis aussi longtemps est considérée comme
+  /// bloquée (réseau coupé en plein transfert…) : on repart de zéro.
+  static const _stuckAfter = Duration(minutes: 3);
+
   /// Synchronise maintenant (bouton, ou déclenchement automatique).
   Future<void> syncNow() async {
     if (!state.enabled) return;
     if (_running) {
-      _again = true;
+      if (DateTime.now().difference(_lastProgress) < _stuckAfter) {
+        _again = true;
+        return;
+      }
+      debugPrint('Synchro : la précédente ne répond plus, on repart.');
+    }
+    // La tâche d'arrière-plan travaille peut-être déjà : on repasse après.
+    final gate = SyncGate(
+      File(p.join(ref.read(appServicesProvider).root.path, SyncGate.fileName)),
+    );
+    if (!gate.tryAcquire()) {
+      _schedule(const Duration(seconds: 30));
       return;
     }
+    final run = ++_runId;
     _running = true;
+    _lastProgress = DateTime.now();
     _timer?.cancel();
     state = state.copyWith(
       phase: SyncPhase.syncing,
@@ -211,19 +289,26 @@ class SyncController extends Notifier<SyncState> {
     try {
       final report = await _engineFor().sync(
         onProgress: (done, total) {
+          if (run != _runId) return;
+          _lastProgress = DateTime.now();
+          gate.touch();
           // Pas à chaque fichier : l'écran n'a pas besoin d'être plus vif.
           if (done == total || done % 5 == 0 || total - done < 5) {
             state = state.copyWith(progressDone: done, progressTotal: total);
           }
         },
       );
+      if (run != _runId) return;
       if (report.ok) {
         state = state.copyWith(
           phase: SyncPhase.idle,
           lastSync: DateTime.now(),
           lastConflicts: report.conflicts.length,
+          lastUploaded: report.uploaded + report.deletedRemote,
+          lastDownloaded: report.downloaded + report.deletedLocal,
           clearError: true,
         );
+        unawaited(_afterSuccess());
       } else {
         final signIn = report.errors.any(
           (e) => e.contains('DriveSignInRequired'),
@@ -234,23 +319,55 @@ class SyncController extends Notifier<SyncState> {
         );
       }
     } on Object catch (error) {
-      state = state.copyWith(phase: SyncPhase.error, error: '$error');
+      if (run == _runId) {
+        state = state.copyWith(phase: SyncPhase.error, error: '$error');
+      }
     } finally {
-      _running = false;
-      if (_again) {
-        _again = false;
-        _schedule(_afterChange);
+      gate.release();
+      if (run == _runId) {
+        _running = false;
+        if (_again) {
+          _again = false;
+          _schedule(_afterChange);
+        }
       }
     }
   }
 
   /// Au retour dans l'application.
   void onResumed() {
-    if (!state.enabled || _running) return;
+    if (!state.enabled) return;
+    // Les synchros faites en arrière-plan ont écrit dans la base : on relit.
+    ref.read(appServicesProvider).database.markTablesUpdated(_watched());
     final last = state.lastSync;
-    if (last == null || DateTime.now().difference(last) > _minBetweenResumes) {
+    final stuck =
+        _running && DateTime.now().difference(_lastProgress) > _stuckAfter;
+    if (stuck ||
+        (!_running &&
+            (last == null ||
+                DateTime.now().difference(last) > _minBetweenResumes))) {
       _schedule(const Duration(seconds: 1));
     }
+  }
+
+  /// Après une synchro réussie : sauvegarde Drive si elle est due.
+  Future<void> _afterSuccess() async {
+    final due = state.backupFrequency.isDue(state.lastBackup, DateTime.now());
+    if (due) await backupNow();
+  }
+
+  List<TableInfo<Table, dynamic>> _watched() {
+    final db = ref.read(appServicesProvider).database;
+    return [
+      db.recipes,
+      db.ingredients,
+      db.recipeSteps,
+      db.recipePhotos,
+      db.recipeEquipment,
+      db.recipeLabels,
+      db.labels,
+      db.equipmentItems,
+    ];
   }
 
   void _schedule(Duration delay) {
@@ -261,22 +378,22 @@ class SyncController extends Notifier<SyncState> {
   void _listen() {
     _watch?.cancel();
     final db = ref.read(appServicesProvider).database;
-    _watch = db
-        .tableUpdates(
-          TableUpdateQuery.onAllTables([
-            db.recipes,
-            db.ingredients,
-            db.recipeSteps,
-            db.recipePhotos,
-            db.recipeEquipment,
-            db.recipeLabels,
-            db.labels,
-            db.equipmentItems,
-          ]),
-        )
-        .listen((_) {
-          if (state.enabled) _schedule(_afterChange);
-        });
+    _watch = db.tableUpdates(TableUpdateQuery.onAllTables(_watched())).listen((
+      _,
+    ) {
+      if (state.enabled) _schedule(_afterChange);
+    });
+  }
+
+  DriveFolder _folderFor() {
+    final existing = _folder;
+    if (existing != null) return existing;
+    final services = ref.read(appServicesProvider);
+    return _folder = ref.read(syncRemoteFactoryProvider)(
+      ref.read(driveAuthProvider),
+      ref.read(syncFolderNameProvider),
+      SyncSettingsStore(services.database),
+    );
   }
 
   SyncEngine _engineFor() {
@@ -290,11 +407,62 @@ class SyncController extends Notifier<SyncState> {
       equipment: services.equipment,
       photos: services.photos,
       clock: services.clock,
-      remote: ref.read(syncRemoteFactoryProvider)(
-        ref.read(driveAuthProvider),
-        ref.read(syncFolderNameProvider),
-        SyncSettingsStore(services.database),
-      ),
+      remote: _folderFor(),
     );
+  }
+
+  DriveBackupService _backupService() {
+    final services = ref.read(appServicesProvider);
+    return DriveBackupService(
+      remote: _folderFor(),
+      sync: _folderFor(),
+      backups: services.backups,
+      photos: services.photos,
+      clock: services.clock,
+    );
+  }
+
+  // ------------------------------------------------------------ sauvegardes
+
+  Future<void> setBackupFrequency(BackupFrequency frequency) async {
+    await ref
+        .read(sharedPreferencesProvider)
+        .setString(SyncPrefs.backupFrequency, frequency.name);
+    state = state.copyWith(backupFrequency: frequency);
+  }
+
+  /// Sauvegarde maintenant dans Drive.
+  Future<bool> backupNow() async {
+    if (!state.enabled || state.backupBusy) return false;
+    state = state.copyWith(backupBusy: true, clearBackupError: true);
+    try {
+      await _backupService().backupNow();
+      final now = DateTime.now();
+      await ref
+          .read(sharedPreferencesProvider)
+          .setString(SyncPrefs.lastBackup, now.toUtc().toIso8601String());
+      state = state.copyWith(backupBusy: false, lastBackup: now);
+      return true;
+    } on Object catch (error) {
+      state = state.copyWith(backupBusy: false, backupError: '$error');
+      return false;
+    }
+  }
+
+  /// Met le dossier Drive à la corbeille, puis arrête la synchronisation.
+  Future<void> deleteDriveData() async {
+    await _folderFor().deleteAll();
+    await disconnect();
+  }
+
+  Future<List<RemoteBackup>> listBackups() => _backupService().list();
+
+  /// Restaure une sauvegarde (voir [DriveBackupService.restore]), puis
+  /// synchronise pour que les autres appareils suivent.
+  Future<RestoreResult> restoreBackup(RemoteBackup backup) async {
+    final result = await _backupService().restore(backup);
+    ref.read(appServicesProvider).database.markTablesUpdated(_watched());
+    unawaited(syncNow());
+    return result;
   }
 }

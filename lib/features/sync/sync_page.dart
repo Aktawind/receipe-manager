@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
+import 'backup_section.dart';
 import 'sync_providers.dart';
 
 /// Réglages → Synchronisation Google Drive : explication et consentement avant
@@ -88,7 +89,7 @@ class SyncPage extends ConsumerWidget {
                 key: const ValueKey('sync-now'),
                 onPressed: state.phase == SyncPhase.syncing
                     ? null
-                    : controller.syncNow,
+                    : () => _syncNow(context, ref),
                 icon: const Icon(Icons.sync),
                 label: Text(l10n.syncNow),
               ),
@@ -100,10 +101,32 @@ class SyncPage extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(l10n.syncAutoNote, style: theme.textTheme.bodySmall),
+            const BackupSection(),
           ],
         ],
       ),
     );
+  }
+
+  /// Lance une synchro et dit ce qui s'est passé : sans cela, une synchro où
+  /// rien n'a changé ressemble à un bouton qui ne fait rien.
+  Future<void> _syncNow(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
+    await ref.read(syncControllerProvider.notifier).syncNow();
+    final result = ref.read(syncControllerProvider);
+    final text = switch (result.phase) {
+      SyncPhase.idle when result.lastUploaded + result.lastDownloaded == 0 =>
+        l10n.syncResultUpToDate,
+      SyncPhase.idle => l10n.syncResultDone(
+        result.lastUploaded,
+        result.lastDownloaded,
+      ),
+      _ => l10n.syncResultFailed,
+    };
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(persist: false, content: Text(text)));
   }
 
   String _status(BuildContext context, AppLocalizations l10n, SyncState state) {
@@ -123,7 +146,10 @@ class SyncPage extends ConsumerWidget {
         final material = MaterialLocalizations.of(context);
         final date = material.formatMediumDate(last);
         final time = material.formatTimeOfDay(TimeOfDay.fromDateTime(last));
-        return '${l10n.syncStatusIdle} · ${l10n.syncLastSync('$date $time')}';
+        final counts = state.lastUploaded + state.lastDownloaded == 0
+            ? ''
+            : ' · ${l10n.syncLastCounts(state.lastUploaded, state.lastDownloaded)}';
+        return '${l10n.syncStatusIdle} · ${l10n.syncLastSync('$date $time')}$counts';
     }
   }
 

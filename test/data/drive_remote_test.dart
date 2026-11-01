@@ -49,6 +49,7 @@ void main() {
     'equipment': 'f-equipment',
     'media': 'f-media',
     'history': 'f-history',
+    'backups': 'f-backups',
   };
 
   DriveRemote remote(
@@ -189,8 +190,8 @@ void main() {
       await drive.changes('1');
       expect(
         created,
-        6,
-        reason: 'le dossier principal et ses cinq sous-dossiers',
+        7,
+        reason: 'le dossier principal et ses six sous-dossiers',
       );
       final stored = jsonDecode(cache.values['drive_folders']!) as Map;
       expect(stored.keys, containsAll(['', 'recipes', 'media', 'history']));
