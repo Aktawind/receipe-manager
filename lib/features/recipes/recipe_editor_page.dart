@@ -55,7 +55,6 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
   final _prep = TextEditingController();
   final _cook = TextEditingController();
   final _rest = TextEditingController();
-  final _timesCooked = TextEditingController();
   final _source = TextEditingController();
   final _notes = TextEditingController();
   final _ingredients = TextEditingController();
@@ -83,7 +82,6 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _prep,
     _cook,
     _rest,
-    _timesCooked,
     _source,
     _notes,
     _ingredients,
@@ -111,7 +109,6 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _prep.text = number(recipe.prepMinutes);
     _cook.text = number(recipe.cookMinutes);
     _rest.text = number(recipe.restMinutes);
-    _timesCooked.text = recipe.timesCooked == 0 ? '' : '${recipe.timesCooked}';
     _source.text = recipe.source;
     _notes.text = recipe.notes;
     _photo = recipe.mainPhoto;
@@ -184,7 +181,6 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
       prepMinutes: () => number(_prep),
       cookMinutes: () => number(_cook),
       restMinutes: () => number(_rest),
-      timesCooked: number(_timesCooked) ?? 0,
       source: _source.text.trim(),
       notes: _notes.text.trim(),
       mainPhoto: () => _photo,
@@ -526,16 +522,6 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                         ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _NumberField(_timesCooked, l10n.fieldTimesCooked),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(child: SizedBox.shrink()),
                   ],
                 ),
                 const SizedBox(height: 12),

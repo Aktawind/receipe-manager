@@ -14,7 +14,8 @@ class _FakeAuth implements DriveAuth {
       signedIn ? {'Authorization': 'Bearer jeton'} : null;
 
   @override
-  Future<String> signIn() async => 'moi@example.org';
+  Future<DriveAccount> signIn() async =>
+      const DriveAccount(email: 'moi@example.org');
 
   @override
   Future<void> signOut() async {}

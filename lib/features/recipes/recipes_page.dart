@@ -108,12 +108,47 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                   : null,
             );
           }
-          return switch (view) {
-            RecipesView.grid => _RecipeGrid(recipes: recipes),
-            RecipesView.list => _RecipeList(recipes: recipes),
-            RecipesView.cards => _RecipeCards(recipes: recipes),
-          };
+          return Column(
+            children: [
+              _CountLine(shown: recipes.length),
+              Expanded(
+                child: switch (view) {
+                  RecipesView.grid => _RecipeGrid(recipes: recipes),
+                  RecipesView.list => _RecipeList(recipes: recipes),
+                  RecipesView.cards => _RecipeCards(recipes: recipes),
+                },
+              ),
+            ],
+          );
         },
+      ),
+    );
+  }
+}
+
+/// « 327 recettes », ou « 12 sur 327 recettes » quand la liste est filtrée.
+class _CountLine extends ConsumerWidget {
+  const _CountLine({required this.shown});
+
+  final int shown;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final total = ref.watch(recipesProvider).value?.length ?? shown;
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          shown == total
+              ? l10n.recipeCount(total)
+              : l10n.recipeCountOf(shown, total),
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
       ),
     );
   }
@@ -126,6 +161,7 @@ enum _DisplayChoice {
   sortTitle,
   sortAdded,
   sortViewed,
+  sortStatus,
   sortManual,
 }
 
@@ -172,6 +208,8 @@ class _DisplayMenu extends ConsumerWidget {
             sort.setSort(RecipeSort.added);
           case _DisplayChoice.sortViewed:
             sort.setSort(RecipeSort.viewed);
+          case _DisplayChoice.sortStatus:
+            sort.setSort(RecipeSort.status);
           case _DisplayChoice.sortManual:
             sort.setSort(RecipeSort.manual);
         }
@@ -198,6 +236,11 @@ class _DisplayMenu extends ConsumerWidget {
           l10n.sortViewed,
           filter.sort == RecipeSort.viewed,
         ),
+        choice(
+          _DisplayChoice.sortStatus,
+          l10n.sortStatus,
+          filter.sort == RecipeSort.status,
+        ),
         if (collection != null)
           choice(
             _DisplayChoice.sortManual,
@@ -209,10 +252,10 @@ class _DisplayMenu extends ConsumerWidget {
   }
 }
 
-/// Le filtre : « Afficher » (toutes, favoris, récentes…) puis une ligne par
-/// famille de classement, qui ouvre une liste à cocher. Catégories, saisons et
-/// origines : l'une ou l'autre ; collections : toutes celles qui sont cochées ;
-/// familles différentes : les deux.
+/// Le filtre : « Afficher » (toutes ou favoris), « Statut », puis une ligne par
+/// famille de classement, qui ouvre une liste à cocher. Statuts, catégories
+/// (principales seulement), saisons et origines : l'un ou l'autre ; collections :
+/// toutes celles qui sont cochées ; critères différents : tous ensemble.
 Future<void> _showFilterSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
@@ -236,8 +279,6 @@ class _FilterSheet extends ConsumerWidget {
           for (final (value, label) in [
             (QuickFilter.all, l10n.quickAll),
             (QuickFilter.favorites, l10n.quickFavorites),
-            (QuickFilter.recent, l10n.quickRecent),
-            (QuickFilter.added, l10n.quickAdded),
           ])
             ListTile(
               title: Text(label),
@@ -249,6 +290,17 @@ class _FilterSheet extends ConsumerWidget {
     );
     if (chosen != null) {
       ref.read(recipeFilterProvider.notifier).setQuick(chosen);
+    }
+  }
+
+  Future<void> _chooseStatuses(BuildContext context, WidgetRef ref) async {
+    final chosen = await showDialog<Set<RecipeStatus>>(
+      context: context,
+      builder: (context) =>
+          _StatusDialog(initial: ref.read(recipeFilterProvider).statuses),
+    );
+    if (chosen != null) {
+      ref.read(recipeFilterProvider.notifier).setStatuses(chosen);
     }
   }
 
@@ -264,6 +316,15 @@ class _FilterSheet extends ConsumerWidget {
       for (final l in all)
         if (l.kind == kind) l.id,
     };
+    // Les catégories se filtrent par les principales : choisir « Plats »
+    // retient aussi ses sous-catégories.
+    final byId = {for (final l in all) l.id: l};
+    final visible = kind == LabelKind.category
+        ? {
+            for (final id in relevant)
+              if (byId[id]?.parentId == null) id,
+          }
+        : relevant;
     final chosen = await pickLabels(
       context,
       kind: kind,
@@ -272,7 +333,7 @@ class _FilterSheet extends ConsumerWidget {
           if (ofKind.contains(id)) id,
       ],
       allowCreate: false,
-      visibleIds: relevant,
+      visibleIds: visible,
     );
     if (chosen != null) {
       ref.read(recipeFilterProvider.notifier).replaceLabels(ofKind, chosen);
@@ -304,8 +365,13 @@ class _FilterSheet extends ConsumerWidget {
     String quickName(QuickFilter quick) => switch (quick) {
       QuickFilter.all => l10n.quickAll,
       QuickFilter.favorites => l10n.quickFavorites,
-      QuickFilter.recent => l10n.quickRecent,
-      QuickFilter.added => l10n.quickAdded,
+    };
+
+    String statusName(RecipeStatus status) => switch (status) {
+      RecipeStatus.toTest => l10n.statusToTest,
+      RecipeStatus.toRetest => l10n.statusToRetest,
+      RecipeStatus.toImprove => l10n.statusToImprove,
+      RecipeStatus.validated => l10n.statusValidated,
     };
 
     return SafeArea(
@@ -348,6 +414,23 @@ class _FilterSheet extends ConsumerWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _chooseQuick(context, ref),
             ),
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: Text(l10n.statusLabel),
+              subtitle: Text(
+                filter.statuses.isEmpty
+                    ? l10n.filterNone
+                    : [
+                        for (final status in RecipeStatus.values)
+                          if (filter.statuses.contains(status))
+                            statusName(status),
+                      ].join(', '),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _chooseStatuses(context, ref),
+            ),
             for (final kind in LabelKind.values)
               () {
                 final selected = [
@@ -371,6 +454,63 @@ class _FilterSheet extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Liste à cocher des statuts (l'un ou l'autre).
+class _StatusDialog extends StatefulWidget {
+  const _StatusDialog({required this.initial});
+
+  final Set<RecipeStatus> initial;
+
+  @override
+  State<_StatusDialog> createState() => _StatusDialogState();
+}
+
+class _StatusDialogState extends State<_StatusDialog> {
+  late final Set<RecipeStatus> _chosen = {...widget.initial};
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    String name(RecipeStatus status) => switch (status) {
+      RecipeStatus.toTest => l10n.statusToTest,
+      RecipeStatus.toRetest => l10n.statusToRetest,
+      RecipeStatus.toImprove => l10n.statusToImprove,
+      RecipeStatus.validated => l10n.statusValidated,
+    };
+    return AlertDialog(
+      title: Text(l10n.statusLabel),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final status in RecipeStatus.values)
+              CheckboxListTile(
+                value: _chosen.contains(status),
+                title: Text(name(status)),
+                onChanged: (on) => setState(() {
+                  if (on == true) {
+                    _chosen.add(status);
+                  } else {
+                    _chosen.remove(status);
+                  }
+                }),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _chosen),
+          child: Text(l10n.validate),
+        ),
+      ],
     );
   }
 }
@@ -539,8 +679,9 @@ class _RecipeCards extends ConsumerWidget {
 
     String statusText(RecipeStatus status) => switch (status) {
       RecipeStatus.toTest => l10n.statusToTest,
-      RecipeStatus.validated => l10n.statusValidated,
+      RecipeStatus.toRetest => l10n.statusToRetest,
       RecipeStatus.toImprove => l10n.statusToImprove,
+      RecipeStatus.validated => l10n.statusValidated,
     };
 
     return LayoutBuilder(

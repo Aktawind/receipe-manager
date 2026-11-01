@@ -52,8 +52,10 @@ class SyncPage extends ConsumerWidget {
           ] else ...[
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.account_circle_outlined),
-              title: Text(l10n.syncConnectedAs(state.email ?? '')),
+              leading: AccountAvatar(state: state),
+              title: Text(
+                state.name.isEmpty ? (state.email ?? '') : state.name,
+              ),
               subtitle: Text(_status(context, l10n, state)),
               trailing: state.phase == SyncPhase.syncing
                   ? const SizedBox.square(
@@ -163,6 +165,32 @@ class _Error extends StatelessWidget {
       text,
       style: Theme.of(context).textTheme.bodySmall
           ?.copyWith(color: scheme.error),
+    );
+  }
+}
+
+/// La photo du compte Google, ou son initiale quand elle n'est pas disponible
+/// (hors connexion, compte sans photo).
+class AccountAvatar extends StatelessWidget {
+  const AccountAvatar({super.key, required this.state, this.radius = 22});
+
+  final SyncState state;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final source = state.name.isNotEmpty ? state.name : (state.email ?? '');
+    final initial = source.isEmpty
+        ? '?'
+        : source.characters.first.toUpperCase();
+    final photo = state.photoUrl;
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: scheme.primaryContainer,
+      foregroundImage: photo == null ? null : NetworkImage(photo),
+      onForegroundImageError: photo == null ? null : (_, _) {},
+      child: Text(initial, style: TextStyle(color: scheme.onPrimaryContainer)),
     );
   }
 }

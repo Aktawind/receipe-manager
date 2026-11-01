@@ -38,6 +38,8 @@ class SyncState {
   const SyncState({
     this.phase = SyncPhase.off,
     this.email,
+    this.name = '',
+    this.photoUrl,
     this.lastSync,
     this.error,
     this.lastConflicts = 0,
@@ -48,6 +50,8 @@ class SyncState {
 
   final SyncPhase phase;
   final String? email;
+  final String name;
+  final String? photoUrl;
   final DateTime? lastSync;
 
   /// Détail technique de la dernière erreur (affiché en petit).
@@ -68,6 +72,8 @@ class SyncState {
   SyncState copyWith({
     SyncPhase? phase,
     String? email,
+    String? name,
+    String? photoUrl,
     DateTime? lastSync,
     String? error,
     bool clearError = false,
@@ -78,6 +84,8 @@ class SyncState {
   }) => SyncState(
     phase: phase ?? this.phase,
     email: email ?? this.email,
+    name: name ?? this.name,
+    photoUrl: photoUrl ?? this.photoUrl,
     lastSync: lastSync ?? this.lastSync,
     error: clearError ? null : error ?? this.error,
     lastConflicts: lastConflicts ?? this.lastConflicts,
@@ -97,6 +105,8 @@ final syncControllerProvider = NotifierProvider<SyncController, SyncState>(
 class SyncController extends Notifier<SyncState> {
   static const _enabledKey = 'sync_enabled';
   static const _emailKey = 'sync_email';
+  static const _nameKey = 'sync_name';
+  static const _photoKey = 'sync_photo';
   static const _afterChange = Duration(seconds: 5);
   static const _atStartup = Duration(seconds: 2);
   static const _minBetweenResumes = Duration(seconds: 30);
@@ -117,19 +127,36 @@ class SyncController extends Notifier<SyncState> {
     if (prefs.getBool(_enabledKey) != true) return const SyncState();
     _listen();
     _schedule(_atStartup);
-    return SyncState(phase: SyncPhase.idle, email: prefs.getString(_emailKey));
+    return SyncState(
+      phase: SyncPhase.idle,
+      email: prefs.getString(_emailKey),
+      name: prefs.getString(_nameKey) ?? '',
+      photoUrl: prefs.getString(_photoKey),
+    );
   }
 
   /// Connexion à Google, puis première synchro.
   Future<void> connect() async {
     final prefs = ref.read(sharedPreferencesProvider);
     try {
-      final email = await ref.read(driveAuthProvider).signIn();
+      final account = await ref.read(driveAuthProvider).signIn();
       // Un autre compte ou une reconnexion : on repart d'une lecture complète.
       await _engineFor().reset();
       await prefs.setBool(_enabledKey, true);
-      await prefs.setString(_emailKey, email);
-      state = SyncState(phase: SyncPhase.idle, email: email);
+      await prefs.setString(_emailKey, account.email);
+      await prefs.setString(_nameKey, account.name);
+      final photo = account.photoUrl;
+      if (photo == null) {
+        await prefs.remove(_photoKey);
+      } else {
+        await prefs.setString(_photoKey, photo);
+      }
+      state = SyncState(
+        phase: SyncPhase.idle,
+        email: account.email,
+        name: account.name,
+        photoUrl: photo,
+      );
       _listen();
       unawaited(syncNow());
     } on GoogleSignInException catch (error) {
@@ -155,6 +182,8 @@ class SyncController extends Notifier<SyncState> {
     _watch = null;
     await prefs.setBool(_enabledKey, false);
     await prefs.remove(_emailKey);
+    await prefs.remove(_nameKey);
+    await prefs.remove(_photoKey);
     try {
       await ref.read(driveAuthProvider).signOut();
     } on Object {

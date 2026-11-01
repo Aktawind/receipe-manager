@@ -10,7 +10,8 @@ import '../helpers/test_app.dart';
 
 class _FakeAuth implements DriveAuth {
   @override
-  Future<String> signIn() async => 'moi@example.org';
+  Future<DriveAccount> signIn() async =>
+      const DriveAccount(email: 'moi@example.org', name: 'Audrick');
 
   @override
   Future<Map<String, String>?> headers() async => {};
@@ -21,7 +22,7 @@ class _FakeAuth implements DriveAuth {
 
 class _RefusedAuth extends _FakeAuth {
   @override
-  Future<String> signIn() async => throw const GoogleSignInException(
+  Future<DriveAccount> signIn() async => throw const GoogleSignInException(
     code: GoogleSignInExceptionCode.canceled,
     description: 'Access blocked',
   );
@@ -97,7 +98,8 @@ void main() {
       );
       await settle(tester);
 
-      expect(find.text('Connecté : moi@example.org'), findsOneWidget);
+      expect(find.text('Audrick'), findsOneWidget);
+      expect(find.text('A'), findsOneWidget, reason: 'initiale du compte');
       expect(
         remote.files.keys.where((k) => k.startsWith('recipes/')),
         hasLength(1),

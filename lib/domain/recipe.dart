@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
 
-/// Où en est la recette : à essayer, adoptée, ou à revoir.
+/// Où en est la recette : à essayer, à refaire, à améliorer ou adoptée.
 enum RecipeStatus {
+  /// Jamais essayée.
   toTest,
-  validated,
-  toImprove;
+
+  /// Déjà faite, à refaire pour confirmer ou ajuster.
+  toRetest,
+  toImprove,
+  validated;
 
   /// Valeur enregistrée en base et dans les sauvegardes.
   String get code => name;

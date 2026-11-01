@@ -114,13 +114,4 @@ void main() {
     final read = (await repo.getRecipe(copy.id))!;
     expect(read.steps.length, 2);
   });
-
-  test('compteur de réalisations', () async {
-    final r = await repo.create();
-    await repo.incrementTimesCooked(r.id, 1);
-    await repo.incrementTimesCooked(r.id, 1);
-    expect((await repo.getRecipe(r.id))!.timesCooked, 2);
-    await repo.incrementTimesCooked(r.id, -5);
-    expect((await repo.getRecipe(r.id))!.timesCooked, 0);
-  });
 }

@@ -112,7 +112,6 @@ void main() {
     for (final label in [
       'Portions',
       'Unité des portions',
-      'Fois réalisée',
       'Préparation',
       'Cuisson',
       'Repos',

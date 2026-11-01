@@ -119,23 +119,6 @@
       }
     }
   },
-  "timesCooked": "{count, plural, =0{Jamais réalisée} =1{Réalisée 1 fois} other{Réalisée {count} fois}}",
-  "@timesCooked": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "iCookedThis": "J'ai fait cette recette",
-  "cookedCountIncremented": "C'est noté : réalisée {count} fois",
-  "@cookedCountIncremented": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "optionalIngredient": "facultatif",
   "recipeNotFound": "Cette recette n'existe plus",
   "editorTitleNew": "Nouvelle recette",
@@ -148,7 +131,6 @@
   "fieldPrepMinutes": "Préparation",
   "fieldCookMinutes": "Cuisson",
   "fieldRestMinutes": "Repos",
-  "fieldTimesCooked": "Fois réalisée",
   "fieldSource": "Source (livre et page, site, lien…)",
   "fieldNotes": "Notes",
   "sectionInfo": "Informations",
@@ -208,8 +190,6 @@
   "cancel": "Annuler",
   "exportBackup": "Exporter une sauvegarde",
   "exportBackupSubtitle": "Toutes les recettes et leurs photos, dans un fichier ZIP",
-  "shareBackup": "Partager une sauvegarde",
-  "shareBackupSubtitle": "Envoyer le fichier vers Drive, un mail…",
   "importBackup": "Importer une sauvegarde",
   "importBackupSubtitle": "Depuis un fichier ZIP exporté par l'app",
   "backupSaved": "Sauvegarde enregistrée",
@@ -274,7 +254,6 @@
   "sourceWebsite": "SOURCE · SITE WEB",
   "sourceVideo": "SOURCE · VIDÉO",
   "linkOpenFailed": "Impossible d'ouvrir ce lien",
-  "noteEmpty": "Aucune note pour l'instant.",
   "addNote": "Ajouter une note",
   "editNotes": "Modifier les notes",
   "servingsLabel": "Nombre de personnes",
@@ -363,7 +342,6 @@
   "quantityLabel": "Quantité",
   "statusNone": "Aucun statut",
   "statusLabel": "Statut",
-  "neverCooked": "Jamais réalisée",
   "equipment": "Matériel",
   "fieldVideos": "Liens vidéo (un par ligne)",
   "videosLabel": "Vidéos",
@@ -482,8 +460,6 @@
   },
   "quickAll": "Toutes",
   "quickFavorites": "Favoris",
-  "quickRecent": "Récemment consultées",
-  "quickAdded": "Récemment ajoutées",
   "filterTitle": "Filtrer",
   "filterClear": "Tout effacer",
   "filterDone": "Terminé",
@@ -534,14 +510,6 @@
   "syncPrivacy": "L’application n’a accès qu’à ce dossier, qu’elle crée elle-même : jamais au reste de ton Drive. Rien n’est envoyé ailleurs.",
   "syncAutoNote": "La synchronisation se fait toute seule à l’ouverture et après chaque modification.",
   "syncConnect": "Se connecter avec Google",
-  "syncConnectedAs": "Connecté : {email}",
-  "@syncConnectedAs": {
-    "placeholders": {
-      "email": {
-        "type": "String"
-      }
-    }
-  },
   "syncStatusIdle": "À jour",
   "syncStatusSyncing": "Synchronisation en cours…",
   "syncStatusError": "La dernière synchronisation a échoué. Elle sera retentée.",
@@ -581,6 +549,27 @@
   "@syncStatusProgress": {
     "placeholders": {
       "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "statusToRetest": "À retester",
+  "sortStatus": "Statut",
+  "recipeCount": "{count, plural, =0{Aucune recette} =1{1 recette} other{{count} recettes}}",
+  "@recipeCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recipeCountOf": "{shown} sur {total} recettes",
+  "@recipeCountOf": {
+    "placeholders": {
+      "shown": {
         "type": "int"
       },
       "total": {
