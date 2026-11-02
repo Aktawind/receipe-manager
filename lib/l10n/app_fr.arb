@@ -728,5 +728,11 @@
       }
     }
   },
-  "filtersClearAll": "Effacer les filtres"
+  "filtersClearAll": "Effacer les filtres",
+  "savedSearches": "Mes recherches",
+  "savedSearchSave": "Enregistrer",
+  "savedSearchSaveTitle": "Enregistrer cette recherche",
+  "savedSearchName": "Nom (par ex. « Plats rapides d’hiver »)",
+  "savedSearchHelp": "Enregistre une combinaison de filtres pour la retrouver d’un geste.",
+  "savedSearchDelete": "Supprimer cette recherche"
 }

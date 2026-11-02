@@ -14,6 +14,7 @@ import '../classification/labels_providers.dart';
 import 'filter_dialogs.dart';
 import 'recipe_photo.dart';
 import 'recipe_providers.dart';
+import 'saved_searches.dart';
 
 class RecipesPage extends ConsumerStatefulWidget {
   const RecipesPage({super.key});
@@ -65,6 +66,12 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Une recherche enregistrée peut remplir le texte cherché : le champ suit.
+    ref.listen(recipeSearchProvider, (previous, next) {
+      if (_searchController.text == next) return;
+      _searchController.text = next;
+      if (next.isNotEmpty && !_searching) setState(() => _searching = true);
+    });
     final l10n = AppLocalizations.of(context);
     final view = ref.watch(recipesViewProvider);
     final filter = ref.watch(recipeFilterProvider);
@@ -530,6 +537,8 @@ class _FilterSheet extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  const SavedSearchesSection(),
+                  const Divider(height: 1),
                   SwitchListTile(
                     key: const ValueKey('filter-favorites'),
                     secondary: const Icon(Icons.star_outline),

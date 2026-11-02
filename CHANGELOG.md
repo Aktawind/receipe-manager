@@ -2,6 +2,9 @@
 
 Le détail de chaque version (avec sa checklist de test) est dans [docs/releases](docs/releases).
 
+## v0.5.0 — Recherche et filtres
+Recherche dans tout le texte des recettes (tolérante), recherches récentes et enregistrées, filtres par ingrédients, durée, matériel et favoris, tris par durée et par note, bouton « Effacer les filtres ».
+
 ## v0.4.0 — Synchronisation Google Drive
 Synchronisation téléphone / tablette via un dossier Google Drive (automatique, arrière-plan, conflits sans perte), sauvegardes et restauration dans Drive, statut « À retester », filtre et tri par statut, nombre de recettes.
 

@@ -181,13 +181,17 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
   (base v9), un fichier par élément dans le format des sauvegardes, conflits, suppressions, photos
   envoyées une seule fois, horloge corrigée des écarts entre appareils. Testé sur deux appareils
   simulés.
-- **Étape 2 (à tester)** : filtre de durée (total, préparation, cuisson : « au plus X min »), matériel
+- **Étape 2 (validée le 2026-11-02)** : filtre de durée (total, préparation, cuisson : « au plus X min »), matériel
   (seules restent les recettes qui utilisent tous les matériels cochés), recherche par ingrédients
   (avec tous / au moins un / sans), tris par durée et par note, interrupteur « Favoris », bouton
   « Effacer les filtres » sous le compteur ; champ de recherche qui annonce qu'il cherche partout ;
   en-tête du filtre fixe pendant qu'on fait défiler. « Ce que j'ai sous la main » a été essayé puis
   retiré le 2026-11-02 (les filtres par ingrédients font le travail).
-- **Étape 3** : recherches enregistrées, listes paginées et chargement progressif des images.
+- **Étape 3 (à tester)** : recherches enregistrées (texte cherché, filtres et tri sous un nom, en
+  haut du filtre ; un appui les applique), images qui apparaissent en fondu une fois décodées. Les
+  listes ne construisaient déjà que ce qui est visible ; l'index de recherche est en mémoire (pas
+  besoin d'index SQLite plein texte pour quelques centaines de recettes).
+- Écarté : tri par nombre de réalisations (compteur retiré en 0.4), étiquettes (retirées en 0.3).
 
 ## 0.6 — Portions, quantités et conversions
 

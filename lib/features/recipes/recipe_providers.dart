@@ -255,6 +255,9 @@ class RecipeFilterController extends Notifier<RecipeFilter> {
   }
 
   void clear() => state = RecipeFilter(sort: state.sort);
+
+  /// Remplace tout le filtre (recherche enregistrée).
+  void apply(RecipeFilter filter) => state = filter;
 }
 
 /// Le seul élément « collection » filtré, s'il n'y en a qu'un : ses recettes
