@@ -358,7 +358,7 @@ class _DisplayMenu extends ConsumerWidget {
   }
 }
 
-/// Le filtre : « Afficher » (toutes ou favoris), « Statut », puis une ligne par
+/// Le filtre : « Favoris », « Statut », puis une ligne par
 /// famille de classement, qui ouvre une liste à cocher. Statuts, catégories
 /// (principales seulement), saisons et origines : l'un ou l'autre ; collections :
 /// toutes celles qui sont cochées ; critères différents : tous ensemble.
@@ -373,31 +373,6 @@ Future<void> _showFilterSheet(BuildContext context) {
 
 class _FilterSheet extends ConsumerWidget {
   const _FilterSheet();
-
-  Future<void> _chooseQuick(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
-    final current = ref.read(recipeFilterProvider).quick;
-    final chosen = await showDialog<QuickFilter>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(l10n.filterShow),
-        children: [
-          for (final (value, label) in [
-            (QuickFilter.all, l10n.quickAll),
-            (QuickFilter.favorites, l10n.quickFavorites),
-          ])
-            ListTile(
-              title: Text(label),
-              trailing: value == current ? const Icon(Icons.check) : null,
-              onTap: () => Navigator.pop(context, value),
-            ),
-        ],
-      ),
-    );
-    if (chosen != null) {
-      ref.read(recipeFilterProvider.notifier).setQuick(chosen);
-    }
-  }
 
   Future<void> _chooseStatuses(BuildContext context, WidgetRef ref) async {
     final chosen = await showDialog<Set<RecipeStatus>>(
@@ -483,6 +458,7 @@ class _FilterSheet extends ConsumerWidget {
     final filter = ref.watch(recipeFilterProvider);
     final all = ref.watch(labelsProvider).value ?? const <Label>[];
     final usage = ref.watch(labelUsageProvider).value ?? const {};
+    final pantry = ref.watch(pantryProvider);
     final byId = {for (final l in all) l.id: l};
 
     // Un élément est proposé s'il sert, s'il est déjà choisi, ou si l'une de
@@ -497,11 +473,6 @@ class _FilterSheet extends ConsumerWidget {
         parent = byId[parent]?.parentId;
       }
     }
-
-    String quickName(QuickFilter quick) => switch (quick) {
-      QuickFilter.all => l10n.quickAll,
-      QuickFilter.favorites => l10n.quickFavorites,
-    };
 
     String statusName(RecipeStatus status) => switch (status) {
       RecipeStatus.toTest => l10n.statusToTest,
@@ -548,12 +519,14 @@ class _FilterSheet extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ListTile(
-                    leading: const Icon(Icons.visibility_outlined),
-                    title: Text(l10n.filterShow),
-                    subtitle: Text(quickName(filter.quick)),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _chooseQuick(context, ref),
+                  SwitchListTile(
+                    key: const ValueKey('filter-favorites'),
+                    secondary: const Icon(Icons.star_outline),
+                    title: Text(l10n.quickFavorites),
+                    value: filter.quick == QuickFilter.favorites,
+                    onChanged: (on) => ref
+                        .read(recipeFilterProvider.notifier)
+                        .setQuick(on ? QuickFilter.favorites : QuickFilter.all),
                   ),
                   ListTile(
                     leading: const Icon(Icons.flag_outlined),
@@ -597,8 +570,25 @@ class _FilterSheet extends ConsumerWidget {
                     title: Text(l10n.filterIngredients),
                     subtitle: Text(
                       filter.ingredients.isActive
-                          ? l10n.ingredientsSummary(filter.ingredients.count)
+                          ? [
+                              if (filter.ingredients.all.isNotEmpty)
+                                l10n.ingredientsSumAll(
+                                  filter.ingredients.all.join(', '),
+                                ),
+                              if (filter.ingredients.any.isNotEmpty)
+                                l10n.ingredientsSumAny(
+                                  filter.ingredients.any.join(', '),
+                                ),
+                              if (filter.ingredients.none.isNotEmpty)
+                                l10n.ingredientsSumNone(
+                                  filter.ingredients.none.join(', '),
+                                ),
+                              if (filter.ingredients.onHand)
+                                l10n.ingredientsSumOnHand(pantry.length),
+                            ].join(' · ')
                           : l10n.filterNone,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _chooseIngredients(context, ref),

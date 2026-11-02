@@ -165,8 +165,8 @@ class RecipeFilter {
   final Set<RecipeStatus> statuses;
   final TimeLimits times;
 
-  /// Le matériel dont on dispose : seules restent les recettes qui n'ont besoin
-  /// que de lui (ou d'aucun matériel) ; vide = pas de filtre.
+  /// Le matériel choisi : seules restent les recettes qui les utilisent tous ;
+  /// vide = pas de filtre.
   final Set<String> equipmentIds;
   final IngredientCriteria ingredients;
   final RecipeSort sort;
@@ -415,7 +415,7 @@ final visibleRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
       final detailed = byId[r.id];
       if (filter.equipmentIds.isNotEmpty &&
           (detailed == null ||
-              !detailed.equipmentIds.every(filter.equipmentIds.contains))) {
+              !filter.equipmentIds.every(detailed.equipmentIds.contains))) {
         return false;
       }
       if (criteria.isActive) {

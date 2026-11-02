@@ -458,7 +458,6 @@
       }
     }
   },
-  "quickAll": "Toutes",
   "quickFavorites": "Favoris",
   "filterTitle": "Filtrer",
   "filterClear": "Tout effacer",
@@ -479,7 +478,6 @@
   "orderEmpty": "Aucune recette dans cette collection",
   "dragHandle": "Déplacer",
   "filterNone": "Pas de filtre",
-  "filterShow": "Afficher",
   "filterSelected": "{count, plural, =1{1 choisi} other{{count} choisis}}",
   "@filterSelected": {
     "placeholders": {
@@ -689,8 +687,8 @@
   "durationAny": "Peu importe",
   "durationNote": "Les recettes dont la durée n’est pas renseignée n’apparaissent pas quand une limite est choisie.",
   "filterEquipment": "Matériel",
-  "filterEquipmentTitle": "Matériel dont je dispose",
-  "filterEquipmentHelp": "Seules restent les recettes qui n’ont besoin que du matériel coché (ou d’aucun matériel).",
+  "filterEquipmentTitle": "Recettes qui utilisent ce matériel",
+  "filterEquipmentHelp": "Coche un ou plusieurs matériels : seules restent les recettes qui les utilisent tous.",
   "filterEquipmentNone": "Aucun matériel dans ta liste. Ajoute-en dans Réglages → Matériel.",
   "filterEquipmentSelected": "{count, plural, =1{1 matériel} other{{count} matériels}}",
   "@filterEquipmentSelected": {
@@ -719,14 +717,6 @@
       }
     }
   },
-  "ingredientsSummary": "{count, plural, =1{1 critère} other{{count} critères}}",
-  "@ingredientsSummary": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "ingredientsMissing": "Il manque : {list}",
   "@ingredientsMissing": {
     "placeholders": {
@@ -735,5 +725,37 @@
       }
     }
   },
-  "ingredientsNothingMissing": "Rien à acheter"
+  "ingredientsNothingMissing": "Rien à acheter",
+  "ingredientsSumAll": "Avec : {list}",
+  "@ingredientsSumAll": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "ingredientsSumAny": "L’un de : {list}",
+  "@ingredientsSumAny": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "ingredientsSumNone": "Sans : {list}",
+  "@ingredientsSumNone": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "ingredientsSumOnHand": "Sous la main ({count})",
+  "@ingredientsSumOnHand": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

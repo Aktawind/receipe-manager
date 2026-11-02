@@ -89,11 +89,9 @@ Future<void> pickFor(
   await settle(tester);
 }
 
-/// Choisit « Afficher » : Toutes ou Favoris.
-Future<void> showOnly(WidgetTester tester, String what) async {
-  await tester.tap(find.text('Afficher'));
-  await settle(tester);
-  await tester.tap(find.text(what));
+/// Active ou coupe l'interrupteur « Favoris » du filtre.
+Future<void> toggleFavorites(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('filter-favorites')));
   await settle(tester);
 }
 
@@ -178,27 +176,26 @@ void main() {
     expect(find.text('Agneau'), findsNothing);
   });
 
-  testWidgets('accès rapide : favoris ; plus de filtre « récemment »', (
-    tester,
-  ) async {
-    await setUpLibrary(tester);
+  testWidgets(
+    'favoris : un interrupteur dans le filtre, plus de « Afficher »',
+    (tester) async {
+      await setUpLibrary(tester);
 
-    await openFilters(tester);
-    await tester.tap(find.text('Afficher'));
-    await settle(tester);
-    expect(find.text('Récemment consultées'), findsNothing);
-    expect(find.text('Récemment ajoutées'), findsNothing);
-    await tester.tap(find.text('Favoris'));
-    await settle(tester);
-    await done(tester);
-    expect(find.text('Boulgour'), findsOneWidget);
-    expect(find.text('Axoa'), findsNothing);
+      await openFilters(tester);
+      expect(find.text('Afficher'), findsNothing);
+      expect(find.text('Récemment consultées'), findsNothing);
+      await toggleFavorites(tester);
+      await done(tester);
+      expect(find.text('Boulgour'), findsOneWidget);
+      expect(find.text('Axoa'), findsNothing);
+      expect(find.text('1 sur 3 recettes'), findsOneWidget);
 
-    await openFilters(tester);
-    await showOnly(tester, 'Toutes');
-    await done(tester);
-    expect(find.text('Axoa'), findsOneWidget);
-  });
+      await openFilters(tester);
+      await toggleFavorites(tester);
+      await done(tester);
+      expect(find.text('Axoa'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'recherche dans les ingrédients, faute de frappe tolérée, historique',

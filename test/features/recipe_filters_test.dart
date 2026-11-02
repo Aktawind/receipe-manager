@@ -160,7 +160,7 @@ void main() {
     ]);
   });
 
-  testWidgets('matériel : seulement les recettes faisables avec ce matériel', (
+  testWidgets('matériel : seulement les recettes qui utilisent ce matériel', (
     tester,
   ) async {
     await library(tester);
@@ -170,13 +170,22 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Valider'));
     await settle(tester);
+    expect(find.text('1 matériel'), findsOneWidget);
     await done(tester);
 
-    // La cocotte, plus celles qui n'ont besoin d'aucun matériel ; pas le robot.
-    expect(find.text('Boeuf bourguignon'), findsOneWidget);
-    expect(find.text('Omelette'), findsOneWidget);
-    expect(find.text('Salade'), findsOneWidget);
-    expect(find.text('Brioche'), findsNothing);
+    // La seule recette qui demande la cocotte.
+    expect(shown(tester, titles), ['Boeuf bourguignon']);
+
+    // Deux matériels : l'un et l'autre (aucune recette ne les demande ensemble).
+    await openFilters(tester);
+    await openRow(tester, 'Matériel');
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Robot pâtissier'));
+    await tester.pump();
+    await tester.tap(find.text('Valider'));
+    await settle(tester);
+    await done(tester);
+    expect(shown(tester, titles), isEmpty);
+    expect(find.textContaining('Aucune recette ne correspond'), findsOneWidget);
   });
 
   testWidgets('ingrédients : tous, au moins un, sans', (tester) async {
@@ -235,11 +244,15 @@ void main() {
       for (final item in ['oeufs', 'beurre', 'farine', 'sucre']) {
         await add('ingredients-pantry', item);
       }
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('ingredients-on-hand')),
+      // Ajouter des ingrédients active « Ne garder que ce que je peux faire ».
+      expect(
+        tester
+            .widget<SwitchListTile>(
+              find.byKey(const ValueKey('ingredients-on-hand')),
+            )
+            .value,
+        isTrue,
       );
-      await tester.tap(find.byKey(const ValueKey('ingredients-on-hand')));
-      await tester.pump();
       await tester.tap(find.byKey(const ValueKey('ingredients-validate')));
       await settle(tester);
       await done(tester);

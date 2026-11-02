@@ -272,6 +272,11 @@ class _IngredientFilterPageState extends ConsumerState<_IngredientFilterPage> {
               for (final item in next) {
                 if (!pantry.contains(item)) notifier.add(item);
               }
+              // Ajouter ce qu'on a chez soi, c'est vouloir s'en servir : le
+              // filtre s'active (on peut le couper ensuite).
+              if (next.length > pantry.length && !_criteria.onHand) {
+                setState(() => _criteria = _criteria.copyWith(onHand: true));
+              }
             },
           ),
           if (_criteria.onHand)
