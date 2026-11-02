@@ -220,7 +220,7 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
   est tolérée, tous les mots doivent se retrouver (dans le désordre), classement par pertinence
   (titre > ingrédients > préparation) ; historique des recherches récentes.
 - **Étape 2 (à tester)** : filtre de durée (total, préparation, cuisson : « au plus X min »), matériel
-  dont on dispose (seules restent les recettes qui n'ont besoin que de lui), recherche par
+  (seules restent les recettes qui utilisent l'un des matériels cochés), recherche par
   ingrédients (avec tous / au moins un / sans) et « ce que j'ai sous la main » (réserve gardée sur
   l'appareil, recettes classées par ce qu'il leur manque, jusqu'à 5 ingrédients tolérés, avec la
   liste de ce qui manque), tris par durée et par note ; champ de recherche qui annonce qu'il cherche
