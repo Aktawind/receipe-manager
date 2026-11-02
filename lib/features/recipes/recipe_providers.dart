@@ -104,43 +104,30 @@ class TimeLimits {
 }
 
 /// La recherche par ingrédients : ceux que la recette doit tous avoir, ceux dont
-/// un suffit, ceux qu'elle ne doit pas avoir, et « ce que j'ai sous la main ».
+/// un suffit, et ceux qu'elle ne doit pas avoir.
 class IngredientCriteria {
   const IngredientCriteria({
     this.all = const [],
     this.any = const [],
     this.none = const [],
-    this.onHand = false,
-    this.maxMissing = 0,
   });
 
   final List<String> all;
   final List<String> any;
   final List<String> none;
 
-  /// Ne garder que les recettes faisables avec les ingrédients de la réserve.
-  final bool onHand;
+  bool get isActive => all.isNotEmpty || any.isNotEmpty || none.isNotEmpty;
 
-  /// Nombre d'ingrédients qu'on accepte de ne pas avoir (avec [onHand]).
-  final int maxMissing;
-
-  bool get isActive =>
-      all.isNotEmpty || any.isNotEmpty || none.isNotEmpty || onHand;
-
-  int get count => all.length + any.length + none.length + (onHand ? 1 : 0);
+  int get count => all.length + any.length + none.length;
 
   IngredientCriteria copyWith({
     List<String>? all,
     List<String>? any,
     List<String>? none,
-    bool? onHand,
-    int? maxMissing,
   }) => IngredientCriteria(
     all: all ?? this.all,
     any: any ?? this.any,
     none: none ?? this.none,
-    onHand: onHand ?? this.onHand,
-    maxMissing: maxMissing ?? this.maxMissing,
   );
 }
 
@@ -329,48 +316,6 @@ final searchIndexProvider = Provider<AsyncValue<RecipeSearchIndex>>(
   (ref) => ref.watch(recipeDetailsProvider).whenData(RecipeSearchIndex.new),
 );
 
-/// Les ingrédients qu'on a sous la main, gardés sur l'appareil.
-final pantryProvider = NotifierProvider<Pantry, List<String>>(Pantry.new);
-
-class Pantry extends Notifier<List<String>> {
-  static const _key = 'pantry';
-
-  @override
-  List<String> build() =>
-      ref.watch(sharedPreferencesProvider).getStringList(_key) ?? const [];
-
-  Future<void> add(String item) async {
-    final clean = item.trim().replaceAll(RegExp(r'\s+'), ' ');
-    if (clean.isEmpty) return;
-    final key = normalizeForSearch(clean);
-    if (state.any((old) => normalizeForSearch(old) == key)) return;
-    await _save([...state, clean]);
-  }
-
-  Future<void> remove(String item) => _save([
-    for (final old in state)
-      if (old != item) old,
-  ]);
-
-  Future<void> _save(List<String> next) async {
-    state = next;
-    await ref.read(sharedPreferencesProvider).setStringList(_key, next);
-  }
-}
-
-/// Ce qu'il manque à chaque recette pour la faire avec ce qu'on a sous la main
-/// (vide hors de ce mode).
-final missingIngredientsProvider = Provider<Map<String, List<String>>>((ref) {
-  final criteria = ref.watch(recipeFilterProvider).ingredients;
-  if (!criteria.onHand) return const {};
-  final pantry = ref.watch(pantryProvider);
-  final details = ref.watch(recipeDetailsProvider).value ?? const [];
-  return {
-    for (final recipe in details)
-      if (!recipe.isDeleted) recipe.id: IngredientMatch.missing(recipe, pantry),
-  };
-});
-
 /// Recettes affichées : recherche, accès rapide, classement, statut, durées,
 /// matériel et ingrédients appliqués, puis le tri.
 final visibleRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
@@ -398,7 +343,6 @@ final visibleRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
     if (index != null)
       for (final (rank, hit) in index.search(query).indexed) hit.recipeId: rank,
   };
-  final missing = ref.watch(missingIngredientsProvider);
   final all = ref.watch(labelsProvider).value ?? const <Label>[];
   final links = ref.watch(recipeLabelLinksProvider).value ?? const {};
   final collection = ref.watch(singleCollectionFilterProvider);
@@ -428,10 +372,6 @@ final visibleRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
           return false;
         }
         if (criteria.none.any((t) => IngredientMatch.has(detailed, t))) {
-          return false;
-        }
-        if (criteria.onHand &&
-            (missing[r.id]?.length ?? 1 << 30) > criteria.maxMissing) {
           return false;
         }
       }
@@ -467,16 +407,6 @@ final visibleRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
     if (query.isNotEmpty) {
       // Une recherche classe par pertinence, quel que soit le tri choisi.
       shown.sort((a, b) => relevance[a.id]!.compareTo(relevance[b.id]!));
-      return shown;
-    }
-    if (criteria.onHand) {
-      // Avec ce qu'on a sous la main : celles auxquelles il manque le moins.
-      shown.sort((a, b) {
-        final byMissing = (missing[a.id]?.length ?? 0).compareTo(
-          missing[b.id]?.length ?? 0,
-        );
-        return byMissing != 0 ? byMissing : byTitle(a, b);
-      });
       return shown;
     }
     switch (filter.sort) {

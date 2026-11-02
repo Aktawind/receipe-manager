@@ -56,54 +56,21 @@ void main() {
     expect(IngredientMatch.has(gateau, 'margarine'), isFalse);
   });
 
-  test('ce qui manque : rien quand tout est là', () {
-    expect(
-      IngredientMatch.missing(gateau, [
-        'farine',
-        'oeufs',
-        'beurre',
-        'sucre',
-        'huile de coco',
-      ]),
-      isEmpty,
-    );
-  });
-
-  test('ce qui manque : les lignes non couvertes, telles qu’écrites', () {
-    expect(IngredientMatch.missing(gateau, ['farine', 'sucre']), [
-      'œufs',
-      'beurre doux',
-      'huile de coco',
+  test('une faute de frappe ne change pas la première lettre', () {
+    final bouches = recipe([
+      line('chocolat noir'),
+      line('crème fraîche'),
+      line('vanille'),
+      line('marrons glacés'),
+      line('pastilles de chocolat'),
     ]);
-  });
-
-  test('un remplaçant possible suffit', () {
-    expect(
-      IngredientMatch.missing(gateau, [
-        'farine',
-        'oeufs',
-        'beurre',
-        'sucre',
-        'margarine',
-      ]),
-      isEmpty,
-    );
-  });
-
-  test('facultatif, eau, sel et poivre ne manquent jamais', () {
-    final simple = recipe([
-      line('sel fin'),
-      line('poivre'),
-      line('eau'),
-      line('persil', optional: true),
-      line('tomates'),
+    expect(IngredientMatch.has(bouches, 'lentilles'), isFalse);
+    expect(IngredientMatch.has(bouches, 'chocolta'), isTrue);
+    final saucisse = recipe([
+      line('saucisses de Toulouse'),
+      line('lentilles vertes'),
     ]);
-    expect(IngredientMatch.missing(simple, const []), ['tomates']);
-    expect(IngredientMatch.missing(simple, ['tomate']), isEmpty);
-  });
-
-  test('« eau de fleur d’oranger » n’est pas de l’eau', () {
-    final r = recipe([line('eau de fleur d’oranger')]);
-    expect(IngredientMatch.missing(r, const []), ['eau de fleur d’oranger']);
+    expect(IngredientMatch.has(saucisse, 'lentilles'), isTrue);
+    expect(IngredientMatch.has(saucisse, 'lentille'), isTrue);
   });
 }

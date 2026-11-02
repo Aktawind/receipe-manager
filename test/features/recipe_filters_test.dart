@@ -228,60 +228,24 @@ void main() {
     expect(shown(tester, titles), ['Boeuf bourguignon', 'Salade']);
   });
 
-  testWidgets(
-    'ce que j’ai sous la main : il manque peu, ce qui manque est dit',
-    (tester) async {
-      final app = await library(tester);
-      Future<void> add(String field, String text) async {
-        await tester.ensureVisible(find.byKey(ValueKey(field)));
-        await tester.enterText(find.byKey(ValueKey(field)), text);
-        await tester.testTextInput.receiveAction(TextInputAction.done);
-        await tester.pump();
-      }
+  testWidgets('un bouton efface tous les filtres d’un geste', (tester) async {
+    await library(tester);
+    expect(find.byKey(const ValueKey('filters-clear')), findsNothing);
 
-      await openFilters(tester);
-      await openRow(tester, 'Ingrédients');
-      for (final item in ['oeufs', 'beurre', 'farine', 'sucre']) {
-        await add('ingredients-pantry', item);
-      }
-      // Ajouter des ingrédients active « Ne garder que ce que je peux faire ».
-      expect(
-        tester
-            .widget<SwitchListTile>(
-              find.byKey(const ValueKey('ingredients-on-hand')),
-            )
-            .value,
-        isTrue,
-      );
-      await tester.tap(find.byKey(const ValueKey('ingredients-validate')));
-      await settle(tester);
-      await done(tester);
+    await openFilters(tester);
+    await openRow(tester, 'Matériel');
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Cocotte'));
+    await tester.pump();
+    await tester.tap(find.text('Valider'));
+    await settle(tester);
+    await done(tester);
+    expect(shown(tester, titles), ['Boeuf bourguignon']);
 
-      // Rien à acheter pour l'omelette ; il manque la levure pour la brioche
-      // (non permis : « il peut me manquer 0 »). Le bœuf et la salade, non.
-      expect(shown(tester, titles), ['Omelette']);
-      expect(find.text('Rien à acheter'), findsOneWidget);
-      expect(app.prefs.getStringList('pantry'), [
-        'oeufs',
-        'beurre',
-        'farine',
-        'sucre',
-      ]);
-
-      // On accepte qu'il manque un ingrédient : la brioche revient, avec ce qu'il manque.
-      await openFilters(tester);
-      await openRow(tester, 'Ingrédients');
-      await tester.drag(find.byType(ListView).last, const Offset(0, -500));
-      await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('ingredients-max-missing')));
-      await settle(tester);
-      await tester.tap(find.text('1 ingrédient').last);
-      await settle(tester);
-      await tester.tap(find.byKey(const ValueKey('ingredients-validate')));
-      await settle(tester);
-      await done(tester);
-      expect(shown(tester, titles), ['Omelette', 'Brioche']);
-      expect(find.text('Il manque : levure'), findsOneWidget);
-    },
-  );
+    // Sous le compteur : « Effacer les filtres ».
+    expect(find.text('Effacer les filtres'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('filters-clear')));
+    await settle(tester);
+    expect(shown(tester, titles).length, 4);
+    expect(find.byKey(const ValueKey('filters-clear')), findsNothing);
+  });
 }
