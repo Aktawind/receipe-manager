@@ -181,50 +181,12 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
   (base v9), un fichier par élément dans le format des sauvegardes, conflits, suppressions, photos
   envoyées une seule fois, horloge corrigée des écarts entre appareils. Testé sur deux appareils
   simulés.
-- **Étape 2 (à tester)** : Réglages → Synchronisation Google Drive : explication, connexion avec ton
-  compte, dossier « Recettes » (« Recettes (test) » pour la version de test) dans ton Drive,
-  synchro automatique à l'ouverture, au retour dans l'app et après chaque modification, bouton
-  « Synchroniser maintenant », déconnexion.
-- **Retours du 2026-11-01** (synchro validée sur téléphone et tablette) : statut « À retester » ;
-  filtre et tri par statut ; nombre de réalisations retiré de l'affichage (la donnée reste dans les
-  sauvegardes) ; « Aucune note » retiré ; « Partager une sauvegarde » retiré (l'export suffit) ;
-  filtre par catégories principales ; filtres « récemment consultées/ajoutées » retirés (les tris
-  restent) ; nombre de recettes en haut de la liste ; photo du compte Google dans la synchro ;
-  numéro de version mis à jour dans le projet à chaque version.
-- **Étape 3 (à tester)** : sauvegardes automatiques dans Drive (fréquence réglable, les 10
-  dernières gardées) et restauration ; synchro en arrière-plan toutes les heures (WorkManager) ;
-  suppression des données dans Drive ; « Synchroniser maintenant » qui dit ce qui s'est passé ;
-  correction d'une synchro qui pouvait rester bloquée après une coupure réseau (délais d'attente,
-  reprise automatique).
-- Reste pour plus tard : l'ordre personnalisé des collections ne se synchronise pas encore ;
-  aucun identifiant n'est gardé par l'application (c'est Google qui conserve la connexion), donc
-  rien à chiffrer.
-
-*Validée le 2026-11-01.*
-
-## 0.5 — Recherche et filtres
-
-- Recherche dans les titres, ingrédients, instructions et notes ; insensible aux accents ;
-  tolère les fautes de frappe
-- Recherche par ingrédients : tous les ingrédients choisis / au moins un / exclure certains ;
-  « ce que j'ai sous la main »
-- Filtres combinables : temps total, de préparation, de cuisson ; saison ; matériel disponible ;
-  statut ; collection ; catégorie ; étiquettes
-- Tri : date d'ajout, durée, nombre de réalisations, note, ordre alphabétique
-- Historique des recherches, recherches fréquentes enregistrées
-- Performance : index plein texte, listes paginées, chargement progressif des images
-
-*Avancement* : trois étapes.
-- **Étape 1 (validée le 2026-11-01)** : la recherche de la liste couvre titres, ingrédients, préparation, notes et
-  description ; insensible aux accents et au pluriel, le début d'un mot suffit, une faute de frappe
-  est tolérée, tous les mots doivent se retrouver (dans le désordre), classement par pertinence
-  (titre > ingrédients > préparation) ; historique des recherches récentes.
 - **Étape 2 (à tester)** : filtre de durée (total, préparation, cuisson : « au plus X min »), matériel
-  (seules restent les recettes qui utilisent tous les matériels cochés), recherche par
-  ingrédients (avec tous / au moins un / sans) et « ce que j'ai sous la main » (réserve gardée sur
-  l'appareil, recettes classées par ce qu'il leur manque, jusqu'à 5 ingrédients tolérés, avec la
-  liste de ce qui manque), tris par durée et par note ; champ de recherche qui annonce qu'il cherche
-  partout ; en-tête du filtre fixe pendant qu'on fait défiler.
+  (seules restent les recettes qui utilisent tous les matériels cochés), recherche par ingrédients
+  (avec tous / au moins un / sans), tris par durée et par note, interrupteur « Favoris », bouton
+  « Effacer les filtres » sous le compteur ; champ de recherche qui annonce qu'il cherche partout ;
+  en-tête du filtre fixe pendant qu'on fait défiler. « Ce que j'ai sous la main » a été essayé puis
+  retiré le 2026-11-02 (les filtres par ingrédients font le travail).
 - **Étape 3** : recherches enregistrées, listes paginées et chargement progressif des images.
 
 ## 0.6 — Portions, quantités et conversions

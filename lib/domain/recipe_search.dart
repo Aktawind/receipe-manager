@@ -134,8 +134,16 @@ abstract final class SearchText {
   ///
   /// [minFuzzy] : longueur minimale d'un mot pour tolérer une faute (une
   /// recherche d'ingrédient est plus stricte : « oeuf » n'est pas « boeuf »).
-  static int quality(String stem, Set<String> tokens, {int minFuzzy = 4}) =>
-      _Doc._quality(stem, tokens, minFuzzy: minFuzzy);
+  ///
+  /// [sameInitial] : une faute de frappe ne change pas la première lettre
+  /// (évite de confondre deux mots proches).
+  static int quality(
+    String stem,
+    Set<String> tokens, {
+    int minFuzzy = 4,
+    bool sameInitial = false,
+  }) =>
+      _Doc._quality(stem, tokens, minFuzzy: minFuzzy, sameInitial: sameInitial);
 }
 
 class _Match {
@@ -192,7 +200,12 @@ class _Doc {
   }
 
   /// 3 = mot entier, 2 = début de mot, 1 = faute de frappe, 0 = absent.
-  static int _quality(String stem, Set<String> tokens, {int minFuzzy = 4}) {
+  static int _quality(
+    String stem,
+    Set<String> tokens, {
+    int minFuzzy = 4,
+    bool sameInitial = false,
+  }) {
     if (tokens.contains(stem)) return 3;
     var prefix = false;
     for (final t in tokens) {
@@ -206,6 +219,7 @@ class _Doc {
     final allowed = stem.length >= 8 ? 2 : 1;
     for (final t in tokens) {
       if ((t.length - stem.length).abs() > allowed) continue;
+      if (sameInitial && t.isNotEmpty && t[0] != stem[0]) continue;
       if (_distance(stem, t, allowed) <= allowed) return 1;
     }
     return 0;

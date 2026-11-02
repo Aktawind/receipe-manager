@@ -205,8 +205,6 @@ class _IngredientFilterPageState extends ConsumerState<_IngredientFilterPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final pantry = ref.watch(pantryProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -248,57 +246,6 @@ class _IngredientFilterPageState extends ConsumerState<_IngredientFilterPage> {
             onChanged: (v) =>
                 setState(() => _criteria = _criteria.copyWith(none: v)),
           ),
-          const Divider(height: 32),
-          Text(l10n.ingredientsOnHandTitle, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          Text(l10n.ingredientsOnHandHelp, style: theme.textTheme.bodySmall),
-          SwitchListTile(
-            key: const ValueKey('ingredients-on-hand'),
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.ingredientsOnHandSwitch),
-            value: _criteria.onHand,
-            onChanged: (on) =>
-                setState(() => _criteria = _criteria.copyWith(onHand: on)),
-          ),
-          _TermsEditor(
-            fieldKey: const ValueKey('ingredients-pantry'),
-            title: l10n.ingredientsPantry,
-            terms: pantry,
-            onChanged: (next) {
-              final notifier = ref.read(pantryProvider.notifier);
-              for (final item in pantry) {
-                if (!next.contains(item)) notifier.remove(item);
-              }
-              for (final item in next) {
-                if (!pantry.contains(item)) notifier.add(item);
-              }
-              // Ajouter ce qu'on a chez soi, c'est vouloir s'en servir : le
-              // filtre s'active (on peut le couper ensuite).
-              if (next.length > pantry.length && !_criteria.onHand) {
-                setState(() => _criteria = _criteria.copyWith(onHand: true));
-              }
-            },
-          ),
-          if (_criteria.onHand)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.ingredientsMaxMissing),
-              trailing: DropdownButton<int>(
-                key: const ValueKey('ingredients-max-missing'),
-                value: _criteria.maxMissing,
-                underline: const SizedBox.shrink(),
-                items: [
-                  for (var n = 0; n <= 5; n++)
-                    DropdownMenuItem(
-                      value: n,
-                      child: Text(l10n.ingredientsMaxMissingValue(n)),
-                    ),
-                ],
-                onChanged: (n) => setState(
-                  () => _criteria = _criteria.copyWith(maxMissing: n),
-                ),
-              ),
-            ),
         ],
       ),
     );

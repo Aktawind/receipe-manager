@@ -226,19 +226,31 @@ class _CountLine extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final total = ref.watch(recipesProvider).value?.length ?? shown;
+    final filter = ref.watch(recipeFilterProvider);
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          shown == total
-              ? l10n.recipeCount(total)
-              : l10n.recipeCountOf(shown, total),
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+      padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              shown == total
+                  ? l10n.recipeCount(total)
+                  : l10n.recipeCountOf(shown, total),
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
-        ),
+          // Un geste pour tout effacer, sans rouvrir le filtre.
+          if (filter.isActive)
+            TextButton.icon(
+              key: const ValueKey('filters-clear'),
+              onPressed: ref.read(recipeFilterProvider.notifier).clear,
+              icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
+              label: Text(l10n.filtersClearAll),
+            ),
+        ],
       ),
     );
   }
@@ -458,7 +470,6 @@ class _FilterSheet extends ConsumerWidget {
     final filter = ref.watch(recipeFilterProvider);
     final all = ref.watch(labelsProvider).value ?? const <Label>[];
     final usage = ref.watch(labelUsageProvider).value ?? const {};
-    final pantry = ref.watch(pantryProvider);
     final byId = {for (final l in all) l.id: l};
 
     // Un élément est proposé s'il sert, s'il est déjà choisi, ou si l'une de
@@ -583,8 +594,6 @@ class _FilterSheet extends ConsumerWidget {
                                 l10n.ingredientsSumNone(
                                   filter.ingredients.none.join(', '),
                                 ),
-                              if (filter.ingredients.onHand)
-                                l10n.ingredientsSumOnHand(pantry.length),
                             ].join(' · ')
                           : l10n.filterNone,
                       maxLines: 2,
@@ -703,17 +712,7 @@ void _openRecipe(BuildContext context, Recipe recipe) =>
 String _recipeTitle(AppLocalizations l10n, Recipe recipe) =>
     recipe.title.trim().isEmpty ? l10n.untitledRecipe : recipe.title;
 
-String? _recipeSummary(
-  AppLocalizations l10n,
-  Recipe recipe, {
-  List<String>? missing,
-}) {
-  // Avec « ce que j'ai sous la main » : ce qu'il manque, plutôt que la durée.
-  if (missing != null) {
-    return missing.isEmpty
-        ? l10n.ingredientsNothingMissing
-        : l10n.ingredientsMissing(missing.join(', '));
-  }
+String? _recipeSummary(AppLocalizations l10n, Recipe recipe) {
   final parts = [
     if (recipe.totalMinutes case final total?) formatMinutes(l10n, total),
     if (recipe.servings case final servings?)
@@ -736,7 +735,6 @@ class _RecipeGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final missingFor = ref.watch(missingIngredientsProvider);
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return LayoutBuilder(
@@ -762,11 +760,7 @@ class _RecipeGrid extends ConsumerWidget {
           itemCount: recipes.length,
           itemBuilder: (context, index) {
             final recipe = recipes[index];
-            final summary = _recipeSummary(
-              l10n,
-              recipe,
-              missing: missingFor[recipe.id],
-            );
+            final summary = _recipeSummary(l10n, recipe);
             return Card(
               clipBehavior: Clip.antiAlias,
               margin: EdgeInsets.zero,
@@ -821,7 +815,6 @@ class _RecipeList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final missingFor = ref.watch(missingIngredientsProvider);
     final l10n = AppLocalizations.of(context);
     return ListView.builder(
       padding: EdgeInsets.only(
@@ -830,11 +823,7 @@ class _RecipeList extends ConsumerWidget {
       itemCount: recipes.length,
       itemBuilder: (context, index) {
         final recipe = recipes[index];
-        final summary = _recipeSummary(
-          l10n,
-          recipe,
-          missing: missingFor[recipe.id],
-        );
+        final summary = _recipeSummary(l10n, recipe);
         return ListTile(
           leading: ClipRRect(
             borderRadius: BorderRadius.circular(8),
@@ -872,7 +861,6 @@ class _RecipeCards extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final missingFor = ref.watch(missingIngredientsProvider);
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -906,11 +894,7 @@ class _RecipeCards extends ConsumerWidget {
           itemCount: recipes.length,
           itemBuilder: (context, index) {
             final recipe = recipes[index];
-            final summary = _recipeSummary(
-              l10n,
-              recipe,
-              missing: missingFor[recipe.id],
-            );
+            final summary = _recipeSummary(l10n, recipe);
             final names = [
               for (final id in links[recipe.id]?.keys ?? const <String>[])
                 if (byId[id] case final label?
