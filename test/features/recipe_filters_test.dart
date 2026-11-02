@@ -176,7 +176,7 @@ void main() {
     // La seule recette qui demande la cocotte.
     expect(shown(tester, titles), ['Boeuf bourguignon']);
 
-    // Deux matériels : l'un ou l'autre.
+    // Deux matériels : l'un et l'autre (aucune recette ne les demande ensemble).
     await openFilters(tester);
     await openRow(tester, 'Matériel');
     await tester.tap(find.widgetWithText(CheckboxListTile, 'Robot pâtissier'));
@@ -184,7 +184,8 @@ void main() {
     await tester.tap(find.text('Valider'));
     await settle(tester);
     await done(tester);
-    expect(shown(tester, titles), ['Boeuf bourguignon', 'Brioche']);
+    expect(shown(tester, titles), isEmpty);
+    expect(find.textContaining('Aucune recette ne correspond'), findsOneWidget);
   });
 
   testWidgets('ingrédients : tous, au moins un, sans', (tester) async {

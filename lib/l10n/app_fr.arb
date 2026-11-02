@@ -688,7 +688,7 @@
   "durationNote": "Les recettes dont la durée n’est pas renseignée n’apparaissent pas quand une limite est choisie.",
   "filterEquipment": "Matériel",
   "filterEquipmentTitle": "Recettes qui utilisent ce matériel",
-  "filterEquipmentHelp": "Coche un ou plusieurs matériels : seules restent les recettes qui en ont besoin.",
+  "filterEquipmentHelp": "Coche un ou plusieurs matériels : seules restent les recettes qui les utilisent tous.",
   "filterEquipmentNone": "Aucun matériel dans ta liste. Ajoute-en dans Réglages → Matériel.",
   "filterEquipmentSelected": "{count, plural, =1{1 matériel} other{{count} matériels}}",
   "@filterEquipmentSelected": {
