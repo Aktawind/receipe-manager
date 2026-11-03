@@ -12,7 +12,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.2](#02--import-recipe-keeper-et-recette-complète) | Import Recipe Keeper et recette complète | ✅ |
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ✅ |
 | [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ✅ |
-| [0.5](#05--recherche-et-filtres) | Recherche et filtres | 🟨 |
+| [0.5](#05--recherche-et-filtres) | Recherche et filtres | ✅ |
 | [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ⬜ |
 | [0.7](#07--mode-cuisine-et-suivi-des-recettes) | Mode cuisine et suivi des recettes | ⬜ |
 | [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ⬜ |
@@ -187,7 +187,7 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
   « Effacer les filtres » sous le compteur ; champ de recherche qui annonce qu'il cherche partout ;
   en-tête du filtre fixe pendant qu'on fait défiler. « Ce que j'ai sous la main » a été essayé puis
   retiré le 2026-11-02 (les filtres par ingrédients font le travail).
-- **Étape 3 (à tester)** : recherches enregistrées (texte cherché, filtres et tri sous un nom, en
+- **Étape 3 (validée le 2026-11-03)** : recherches enregistrées (texte cherché, filtres et tri sous un nom, en
   haut du filtre ; un appui les applique), images qui apparaissent en fondu une fois décodées. Les
   listes ne construisaient déjà que ce qui est visible ; l'index de recherche est en mémoire (pas
   besoin d'index SQLite plein texte pour quelques centaines de recettes).
