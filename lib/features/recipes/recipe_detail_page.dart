@@ -3,13 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/format/durations.dart';
-import '../../core/format/text_search.dart';
+import '../../core/settings/kitchen_settings.dart';
 import '../../core/widgets/formatted_text.dart';
 import '../../core/widgets/linked_text.dart';
 import '../../data/app_services.dart';
 import '../../domain/ingredient_scaling.dart';
 import '../../domain/ingredient_text.dart';
 import '../../domain/recipe.dart';
+import '../../domain/unit_conversion.dart';
 import '../../l10n/app_localizations.dart';
 import '../classification/label_chips.dart';
 import '../equipment/equipment_providers.dart';
@@ -503,7 +504,7 @@ class _ServingsRow extends ConsumerWidget {
     final scale = ref.read(recipeScaleProvider(recipe.id).notifier);
     final wanted = scaledServings(recipe, factor) ?? servings;
     final changed = wanted != servings;
-    return Row(
+    final row = Row(
       children: [
         Expanded(
           child: Text(
@@ -550,6 +551,31 @@ class _ServingsRow extends ConsumerWidget {
           tooltip: l10n.scaleMore,
           icon: const Icon(Icons.add),
           onPressed: () => scale.set((wanted + 1) / servings),
+        ),
+      ],
+    );
+    if (!changed) return row;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        row,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.scaledNote,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            IconButton(
+              key: const ValueKey('scale-reset'),
+              tooltip: l10n.scaleReset,
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.undo, size: 20),
+              onPressed: () => scale.set(1),
+            ),
+          ],
         ),
       ],
     );
@@ -639,9 +665,10 @@ class _IngredientsSection extends ConsumerWidget {
     final lines = recipe.ingredients.where((l) => !l.isBlank).toList();
     if (lines.isEmpty) return const SizedBox.shrink();
     final factor = ref.watch(recipeScaleProvider(recipe.id));
-    final scale = ref.read(recipeScaleProvider(recipe.id).notifier);
-    final scaled = factor == 1 ? null : IngredientScaling.scale(lines, factor);
-    final canScale = lines.any((l) => l.quantity != null);
+    final system = ref.watch(unitSystemProvider);
+    final scaled = factor == 1 && system == UnitSystem.recipe
+        ? null
+        : IngredientScaling.scale(lines, factor, system: system);
 
     final children = <Widget>[];
     for (final (index, line) in lines.indexed) {
@@ -669,63 +696,16 @@ class _IngredientsSection extends ConsumerWidget {
         _IngredientRow(
           line: line,
           scaled: scaled?[index],
+          showOriginal: factor != 1,
           optionalLabel: l10n.optionalIngredient,
           substitutesPrefix: l10n.substitutesPrefix,
         ),
       );
     }
 
-    var hasMould = false;
-    if (scaled != null) {
-      final names = {
-        for (final item in ref.watch(equipmentProvider).value ?? const [])
-          item.id: item.name,
-      };
-      hasMould = recipe.equipmentIds.any(
-        (id) => normalizeForSearch(names[id] ?? '').contains('moule'),
-      );
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(child: _SectionTitle(l10n.ingredients)),
-            if (canScale)
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 20),
-                  child: TextButton.icon(
-                    key: const ValueKey('scale-open'),
-                    onPressed: () async {
-                      final chosen = await showScaleDialog(
-                        context,
-                        recipe,
-                        factor,
-                      );
-                      if (chosen != null) scale.set(chosen);
-                    },
-                    icon: const Icon(Icons.tune, size: 18),
-                    label: Text(
-                      l10n.scaleAdjust,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        if (scaled != null)
-          ScaleBanner(
-            recipe: recipe,
-            factor: factor,
-            scaled: scaled,
-            hasMould: hasMould,
-            onReset: () => scale.set(1),
-          ),
-        ...children,
-      ],
+      children: [_SectionTitle(l10n.ingredients), ...children],
     );
   }
 }
@@ -734,6 +714,7 @@ class _IngredientRow extends StatelessWidget {
   const _IngredientRow({
     required this.line,
     this.scaled,
+    this.showOriginal = false,
     required this.optionalLabel,
     required this.substitutesPrefix,
   });
@@ -742,6 +723,9 @@ class _IngredientRow extends StatelessWidget {
 
   /// La ligne recalculée pour d'autres portions ; `null` telle qu'enregistrée.
   final ScaledIngredient? scaled;
+
+  /// Rappeler la quantité de la recette (portions changées).
+  final bool showOriginal;
   final String optionalLabel;
   final String substitutesPrefix;
 
@@ -751,11 +735,14 @@ class _IngredientRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final muted = TextStyle(color: theme.colorScheme.onSurfaceVariant);
     final scaled = this.scaled;
-    final amount = IngredientText.formatAmount(scaled?.scaledLine ?? line);
+    final shown = IngredientText.formatAmount(scaled?.scaledLine ?? line);
+    final amount = shown.isNotEmpty && (scaled?.approximate ?? false)
+        ? '≈ $shown'
+        : shown;
     final original = IngredientText.formatAmount(line);
     final extras = <TextSpan>[];
     if (scaled != null) {
-      if (original.isNotEmpty && original != amount) {
+      if (showOriginal && original.isNotEmpty && original != shown) {
         extras.add(
           TextSpan(text: ' · ${l10n.scaleInsteadOf(original)}', style: muted),
         );
@@ -791,7 +778,8 @@ class _IngredientRow extends StatelessWidget {
     final name = line.name.trim();
     // « 200 g de farine », « 1 yaourt nature », « Sel, selon le goût » : une
     // seule phrase, la quantité juste avant l'ingrédient.
-    final connector = line.unit.isNotEmpty && name.isNotEmpty
+    final unit = scaled?.unit ?? line.unit;
+    final connector = unit.isNotEmpty && name.isNotEmpty
         ? IngredientText.partitive(name)
         : '';
 
@@ -865,13 +853,19 @@ class _IngredientRow extends StatelessWidget {
   }
 }
 
-class _StepsSection extends StatelessWidget {
+class _StepsSection extends ConsumerWidget {
   const _StepsSection({required this.recipe});
 
   final Recipe recipe;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final temperature = ref.watch(temperatureUnitProvider);
+    final system = ref.watch(unitSystemProvider);
+    String convert(String text) => UnitConversion.convertLengths(
+      UnitConversion.convertTemperatures(text, temperature),
+      system,
+    );
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final steps = recipe.steps.where((s) => s.text.trim().isNotEmpty).toList();
@@ -917,7 +911,7 @@ class _StepsSection extends StatelessWidget {
                           ),
                         ),
                       FormattedText(
-                        step.text,
+                        convert(step.text),
                         style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
                       ),
                     ],
