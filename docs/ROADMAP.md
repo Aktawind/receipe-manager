@@ -13,7 +13,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ✅ |
 | [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ✅ |
 | [0.5](#05--recherche-et-filtres) | Recherche et filtres | ✅ |
-| [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ⬜ |
+| [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | 🟨 |
 | [0.7](#07--mode-cuisine-et-suivi-des-recettes) | Mode cuisine et suivi des recettes | ⬜ |
 | [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ⬜ |
 | [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ⬜ |
@@ -213,6 +213,18 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
 - Densités propres aux ingrédients (farine, sucre, beurre…) ; conversion exacte ou dépendant de
   l'ingrédient clairement distinguée
 - Réglages : unités par défaut, unité de température, portions par défaut
+
+*Avancement* : trois étapes.
+- **Étape 1 (à tester)** : changer les portions sur la fiche (− / +, raccourcis 2, 4, 6, 8, 12,
+  nombre libre ; « × 2 » pour une recette sans portions), quantités recalculées avec celles de la
+  recette à côté, arrondis de cuisine (gramme, quart de cuillère, demi-citron), œufs et sachets
+  entiers avec la quantité exacte, avertissements (cuisson, levure, sel et épices, moule,
+  ingrédients à ajuster soi-même). Le choix revient à la recette en quittant la fiche.
+- **Étape 2** : conversions (métrique ↔ impérial, cuillères, tasses, °C ↔ °F, densités propres
+  aux ingrédients, conversion exacte ou approchée signalée) et réglages (unités, température,
+  portions par défaut).
+- **Étape 3** : ajustement par groupe d'ingrédients, adapter à un poids final ou à une taille de
+  moule.
 
 ## 0.7 — Mode cuisine et suivi des recettes
 
