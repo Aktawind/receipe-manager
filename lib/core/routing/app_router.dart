@@ -8,6 +8,7 @@ import '../../features/equipment/equipment_page.dart';
 import '../../features/sync/sync_page.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/planning/planning_page.dart';
+import '../../features/recipes/cooking_mode_page.dart';
 import '../../features/recipes/recipe_detail_page.dart';
 import '../../features/recipes/recipe_editor_page.dart';
 import '../../features/recipes/recipes_page.dart';
@@ -37,6 +38,13 @@ GoRouter buildRouter() => GoRouter(
                   builder: (context, state) =>
                       RecipeDetailPage(recipeId: state.pathParameters['id']!),
                   routes: [
+                    GoRoute(
+                      path: 'cuisine',
+                      parentNavigatorKey: _rootKey,
+                      builder: (context, state) => CookingModePage(
+                        recipeId: state.pathParameters['id']!,
+                      ),
+                    ),
                     GoRoute(
                       path: 'modifier',
                       parentNavigatorKey: _rootKey,

@@ -758,5 +758,9 @@
   "scaleNoticeLeavening": "à doser",
   "scaleNoticeSeasoning": "à goûter",
   "scaleNoticeManual": "à ajuster",
-  "scaledNote": "Quantités recalculées"
+  "scaledNote": "Quantités recalculées",
+  "cookingMode": "Mode cuisine",
+  "cookingClose": "Quitter le mode cuisine",
+  "cookingNoIngredients": "Pas d’ingrédients",
+  "cookingNoSteps": "Pas de préparation"
 }
