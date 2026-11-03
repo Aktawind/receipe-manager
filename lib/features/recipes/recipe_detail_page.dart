@@ -6,6 +6,7 @@ import '../../core/format/durations.dart';
 import '../../core/widgets/formatted_text.dart';
 import '../../core/widgets/linked_text.dart';
 import '../../data/app_services.dart';
+import '../../domain/ingredient_scaling.dart';
 import '../../domain/ingredient_text.dart';
 import '../../domain/recipe.dart';
 import '../../l10n/app_localizations.dart';
@@ -13,6 +14,7 @@ import '../classification/label_chips.dart';
 import '../equipment/equipment_providers.dart';
 import 'recipe_photo.dart';
 import 'recipe_providers.dart';
+import 'recipe_scale.dart';
 
 /// Largeur à partir de laquelle la fiche passe sur deux colonnes (tablette).
 const _wideBreakpoint = 840.0;
@@ -475,39 +477,104 @@ class _Header extends StatelessWidget {
             ],
           ),
         ],
-        if (recipe.servings case final servings?) ...[
+        if (recipe.servings case final servings? when servings > 0) ...[
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  recipe.servingsUnit.isEmpty
-                      ? l10n.servingsLabel
-                      : l10n.quantityLabel,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: _tint(context),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Text(
-                  recipe.servingsUnit.isEmpty
-                      ? l10n.personsShort(servings)
-                      : '$servings ${recipe.servingsUnit}',
-                  style: theme.textTheme.titleSmall,
-                ),
-              ),
-            ],
-          ),
+          _ServingsRow(recipe: recipe),
         ],
+      ],
+    );
+  }
+}
+
+/// Le nombre de portions, qu'on change d'un appui : les quantités des
+/// ingrédients suivent.
+class _ServingsRow extends ConsumerWidget {
+  const _ServingsRow({required this.recipe});
+
+  final Recipe recipe;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final servings = recipe.servings!;
+    final factor = ref.watch(recipeScaleProvider(recipe.id));
+    final scale = ref.read(recipeScaleProvider(recipe.id).notifier);
+    final wanted = scaledServings(recipe, factor) ?? servings;
+    final changed = wanted != servings;
+    final row = Row(
+      children: [
+        Expanded(
+          child: Text(
+            recipe.servingsUnit.isEmpty
+                ? l10n.servingsLabel
+                : l10n.quantityLabel,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        IconButton(
+          key: const ValueKey('servings-less'),
+          tooltip: l10n.scaleLess,
+          icon: const Icon(Icons.remove),
+          onPressed: wanted > 1
+              ? () => scale.set((wanted - 1) / servings)
+              : null,
+        ),
+        Material(
+          color: _tint(context),
+          borderRadius: BorderRadius.circular(24),
+          child: InkWell(
+            key: const ValueKey('servings-pill'),
+            borderRadius: BorderRadius.circular(24),
+            onTap: () async {
+              final chosen = await showScaleDialog(context, recipe, factor);
+              if (chosen != null) scale.set(chosen);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Text(
+                servingsText(l10n, recipe, wanted),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: changed ? theme.colorScheme.primary : null,
+                  fontWeight: changed ? FontWeight.w800 : null,
+                ),
+              ),
+            ),
+          ),
+        ),
+        IconButton(
+          key: const ValueKey('servings-more'),
+          tooltip: l10n.scaleMore,
+          icon: const Icon(Icons.add),
+          onPressed: () => scale.set((wanted + 1) / servings),
+        ),
+      ],
+    );
+    if (!changed) return row;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        row,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.scaledNote,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            IconButton(
+              key: const ValueKey('scale-reset'),
+              tooltip: l10n.scaleReset,
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.undo, size: 20),
+              onPressed: () => scale.set(1),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -584,17 +651,19 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _IngredientsSection extends StatelessWidget {
+class _IngredientsSection extends ConsumerWidget {
   const _IngredientsSection({required this.recipe});
 
   final Recipe recipe;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final lines = recipe.ingredients.where((l) => !l.isBlank).toList();
     if (lines.isEmpty) return const SizedBox.shrink();
+    final factor = ref.watch(recipeScaleProvider(recipe.id));
+    final scaled = factor == 1 ? null : IngredientScaling.scale(lines, factor);
 
     final children = <Widget>[];
     for (final (index, line) in lines.indexed) {
@@ -621,11 +690,13 @@ class _IngredientsSection extends StatelessWidget {
       children.add(
         _IngredientRow(
           line: line,
+          scaled: scaled?[index],
           optionalLabel: l10n.optionalIngredient,
           substitutesPrefix: l10n.substitutesPrefix,
         ),
       );
     }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [_SectionTitle(l10n.ingredients), ...children],
@@ -636,19 +707,56 @@ class _IngredientsSection extends StatelessWidget {
 class _IngredientRow extends StatelessWidget {
   const _IngredientRow({
     required this.line,
+    this.scaled,
     required this.optionalLabel,
     required this.substitutesPrefix,
   });
 
   final IngredientLine line;
+
+  /// La ligne recalculée pour d'autres portions ; `null` telle qu'enregistrée.
+  final ScaledIngredient? scaled;
+
   final String optionalLabel;
   final String substitutesPrefix;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final muted = TextStyle(color: theme.colorScheme.onSurfaceVariant);
-    final amount = IngredientText.formatAmount(line);
+    final scaled = this.scaled;
+    final amount = IngredientText.formatAmount(scaled?.scaledLine ?? line);
+    final extras = <TextSpan>[];
+    if (scaled != null) {
+      final exact = scaled.exact;
+      if (scaled.notice == ScaleNotice.rounded && exact != null) {
+        extras.add(
+          TextSpan(
+            text: ' · ${l10n.scaleExact(IngredientText.formatQuantity(exact))}',
+            style: muted,
+          ),
+        );
+      }
+      final hint = switch (scaled.notice) {
+        ScaleNotice.leavening => l10n.scaleNoticeLeavening,
+        ScaleNotice.seasoning => l10n.scaleNoticeSeasoning,
+        ScaleNotice.manual => l10n.scaleNoticeManual,
+        _ => null,
+      };
+      if (hint != null) {
+        extras.add(
+          TextSpan(
+            text: ' · $hint',
+            style: TextStyle(
+              color: theme.colorScheme.primary,
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      }
+    }
     final name = line.name.trim();
     // « 200 g de farine », « 1 yaourt nature », « Sel, selon le goût » : une
     // seule phrase, la quantité juste avant l'ingrédient.
@@ -693,6 +801,7 @@ class _IngredientRow extends StatelessWidget {
               text: ' · $optionalLabel',
               style: muted.copyWith(fontStyle: FontStyle.italic),
             ),
+          ...extras,
         ],
       ),
       style: theme.textTheme.bodyLarge?.copyWith(height: 1.25),

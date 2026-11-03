@@ -734,5 +734,29 @@
   "savedSearchSaveTitle": "Enregistrer cette recherche",
   "savedSearchName": "Nom (par ex. « Plats rapides d’hiver »)",
   "savedSearchHelp": "Enregistre une combinaison de filtres pour la retrouver d’un geste.",
-  "savedSearchDelete": "Supprimer cette recherche"
+  "savedSearchDelete": "Supprimer cette recherche",
+  "scaleOther": "Autre nombre",
+  "scaleReset": "Revenir à la recette",
+  "scaleLess": "Moins",
+  "scaleMore": "Plus",
+  "scaleRecipeFor": "Recette pour {amount}",
+  "@scaleRecipeFor": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "scaleExact": "{amount} exactement",
+  "@scaleExact": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "scaleNoticeLeavening": "à doser",
+  "scaleNoticeSeasoning": "à goûter",
+  "scaleNoticeManual": "à ajuster",
+  "scaledNote": "Quantités recalculées"
 }

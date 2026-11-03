@@ -13,7 +13,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.3](#03--organisation-et-classement) | Organisation et classement | ✅ |
 | [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ✅ |
 | [0.5](#05--recherche-et-filtres) | Recherche et filtres | ✅ |
-| [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ⬜ |
+| [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ✅ |
 | [0.7](#07--mode-cuisine-et-suivi-des-recettes) | Mode cuisine et suivi des recettes | ⬜ |
 | [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ⬜ |
 | [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ⬜ |
@@ -213,6 +213,21 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
 - Densités propres aux ingrédients (farine, sucre, beurre…) ; conversion exacte ou dépendant de
   l'ingrédient clairement distinguée
 - Réglages : unités par défaut, unité de température, portions par défaut
+
+*Avancement* : trois étapes.
+- **Étape 1 (validée le 2026-11-03)** : changer les portions sur la fiche (− / +, raccourcis 2, 4,
+  6, 8, 12, nombre libre), quantités recalculées, arrondis de
+  cuisine (gramme, quart de cuillère, demi-citron), œufs et sachets entiers avec la quantité
+  exacte, « à goûter » / « à doser » / « à ajuster » sur les lignes concernées. Le choix revient à
+  la recette en quittant la fiche. Retours : un simple rappel « Quantités recalculées » sous le
+  nombre de personnes (plus de cadre d'avertissements), plus de bouton « Ajuster » (les − / +
+  suffisent ; une recette sans nombre de personnes ne se recalcule pas), plus de « au lieu de »
+  à côté des quantités recalculées.
+- **Étape 2 (retirée le 2026-11-03)** : conversions d'unités et de températures, réglages
+  d'unités et de portions par défaut. Essayées puis retirées : pas utiles. Une recette collée garde
+  ses unités telles qu'écrites.
+- **Étape 3 (abandonnée le 2026-11-03)** : ajustement par groupe d'ingrédients, poids final,
+  taille de moule — pas nécessaires.
 
 ## 0.7 — Mode cuisine et suivi des recettes
 
