@@ -566,31 +566,7 @@ class _ServingsRow extends ConsumerWidget {
         ),
       ],
     );
-    if (!changed) return row;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        row,
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n.scaledNote,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            IconButton(
-              key: const ValueKey('scale-reset'),
-              tooltip: l10n.scaleReset,
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.undo, size: 20),
-              onPressed: () => scale.set(1),
-            ),
-          ],
-        ),
-      ],
-    );
+    return row;
   }
 }
 
