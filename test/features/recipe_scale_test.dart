@@ -54,12 +54,9 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('servings-more')));
     await settle(tester);
     expect(find.text('6 pers.'), findsOneWidget);
-    expect(find.text('375 g de farine · au lieu de 250 g'), findsOneWidget);
-    expect(find.text('5 œufs · au lieu de 3 · 4 ½ exactement'), findsOneWidget);
-    expect(
-      find.text('1 ½ pincée de sel · au lieu de 1 pincée · à goûter'),
-      findsOneWidget,
-    );
+    expect(find.text('375 g de farine'), findsOneWidget);
+    expect(find.text('5 œufs · 4 ½ exactement'), findsOneWidget);
+    expect(find.text('1 ½ pincée de sel · à goûter'), findsOneWidget);
     expect(find.text('Quantités recalculées'), findsOneWidget);
 
     // Choix direct dans la liste : 2 personnes.
@@ -68,7 +65,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('scale-0.5')));
     await settle(tester);
     expect(find.text('2 pers.'), findsOneWidget);
-    expect(find.text('125 g de farine · au lieu de 250 g'), findsOneWidget);
+    expect(find.text('125 g de farine'), findsOneWidget);
 
     // Nombre libre.
     await tester.tap(find.byKey(const ValueKey('servings-pill')));
@@ -77,7 +74,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('scale-other-ok')));
     await settle(tester);
     expect(find.text('10 pers.'), findsOneWidget);
-    expect(find.text('625 g de farine · au lieu de 250 g'), findsOneWidget);
+    expect(find.text('625 g de farine'), findsOneWidget);
 
     // Retour à la recette.
     await tester.tap(find.byKey(const ValueKey('scale-reset')));

@@ -727,14 +727,8 @@ class _IngredientRow extends StatelessWidget {
     final muted = TextStyle(color: theme.colorScheme.onSurfaceVariant);
     final scaled = this.scaled;
     final amount = IngredientText.formatAmount(scaled?.scaledLine ?? line);
-    final original = IngredientText.formatAmount(line);
     final extras = <TextSpan>[];
     if (scaled != null) {
-      if (original.isNotEmpty && original != amount) {
-        extras.add(
-          TextSpan(text: ' · ${l10n.scaleInsteadOf(original)}', style: muted),
-        );
-      }
       final exact = scaled.exact;
       if (scaled.notice == ScaleNotice.rounded && exact != null) {
         extras.add(
