@@ -47,6 +47,9 @@ void main() {
       expect(line.unit, 'pincée');
       expect(line.name, 'sel');
       expect(parse('un oignon').quantity, 1);
+      // « Un peu de lait » n'est pas une quantité.
+      expect(parse('Un peu de lait').quantity, isNull);
+      expect(parse('Un peu de lait').name, 'Un peu de lait');
     });
 
     test('sans unité', () {

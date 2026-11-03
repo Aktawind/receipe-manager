@@ -734,5 +734,60 @@
   "savedSearchSaveTitle": "Enregistrer cette recherche",
   "savedSearchName": "Nom (par ex. « Plats rapides d’hiver »)",
   "savedSearchHelp": "Enregistre une combinaison de filtres pour la retrouver d’un geste.",
-  "savedSearchDelete": "Supprimer cette recherche"
+  "savedSearchDelete": "Supprimer cette recherche",
+  "scaleAdjust": "Ajuster",
+  "scaleTitleFactor": "Multiplier les quantités",
+  "scaleOther": "Autre nombre",
+  "scaleOtherFactor": "Autre multiple (par ex. 2,5)",
+  "scaleReset": "Revenir à la recette",
+  "scaleLess": "Moins",
+  "scaleMore": "Plus",
+  "scaleRecipeFor": "Recette pour {amount}",
+  "@scaleRecipeFor": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "scaleTimes": "× {factor}",
+  "@scaleTimes": {
+    "placeholders": {
+      "factor": {
+        "type": "String"
+      }
+    }
+  },
+  "scaledBanner": "Quantités recalculées : {amount}",
+  "@scaledBanner": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "scaleCookWarning": "Le temps de cuisson ne se multiplie pas : surveille la cuisson.",
+  "scaleSeasoningWarning": "Levure, sel et épices ne suivent pas les proportions : dose-les en goûtant.",
+  "scaleMouldWarning": "Prends un moule adapté à la nouvelle quantité.",
+  "scaleRoundedWarning": "Œufs, sachets… sont arrondis : la quantité exacte est indiquée.",
+  "scaleManualWarning": "Certains ingrédients sont à ajuster toi-même.",
+  "scaleInsteadOf": "au lieu de {amount}",
+  "@scaleInsteadOf": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "scaleExact": "{amount} exactement",
+  "@scaleExact": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "scaleNoticeLeavening": "à doser",
+  "scaleNoticeSeasoning": "à goûter",
+  "scaleNoticeManual": "à ajuster"
 }

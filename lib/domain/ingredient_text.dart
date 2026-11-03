@@ -388,7 +388,7 @@ abstract final class IngredientText {
   // « 1½ », « un », « une ». Renvoie (valeur, longueur consommée).
   static (double, int)? _matchQuantity(String text) {
     final pattern = RegExp(
-      r'^(?:(\d+)\s*([½¼¾⅓⅔⅛])|(\d+)\s+(\d+)\s*/\s*(\d+)|(\d+)\s*/\s*(\d+)|(\d+(?:[.,]\d+)?)|([½¼¾⅓⅔⅛])|(une?)(?=\s))',
+      r'^(?:(\d+)\s*([½¼¾⅓⅔⅛])|(\d+)\s+(\d+)\s*/\s*(\d+)|(\d+)\s*/\s*(\d+)|(\d+(?:[.,]\d+)?)|([½¼¾⅓⅔⅛])|(une?)(?=\s)(?!\s*peu\b))',
       caseSensitive: false,
     );
     final m = pattern.firstMatch(text);
