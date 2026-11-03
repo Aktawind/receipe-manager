@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../../core/settings/kitchen_settings.dart';
 import '../../core/settings/theme_mode_controller.dart';
-import '../../domain/unit_conversion.dart';
 import '../../l10n/app_localizations.dart';
 import '../recipes/recipe_providers.dart';
 import '../sync/sync_page.dart';
@@ -60,44 +58,6 @@ class SettingsPage extends ConsumerWidget {
                 }
               },
             ),
-          ),
-          _SectionTitle(l10n.settingsKitchen),
-          _ChoiceTile<UnitSystem>(
-            key: const ValueKey('setting-units'),
-            icon: Icons.scale_outlined,
-            title: l10n.settingsUnits,
-            value: ref.watch(unitSystemProvider),
-            choices: {
-              UnitSystem.recipe: l10n.unitsRecipe,
-              UnitSystem.metric: l10n.unitsMetric,
-              UnitSystem.imperial: l10n.unitsImperial,
-            },
-            onChanged: (v) => ref.read(unitSystemProvider.notifier).set(v),
-          ),
-          _ChoiceTile<TemperatureUnit>(
-            key: const ValueKey('setting-temperature'),
-            icon: Icons.thermostat_outlined,
-            title: l10n.settingsTemperature,
-            value: ref.watch(temperatureUnitProvider),
-            choices: {
-              TemperatureUnit.recipe: l10n.temperatureRecipe,
-              TemperatureUnit.celsius: l10n.temperatureCelsius,
-              TemperatureUnit.fahrenheit: l10n.temperatureFahrenheit,
-            },
-            onChanged: (v) => ref.read(temperatureUnitProvider.notifier).set(v),
-          ),
-          _ChoiceTile<int?>(
-            key: const ValueKey('setting-servings'),
-            icon: Icons.people_outline,
-            title: l10n.settingsDefaultServings,
-            subtitle: l10n.settingsDefaultServingsSubtitle,
-            value: ref.watch(defaultServingsProvider),
-            choices: {
-              null: l10n.defaultServingsNone,
-              for (final n in const [1, 2, 3, 4, 5, 6, 8, 10, 12])
-                n: l10n.personsShort(n),
-            },
-            onChanged: (v) => ref.read(defaultServingsProvider.notifier).set(v),
           ),
           _SectionTitle(l10n.settingsData),
           ListTile(
@@ -159,65 +119,6 @@ class SettingsPage extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Un réglage à choix : le choix actuel sous le titre, la liste dans un
-/// dialogue (les libellés longs ne tiennent pas dans un menu à droite).
-class _ChoiceTile<T> extends StatelessWidget {
-  const _ChoiceTile({
-    super.key,
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    required this.value,
-    required this.choices,
-    required this.onChanged,
-  });
-
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final T value;
-  final Map<T, String> choices;
-  final ValueChanged<T> onChanged;
-
-  Future<void> _pick(BuildContext context) async {
-    final picked = await showDialog<(T,)>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(title),
-        children: [
-          RadioGroup<T>(
-            groupValue: value,
-            onChanged: (v) => Navigator.pop(context, (v as T,)),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final entry in choices.entries)
-                  RadioListTile<T>(
-                    key: ValueKey('choice-${entry.key}'),
-                    value: entry.key,
-                    title: Text(entry.value),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-    if (picked != null) onChanged(picked.$1);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final current = choices[value] ?? '';
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle == null ? current : '$current · $subtitle'),
-      onTap: () => _pick(context),
     );
   }
 }

@@ -1,6 +1,5 @@
 import '../core/format/text_search.dart';
 import 'recipe.dart';
-import 'unit_conversion.dart';
 
 /// Ce qui demande de l'attention quand on change les portions d'un
 /// ingrédient.
@@ -27,8 +26,6 @@ class ScaledIngredient {
     required this.line,
     required this.quantity,
     required this.exact,
-    this.convertedUnit,
-    this.approximate = false,
     this.notice,
   });
 
@@ -43,25 +40,13 @@ class ScaledIngredient {
 
   final ScaleNotice? notice;
 
-  /// L'unité après conversion, `null` sans conversion.
-  final String? convertedUnit;
-
-  /// L'unité affichée : celle de la recette, ou celle de la conversion.
-  String get unit => convertedUnit ?? line.unit;
-
-  /// Converti d'un volume en poids par la densité de l'ingrédient.
-  final bool approximate;
-
-  /// Converti dans une autre unité que celle de la recette.
-  bool get converted => unit != line.unit;
-
   /// La ligne avec sa nouvelle quantité.
   IngredientLine get scaledLine => IngredientLine(
     id: line.id,
     isSection: line.isSection,
     name: line.name,
     quantity: quantity,
-    unit: unit,
+    unit: line.unit,
     note: line.note,
     optional: line.optional,
     substitutes: line.substitutes,
@@ -160,18 +145,10 @@ abstract final class IngredientScaling {
   /// groupe et les lignes vides sont gardés tels quels (sans quantité).
   static List<ScaledIngredient> scale(
     List<IngredientLine> ingredients,
-    double factor, {
-    UnitSystem system = UnitSystem.recipe,
-  }) => [
-    for (final line in ingredients) scaleLine(line, factor, system: system),
-  ];
+    double factor,
+  ) => [for (final line in ingredients) scaleLine(line, factor)];
 
-  /// [line] multipliée par [factor], puis convertie dans [system].
-  static ScaledIngredient scaleLine(
-    IngredientLine line,
-    double factor, {
-    UnitSystem system = UnitSystem.recipe,
-  }) {
+  static ScaledIngredient scaleLine(IngredientLine line, double factor) {
     final original = line.quantity;
     if (line.isSection || line.isBlank) {
       return ScaledIngredient(line: line, quantity: null, exact: null);
@@ -185,31 +162,11 @@ abstract final class IngredientScaling {
         notice: same || !_needsAmount(line) ? null : ScaleNotice.manual,
       );
     }
-    var exact = original * factor;
-    final conversion = UnitConversion.convert(
-      exact,
-      line.unit,
-      line.name,
-      system,
-    );
-    if (same && conversion == null) {
+    final exact = original * factor;
+    if (same) {
       return ScaledIngredient(line: line, quantity: original, exact: original);
     }
-    final unit = conversion?.unit ?? line.unit;
-    if (conversion != null) exact = conversion.quantity;
-    final quantity = round(
-      exact,
-      IngredientLine(id: line.id, name: line.name, unit: unit),
-    );
-    if (same) {
-      return ScaledIngredient(
-        line: line,
-        quantity: quantity,
-        exact: exact,
-        convertedUnit: unit,
-        approximate: conversion?.approximate ?? false,
-      );
-    }
+    final quantity = round(exact, line);
     ScaleNotice? notice;
     final name = normalizeForSearch(line.name);
     if (_containsAny(name, _leaveningWords)) {
@@ -223,8 +180,6 @@ abstract final class IngredientScaling {
       line: line,
       quantity: quantity,
       exact: exact,
-      convertedUnit: unit,
-      approximate: conversion?.approximate ?? false,
       notice: notice,
     );
   }

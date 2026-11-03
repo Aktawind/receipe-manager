@@ -160,29 +160,6 @@ Pour la pâte :
     expect(find.text('Aucune recette pour l\'instant'), findsOneWidget);
   });
 
-  testWidgets(
-    'personnes par défaut : proposées, sans garder une recette vide',
-    (tester) async {
-      usePhoneSize(tester);
-      final app = (await tester.runAsync(
-        () => TestApp.create(prefs: {'default_servings': 4}),
-      ))!;
-      await app.pump(tester);
-
-      await tester.tap(find.text('Nouvelle recette'));
-      await settle(tester);
-      final preset = find.byWidgetPredicate(
-        (w) => w is EditableText && w.controller.text == '4',
-      );
-      await scrollTo(tester, preset);
-      expect(preset, findsOneWidget);
-      await goBack(tester);
-
-      final all = await tester.runAsync(app.services.recipes.getAllWithDetails);
-      expect(all, isEmpty);
-    },
-  );
-
   testWidgets('supprimer met à la corbeille, et on peut restaurer', (
     tester,
   ) async {

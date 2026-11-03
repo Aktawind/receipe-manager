@@ -222,11 +222,9 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
   la recette en quittant la fiche. Retours : un simple rappel « Quantités recalculées » sous le
   nombre de personnes (plus de cadre d'avertissements), plus de bouton « Ajuster » (les − / +
   suffisent ; une recette sans nombre de personnes ne se recalcule pas).
-- **Étape 2 (à tester)** : réglages Cuisine — unités des quantités (comme dans la recette /
-  grammes et millilitres / onces et tasses), températures du four (°C, °F, thermostat complété),
-  personnes par défaut d'une nouvelle recette. Onces, livres, tasses, « tbsp », « tsp » reconnus à
-  la saisie ; tasse → grammes par la densité de l'ingrédient (farine, sucre, beurre…), marquée
-  « ≈ » ; dimensions des moules converties dans la préparation.
+- **Étape 2 (retirée le 2026-11-03)** : conversions d'unités et de températures, réglages
+  d'unités et de portions par défaut. Essayées puis retirées : pas utiles. Une recette collée garde
+  ses unités telles qu'écrites.
 - **Étape 3** : ajustement par groupe d'ingrédients, adapter à un poids final ou à une taille de
   moule.
 
