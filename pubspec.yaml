@@ -4,7 +4,7 @@ publish_to: 'none'
 
 # Version visible (x.y.z). Le versionCode Android est calculé par la CI :
 # voir .github/workflows/ et docs/decisions/0003-workflow-git-et-versions.md
-version: 0.6.0+1
+version: 0.7.0+1
 
 environment:
   sdk: ^3.13.5
