@@ -2,6 +2,9 @@
 
 Le détail de chaque version (avec sa checklist de test) est dans [docs/releases](docs/releases).
 
+## v0.6.0 — Portions et quantités
+Changer le nombre de personnes sur la fiche (− / +, 2, 4, 6, 8, 12 ou libre) : quantités recalculées et arrondies pour la cuisine, œufs et sachets entiers avec la quantité exacte, levure, sel et épices signalés.
+
 ## v0.5.0 — Recherche et filtres
 Recherche dans tout le texte des recettes (tolérante), recherches récentes et enregistrées, filtres par ingrédients, durée, matériel et favoris, tris par durée et par note, bouton « Effacer les filtres ».
 

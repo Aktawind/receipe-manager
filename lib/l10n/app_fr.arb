@@ -747,14 +747,6 @@
       }
     }
   },
-  "scaleInsteadOf": "au lieu de {amount}",
-  "@scaleInsteadOf": {
-    "placeholders": {
-      "amount": {
-        "type": "String"
-      }
-    }
-  },
   "scaleExact": "{amount} exactement",
   "@scaleExact": {
     "placeholders": {
