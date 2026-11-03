@@ -243,10 +243,15 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
 de la feuille de route.
 
 *Avancement* : deux étapes.
-- **Étape 1 (à tester)** : bouton « Mode cuisine », écran allumé, ingrédients et préparation en
-  grand. L'écran allumé passe par un petit canal Android maison (`MainActivity`), sans nouveau
-  plugin.
-- **Étape 2** : minuteurs.
+- **Étape 1 (validée le 2026-11-03)** : bouton « Mode cuisine », écran allumé, ingrédients et
+  préparation en grand. L'écran allumé passe par un petit canal Android maison (`MainActivity`),
+  sans nouveau plugin. Retour : plus de rappel « Quantités recalculées » sur la fiche (les
+  quantités reviennent à celles de la recette en la quittant).
+- **Étape 2 (à tester)** : minuteurs. Les durées de chaque étape (« 20 minutes », « 1 h 30 »,
+  « une demi-heure ») deviennent des boutons ; minuteur libre depuis la barre du haut ; plusieurs
+  à la fois en bas de l'écran (pause, une minute de plus, arrêt). À la fin, notification avec la
+  sonnerie d'alarme, répétée jusqu'à ce qu'on la touche, même app fermée : alarmes Android
+  (`TimerAlarms.kt`), là encore sans plugin.
 
 ## 0.8 — Import depuis Internet et depuis du texte
 

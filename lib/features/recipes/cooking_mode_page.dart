@@ -6,7 +6,9 @@ import '../../core/widgets/formatted_text.dart';
 import '../../domain/ingredient_scaling.dart';
 import '../../domain/ingredient_text.dart';
 import '../../domain/recipe.dart';
+import '../../domain/step_durations.dart';
 import '../../l10n/app_localizations.dart';
+import 'cooking_timers.dart';
 import 'recipe_providers.dart';
 import 'recipe_scale.dart';
 
@@ -50,7 +52,7 @@ class _CookingModePageState extends ConsumerState<CookingModePage> {
         ? l10n.untitledRecipe
         : recipe.title.trim();
     final ingredients = _Ingredients(recipe: recipe, factor: factor);
-    final steps = _Steps(recipe: recipe);
+    final steps = _Steps(recipe: recipe, title: title);
     final wide = MediaQuery.sizeOf(context).width >= _wideBreakpoint;
 
     final appBar = AppBar(
@@ -65,6 +67,23 @@ class _CookingModePageState extends ConsumerState<CookingModePage> {
             ),
         ],
       ),
+      actions: [
+        IconButton(
+          key: const ValueKey('timer-new'),
+          tooltip: l10n.timerNew,
+          icon: const Icon(Icons.timer_outlined),
+          onPressed: () async {
+            final duration = await showCustomTimerDialog(context);
+            if (duration == null || !context.mounted) return;
+            startCookingTimer(
+              ref,
+              l10n,
+              l10n.timerLabelCustom(title, formatTimerDuration(l10n, duration)),
+              duration,
+            );
+          },
+        ),
+      ],
       leading: IconButton(
         key: const ValueKey('cooking-close'),
         icon: const Icon(Icons.close),
@@ -84,6 +103,7 @@ class _CookingModePageState extends ConsumerState<CookingModePage> {
     if (wide) {
       return Scaffold(
         appBar: appBar,
+        bottomNavigationBar: const CookingTimersPanel(),
         body: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -98,6 +118,7 @@ class _CookingModePageState extends ConsumerState<CookingModePage> {
       length: 2,
       child: Scaffold(
         appBar: appBar,
+        bottomNavigationBar: const CookingTimersPanel(),
         body: TabBarView(children: [ingredients, steps]),
       ),
     );
@@ -189,13 +210,14 @@ class _Ingredients extends StatelessWidget {
   }
 }
 
-class _Steps extends StatelessWidget {
-  const _Steps({required this.recipe});
+class _Steps extends ConsumerWidget {
+  const _Steps({required this.recipe, required this.title});
 
   final Recipe recipe;
+  final String title;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final style = _bigText(context);
@@ -238,6 +260,37 @@ class _Steps extends StatelessWidget {
                           ),
                         ),
                       FormattedText(step.text, style: style),
+                      for (final durations in [StepDurations.find(step.text)])
+                        if (durations.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final d in durations)
+                                  ActionChip(
+                                    key: ValueKey(
+                                      'timer-step-${index + 1}-${d.inSeconds}',
+                                    ),
+                                    avatar: const Icon(Icons.timer_outlined),
+                                    tooltip: l10n.timerLaunch(
+                                      formatTimerDuration(l10n, d),
+                                    ),
+                                    label: Text(
+                                      formatTimerDuration(l10n, d),
+                                      style: theme.textTheme.titleMedium,
+                                    ),
+                                    onPressed: () => startCookingTimer(
+                                      ref,
+                                      l10n,
+                                      l10n.timerLabelStep(title, index + 1),
+                                      d,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
                     ],
                   ),
                 ),
@@ -247,4 +300,21 @@ class _Steps extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Lance un minuteur avec les textes de la notification.
+void startCookingTimer(
+  WidgetRef ref,
+  AppLocalizations l10n,
+  String label,
+  Duration duration,
+) {
+  ref
+      .read(cookingTimersProvider.notifier)
+      .start(
+        label,
+        duration,
+        alarmTitle: l10n.timerAlarmTitle,
+        channelName: l10n.timerChannel,
+      );
 }
