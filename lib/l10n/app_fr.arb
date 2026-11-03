@@ -458,7 +458,6 @@
       }
     }
   },
-  "quickAll": "Toutes",
   "quickFavorites": "Favoris",
   "filterTitle": "Filtrer",
   "filterClear": "Tout effacer",
@@ -479,7 +478,6 @@
   "orderEmpty": "Aucune recette dans cette collection",
   "dragHandle": "Déplacer",
   "filterNone": "Pas de filtre",
-  "filterShow": "Afficher",
   "filterSelected": "{count, plural, =1{1 choisi} other{{count} choisis}}",
   "@filterSelected": {
     "placeholders": {
@@ -675,5 +673,66 @@
     }
   },
   "driveDeleteAction": "Supprimer",
-  "driveDeleted": "Dossier mis à la corbeille de Drive."
+  "driveDeleted": "Dossier mis à la corbeille de Drive.",
+  "searchHistory": "Recherches récentes",
+  "searchHistoryClear": "Effacer",
+  "searchHistoryRemove": "Retirer de l’historique",
+  "searchAnything": "Titre, ingrédient, préparation, notes…",
+  "sortDuration": "Durée (la plus courte d’abord)",
+  "sortRating": "Note (la meilleure d’abord)",
+  "filterDuration": "Durée",
+  "filterDurationTotal": "Durée totale, au plus",
+  "filterDurationPrep": "Préparation, au plus",
+  "filterDurationCook": "Cuisson, au plus",
+  "durationAny": "Peu importe",
+  "durationNote": "Les recettes dont la durée n’est pas renseignée n’apparaissent pas quand une limite est choisie.",
+  "filterEquipment": "Matériel",
+  "filterEquipmentTitle": "Recettes qui utilisent ce matériel",
+  "filterEquipmentHelp": "Coche un ou plusieurs matériels : seules restent les recettes qui les utilisent tous.",
+  "filterEquipmentNone": "Aucun matériel dans ta liste. Ajoute-en dans Réglages → Matériel.",
+  "filterEquipmentSelected": "{count, plural, =1{1 matériel} other{{count} matériels}}",
+  "@filterEquipmentSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filterIngredients": "Ingrédients",
+  "ingredientsPageTitle": "Chercher par ingrédients",
+  "ingredientsAll": "Avec tous ces ingrédients",
+  "ingredientsAny": "Avec au moins un de ces ingrédients",
+  "ingredientsNone": "Sans ces ingrédients",
+  "ingredientsAdd": "Ajouter un ingrédient",
+  "ingredientsSumAll": "Avec : {list}",
+  "@ingredientsSumAll": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "ingredientsSumAny": "L’un de : {list}",
+  "@ingredientsSumAny": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "ingredientsSumNone": "Sans : {list}",
+  "@ingredientsSumNone": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "filtersClearAll": "Effacer les filtres",
+  "savedSearches": "Mes recherches",
+  "savedSearchSave": "Enregistrer",
+  "savedSearchSaveTitle": "Enregistrer cette recherche",
+  "savedSearchName": "Nom (par ex. « Plats rapides d’hiver »)",
+  "savedSearchHelp": "Enregistre une combinaison de filtres pour la retrouver d’un geste.",
+  "savedSearchDelete": "Supprimer cette recherche"
 }

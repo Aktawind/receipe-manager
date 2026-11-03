@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,8 +11,10 @@ import '../../domain/recipe.dart';
 import '../../l10n/app_localizations.dart';
 import '../classification/label_picker.dart';
 import '../classification/labels_providers.dart';
+import 'filter_dialogs.dart';
 import 'recipe_photo.dart';
 import 'recipe_providers.dart';
+import 'saved_searches.dart';
 
 class RecipesPage extends ConsumerStatefulWidget {
   const RecipesPage({super.key});
@@ -22,17 +26,36 @@ class RecipesPage extends ConsumerStatefulWidget {
 class _RecipesPageState extends ConsumerState<RecipesPage> {
   final _searchController = TextEditingController();
   bool _searching = false;
+  Timer? _remember;
 
   @override
   void dispose() {
+    _remember?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
   void _closeSearch() {
+    _remember?.cancel();
     setState(() => _searching = false);
     _searchController.clear();
     ref.read(recipeSearchProvider.notifier).set('');
+  }
+
+  void _onQueryChanged(String query) {
+    ref.read(recipeSearchProvider.notifier).set(query);
+    // Une recherche qu'on laisse affichée un instant est gardée dans
+    // l'historique ; ce qu'on tape lettre à lettre ne l'est pas.
+    _remember?.cancel();
+    _remember = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) ref.read(searchHistoryProvider.notifier).add(query);
+    });
+  }
+
+  void _useSearch(String query) {
+    _searchController.text = query;
+    _searchController.selection = TextSelection.collapsed(offset: query.length);
+    ref.read(recipeSearchProvider.notifier).set(query);
   }
 
   Future<void> _createRecipe() async {
@@ -43,6 +66,12 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Une recherche enregistrée peut remplir le texte cherché : le champ suit.
+    ref.listen(recipeSearchProvider, (previous, next) {
+      if (_searchController.text == next) return;
+      _searchController.text = next;
+      if (next.isNotEmpty && !_searching) setState(() => _searching = true);
+    });
     final l10n = AppLocalizations.of(context);
     final view = ref.watch(recipesViewProvider);
     final filter = ref.watch(recipeFilterProvider);
@@ -55,13 +84,15 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                 controller: _searchController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: l10n.searchRecipes,
+                  hintText: l10n.searchAnything,
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
                 ),
                 textInputAction: TextInputAction.search,
-                onChanged: ref.read(recipeSearchProvider.notifier).set,
+                onChanged: _onQueryChanged,
+                onSubmitted: (query) =>
+                    ref.read(searchHistoryProvider.notifier).add(query),
               )
             : Text(l10n.navRecipes),
         actions: [
@@ -94,34 +125,100 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
         icon: const Icon(Icons.add),
         label: Text(l10n.newRecipe),
       ),
-      body: recipes.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('$error')),
-        data: (recipes) {
-          if (recipes.isEmpty) {
-            final query = ref.watch(recipeSearchProvider).trim();
-            return _EmptyState(
-              message: query.isNotEmpty
-                  ? l10n.noSearchResults(query)
-                  : filter.isActive
-                  ? l10n.filterNoRecipes
-                  : null,
-            );
-          }
-          return Column(
+      body: _searching && ref.watch(recipeSearchProvider).trim().isEmpty
+          ? _SearchHistoryList(
+              onPick: _useSearch,
+              fallback: _list(l10n, view, filter, recipes),
+            )
+          : _list(l10n, view, filter, recipes),
+    );
+  }
+
+  Widget _list(
+    AppLocalizations l10n,
+    RecipesView view,
+    RecipeFilter filter,
+    AsyncValue<List<Recipe>> recipes,
+  ) {
+    return recipes.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(child: Text('$error')),
+      data: (recipes) {
+        if (recipes.isEmpty) {
+          final query = ref.watch(recipeSearchProvider).trim();
+          return _EmptyState(
+            message: query.isNotEmpty
+                ? l10n.noSearchResults(query)
+                : filter.isActive
+                ? l10n.filterNoRecipes
+                : null,
+          );
+        }
+        return Column(
+          children: [
+            _CountLine(shown: recipes.length),
+            Expanded(
+              child: switch (view) {
+                RecipesView.grid => _RecipeGrid(recipes: recipes),
+                RecipesView.list => _RecipeList(recipes: recipes),
+                RecipesView.cards => _RecipeCards(recipes: recipes),
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// L'historique des recherches, affiché quand on ouvre la recherche sans rien
+/// avoir tapé. Sans historique, c'est la liste des recettes.
+class _SearchHistoryList extends ConsumerWidget {
+  const _SearchHistoryList({required this.onPick, required this.fallback});
+
+  final ValueChanged<String> onPick;
+  final Widget fallback;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final history = ref.watch(searchHistoryProvider);
+    if (history.isEmpty) return fallback;
+    final l10n = AppLocalizations.of(context);
+    final notifier = ref.read(searchHistoryProvider.notifier);
+    return ListView(
+      padding: EdgeInsets.only(
+        bottom: 24 + MediaQuery.paddingOf(context).bottom,
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+          child: Row(
             children: [
-              _CountLine(shown: recipes.length),
               Expanded(
-                child: switch (view) {
-                  RecipesView.grid => _RecipeGrid(recipes: recipes),
-                  RecipesView.list => _RecipeList(recipes: recipes),
-                  RecipesView.cards => _RecipeCards(recipes: recipes),
-                },
+                child: Text(
+                  l10n.searchHistory,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              TextButton(
+                onPressed: notifier.clear,
+                child: Text(l10n.searchHistoryClear),
               ),
             ],
-          );
-        },
-      ),
+          ),
+        ),
+        for (final query in history)
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: Text(query),
+            trailing: IconButton(
+              tooltip: l10n.searchHistoryRemove,
+              icon: const Icon(Icons.close),
+              onPressed: () => notifier.remove(query),
+            ),
+            onTap: () => onPick(query),
+          ),
+      ],
     );
   }
 }
@@ -136,19 +233,31 @@ class _CountLine extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final total = ref.watch(recipesProvider).value?.length ?? shown;
+    final filter = ref.watch(recipeFilterProvider);
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          shown == total
-              ? l10n.recipeCount(total)
-              : l10n.recipeCountOf(shown, total),
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+      padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              shown == total
+                  ? l10n.recipeCount(total)
+                  : l10n.recipeCountOf(shown, total),
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
-        ),
+          // Un geste pour tout effacer, sans rouvrir le filtre.
+          if (filter.isActive)
+            TextButton.icon(
+              key: const ValueKey('filters-clear'),
+              onPressed: ref.read(recipeFilterProvider.notifier).clear,
+              icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
+              label: Text(l10n.filtersClearAll),
+            ),
+        ],
       ),
     );
   }
@@ -161,6 +270,8 @@ enum _DisplayChoice {
   sortTitle,
   sortAdded,
   sortViewed,
+  sortDuration,
+  sortRating,
   sortStatus,
   sortManual,
 }
@@ -208,6 +319,10 @@ class _DisplayMenu extends ConsumerWidget {
             sort.setSort(RecipeSort.added);
           case _DisplayChoice.sortViewed:
             sort.setSort(RecipeSort.viewed);
+          case _DisplayChoice.sortDuration:
+            sort.setSort(RecipeSort.duration);
+          case _DisplayChoice.sortRating:
+            sort.setSort(RecipeSort.rating);
           case _DisplayChoice.sortStatus:
             sort.setSort(RecipeSort.status);
           case _DisplayChoice.sortManual:
@@ -237,6 +352,16 @@ class _DisplayMenu extends ConsumerWidget {
           filter.sort == RecipeSort.viewed,
         ),
         choice(
+          _DisplayChoice.sortDuration,
+          l10n.sortDuration,
+          filter.sort == RecipeSort.duration,
+        ),
+        choice(
+          _DisplayChoice.sortRating,
+          l10n.sortRating,
+          filter.sort == RecipeSort.rating,
+        ),
+        choice(
           _DisplayChoice.sortStatus,
           l10n.sortStatus,
           filter.sort == RecipeSort.status,
@@ -252,7 +377,7 @@ class _DisplayMenu extends ConsumerWidget {
   }
 }
 
-/// Le filtre : « Afficher » (toutes ou favoris), « Statut », puis une ligne par
+/// Le filtre : « Favoris », « Statut », puis une ligne par
 /// famille de classement, qui ouvre une liste à cocher. Statuts, catégories
 /// (principales seulement), saisons et origines : l'un ou l'autre ; collections :
 /// toutes celles qui sont cochées ; critères différents : tous ensemble.
@@ -268,31 +393,6 @@ Future<void> _showFilterSheet(BuildContext context) {
 class _FilterSheet extends ConsumerWidget {
   const _FilterSheet();
 
-  Future<void> _chooseQuick(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
-    final current = ref.read(recipeFilterProvider).quick;
-    final chosen = await showDialog<QuickFilter>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(l10n.filterShow),
-        children: [
-          for (final (value, label) in [
-            (QuickFilter.all, l10n.quickAll),
-            (QuickFilter.favorites, l10n.quickFavorites),
-          ])
-            ListTile(
-              title: Text(label),
-              trailing: value == current ? const Icon(Icons.check) : null,
-              onTap: () => Navigator.pop(context, value),
-            ),
-        ],
-      ),
-    );
-    if (chosen != null) {
-      ref.read(recipeFilterProvider.notifier).setQuick(chosen);
-    }
-  }
-
   Future<void> _chooseStatuses(BuildContext context, WidgetRef ref) async {
     final chosen = await showDialog<Set<RecipeStatus>>(
       context: context,
@@ -301,6 +401,36 @@ class _FilterSheet extends ConsumerWidget {
     );
     if (chosen != null) {
       ref.read(recipeFilterProvider.notifier).setStatuses(chosen);
+    }
+  }
+
+  Future<void> _chooseTimes(BuildContext context, WidgetRef ref) async {
+    final chosen = await showTimeLimitsDialog(
+      context,
+      ref.read(recipeFilterProvider).times,
+    );
+    if (chosen != null) {
+      ref.read(recipeFilterProvider.notifier).setTimes(chosen);
+    }
+  }
+
+  Future<void> _chooseEquipment(BuildContext context, WidgetRef ref) async {
+    final chosen = await showEquipmentFilterDialog(
+      context,
+      ref.read(recipeFilterProvider).equipmentIds,
+    );
+    if (chosen != null) {
+      ref.read(recipeFilterProvider.notifier).setEquipment(chosen);
+    }
+  }
+
+  Future<void> _chooseIngredients(BuildContext context, WidgetRef ref) async {
+    final chosen = await showIngredientFilterPage(
+      context,
+      ref.read(recipeFilterProvider).ingredients,
+    );
+    if (chosen != null) {
+      ref.read(recipeFilterProvider.notifier).setIngredients(chosen);
     }
   }
 
@@ -362,11 +492,6 @@ class _FilterSheet extends ConsumerWidget {
       }
     }
 
-    String quickName(QuickFilter quick) => switch (quick) {
-      QuickFilter.all => l10n.quickAll,
-      QuickFilter.favorites => l10n.quickFavorites,
-    };
-
     String statusName(RecipeStatus status) => switch (status) {
       RecipeStatus.toTest => l10n.statusToTest,
       RecipeStatus.toRetest => l10n.statusToRetest,
@@ -375,84 +500,159 @@ class _FilterSheet extends ConsumerWidget {
     };
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                children: [
-                  Text(l10n.filterTitle, style: theme.textTheme.titleLarge),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      if (filter.isActive)
-                        TextButton(
-                          onPressed: ref
-                              .read(recipeFilterProvider.notifier)
-                              .clear,
-                          child: Text(l10n.filterClear),
-                        ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(l10n.filterDone),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              children: [
+                Text(l10n.filterTitle, style: theme.textTheme.titleLarge),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    if (filter.isActive)
+                      TextButton(
+                        onPressed: ref
+                            .read(recipeFilterProvider.notifier)
+                            .clear,
+                        child: Text(l10n.filterClear),
                       ),
-                    ],
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(l10n.filterDone),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // L'en-tête reste en haut ; seules les lignes défilent.
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SavedSearchesSection(),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    key: const ValueKey('filter-favorites'),
+                    secondary: const Icon(Icons.star_outline),
+                    title: Text(l10n.quickFavorites),
+                    value: filter.quick == QuickFilter.favorites,
+                    onChanged: (on) => ref
+                        .read(recipeFilterProvider.notifier)
+                        .setQuick(on ? QuickFilter.favorites : QuickFilter.all),
                   ),
+                  ListTile(
+                    leading: const Icon(Icons.flag_outlined),
+                    title: Text(l10n.statusLabel),
+                    subtitle: Text(
+                      filter.statuses.isEmpty
+                          ? l10n.filterNone
+                          : [
+                              for (final status in RecipeStatus.values)
+                                if (filter.statuses.contains(status))
+                                  statusName(status),
+                            ].join(', '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _chooseStatuses(context, ref),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.timer_outlined),
+                    title: Text(l10n.filterDuration),
+                    subtitle: Text(
+                      filter.times.isActive
+                          ? [
+                              if (filter.times.total case final m?)
+                                '${l10n.filterDurationTotal} ${formatMinutes(l10n, m)}',
+                              if (filter.times.prep case final m?)
+                                '${l10n.filterDurationPrep} ${formatMinutes(l10n, m)}',
+                              if (filter.times.cook case final m?)
+                                '${l10n.filterDurationCook} ${formatMinutes(l10n, m)}',
+                            ].join(' · ')
+                          : l10n.filterNone,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _chooseTimes(context, ref),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.restaurant_menu),
+                    title: Text(l10n.filterIngredients),
+                    subtitle: Text(
+                      filter.ingredients.isActive
+                          ? [
+                              if (filter.ingredients.all.isNotEmpty)
+                                l10n.ingredientsSumAll(
+                                  filter.ingredients.all.join(', '),
+                                ),
+                              if (filter.ingredients.any.isNotEmpty)
+                                l10n.ingredientsSumAny(
+                                  filter.ingredients.any.join(', '),
+                                ),
+                              if (filter.ingredients.none.isNotEmpty)
+                                l10n.ingredientsSumNone(
+                                  filter.ingredients.none.join(', '),
+                                ),
+                            ].join(' · ')
+                          : l10n.filterNone,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _chooseIngredients(context, ref),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.kitchen_outlined),
+                    title: Text(l10n.filterEquipment),
+                    subtitle: Text(
+                      filter.equipmentIds.isEmpty
+                          ? l10n.filterNone
+                          : l10n.filterEquipmentSelected(
+                              filter.equipmentIds.length,
+                            ),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _chooseEquipment(context, ref),
+                  ),
+                  for (final kind in LabelKind.values)
+                    () {
+                      final selected = [
+                        for (final l in all)
+                          if (l.kind == kind && filter.labelIds.contains(l.id))
+                            l,
+                      ];
+                      return ListTile(
+                        leading: Icon(kind.icon),
+                        title: Text(kind.title(l10n)),
+                        subtitle: Text(
+                          selected.isEmpty
+                              ? l10n.filterNone
+                              : selected
+                                    .map((l) => labelPath(l, byId))
+                                    .join(', '),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () =>
+                            _chooseLabels(context, ref, kind, all, relevant),
+                      );
+                    }(),
                 ],
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.visibility_outlined),
-              title: Text(l10n.filterShow),
-              subtitle: Text(quickName(filter.quick)),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _chooseQuick(context, ref),
-            ),
-            ListTile(
-              leading: const Icon(Icons.flag_outlined),
-              title: Text(l10n.statusLabel),
-              subtitle: Text(
-                filter.statuses.isEmpty
-                    ? l10n.filterNone
-                    : [
-                        for (final status in RecipeStatus.values)
-                          if (filter.statuses.contains(status))
-                            statusName(status),
-                      ].join(', '),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _chooseStatuses(context, ref),
-            ),
-            for (final kind in LabelKind.values)
-              () {
-                final selected = [
-                  for (final l in all)
-                    if (l.kind == kind && filter.labelIds.contains(l.id)) l,
-                ];
-                return ListTile(
-                  leading: Icon(kind.icon),
-                  title: Text(kind.title(l10n)),
-                  subtitle: Text(
-                    selected.isEmpty
-                        ? l10n.filterNone
-                        : selected.map((l) => labelPath(l, byId)).join(', '),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _chooseLabels(context, ref, kind, all, relevant),
-                );
-              }(),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -532,7 +732,7 @@ String? _recipeSummary(AppLocalizations l10n, Recipe recipe) {
   return parts.isEmpty ? null : parts.join(' · ');
 }
 
-class _RecipeGrid extends StatelessWidget {
+class _RecipeGrid extends ConsumerWidget {
   const _RecipeGrid({required this.recipes});
 
   final List<Recipe> recipes;
@@ -543,7 +743,7 @@ class _RecipeGrid extends StatelessWidget {
   static const _padding = 12.0;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return LayoutBuilder(
@@ -617,13 +817,13 @@ class _RecipeGrid extends StatelessWidget {
   }
 }
 
-class _RecipeList extends StatelessWidget {
+class _RecipeList extends ConsumerWidget {
   const _RecipeList({required this.recipes});
 
   final List<Recipe> recipes;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return ListView.builder(
       padding: EdgeInsets.only(

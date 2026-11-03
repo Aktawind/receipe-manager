@@ -40,6 +40,22 @@ class RecipePhoto extends ConsumerWidget {
       fit: BoxFit.cover,
       cacheWidth: decodeWidth,
       gaplessPlayback: true,
+      // Les images apparaissent en fondu une fois décodées : la liste défile
+      // sans attendre, l'illustration neutre tient la place en attendant.
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (wasSynchronouslyLoaded) return child;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            placeholder,
+            AnimatedOpacity(
+              opacity: frame == null ? 0 : 1,
+              duration: const Duration(milliseconds: 200),
+              child: child,
+            ),
+          ],
+        );
+      },
       errorBuilder: (context, error, stackTrace) => placeholder,
     );
   }
