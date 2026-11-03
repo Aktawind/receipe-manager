@@ -215,14 +215,18 @@ jamais modifié, comme une empreinte) au lieu d'un `sha256`.
 - Réglages : unités par défaut, unité de température, portions par défaut
 
 *Avancement* : trois étapes.
-- **Étape 1 (à tester)** : changer les portions sur la fiche (− / +, raccourcis 2, 4, 6, 8, 12,
-  nombre libre ; « × 2 » pour une recette sans portions), quantités recalculées avec celles de la
-  recette à côté, arrondis de cuisine (gramme, quart de cuillère, demi-citron), œufs et sachets
-  entiers avec la quantité exacte, avertissements (cuisson, levure, sel et épices, moule,
-  ingrédients à ajuster soi-même). Le choix revient à la recette en quittant la fiche.
-- **Étape 2** : conversions (métrique ↔ impérial, cuillères, tasses, °C ↔ °F, densités propres
-  aux ingrédients, conversion exacte ou approchée signalée) et réglages (unités, température,
-  portions par défaut).
+- **Étape 1 (validée le 2026-11-03)** : changer les portions sur la fiche (− / +, raccourcis 2, 4,
+  6, 8, 12, nombre libre), quantités recalculées avec celles de la recette à côté, arrondis de
+  cuisine (gramme, quart de cuillère, demi-citron), œufs et sachets entiers avec la quantité
+  exacte, « à goûter » / « à doser » / « à ajuster » sur les lignes concernées. Le choix revient à
+  la recette en quittant la fiche. Retours : un simple rappel « Quantités recalculées » sous le
+  nombre de personnes (plus de cadre d'avertissements), plus de bouton « Ajuster » (les − / +
+  suffisent ; une recette sans nombre de personnes ne se recalcule pas).
+- **Étape 2 (à tester)** : réglages Cuisine — unités des quantités (comme dans la recette /
+  grammes et millilitres / onces et tasses), températures du four (°C, °F, thermostat complété),
+  personnes par défaut d'une nouvelle recette. Onces, livres, tasses, « tbsp », « tsp » reconnus à
+  la saisie ; tasse → grammes par la densité de l'ingrédient (farine, sucre, beurre…), marquée
+  « ≈ » ; dimensions des moules converties dans la préparation.
 - **Étape 3** : ajustement par groupe d'ingrédients, adapter à un poids final ou à une taille de
   moule.
 
