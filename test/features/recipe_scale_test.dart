@@ -16,11 +16,10 @@ void main() {
 
   Future<TestApp> open(
     WidgetTester tester,
-    Recipe Function(Recipe) fill, {
-    Map<String, Object> prefs = const {},
-  }) async {
+    Recipe Function(Recipe) fill,
+  ) async {
     usePhoneSize(tester);
-    final app = (await tester.runAsync(() => TestApp.create(prefs: prefs)))!;
+    final app = (await tester.runAsync(TestApp.create))!;
     await tester.runAsync(() async {
       final repo = app.services.recipes;
       await repo.save(fill(await repo.create()));
@@ -85,39 +84,6 @@ void main() {
     await settle(tester);
     expect(find.text('4 pers.'), findsOneWidget);
     expect(find.text('250 g de farine'), findsOneWidget);
-    expect(find.text('Quantités recalculées'), findsNothing);
-  });
-
-  testWidgets('unités et températures choisies dans les réglages', (
-    tester,
-  ) async {
-    await open(
-      tester,
-      (r) => r.copyWith(
-        title: 'Crêpes',
-        servings: () => 4,
-        ingredients: [
-          line('farine', 2, 'tasse'),
-          line('lait', 1, 'tasse'),
-          line('beurre', 4, 'oz'),
-          line('œufs', 2),
-        ],
-        steps: [
-          RecipeStep(
-            id: RecipeRepository.newId(),
-            text: 'Cuire à 350 °F dans un moule de 9 pouces.',
-          ),
-        ],
-      ),
-      prefs: {'unit_system': 'metric', 'temperature_unit': 'celsius'},
-    );
-    // La densité de la farine : une estimation, marquée « ≈ ».
-    expect(find.text('≈ 255 g de farine'), findsOneWidget);
-    expect(find.text('240 ml de lait'), findsOneWidget);
-    expect(find.text('113 g de beurre'), findsOneWidget);
-    expect(find.text('2 œufs'), findsOneWidget);
-    expect(find.text('Cuire à 175 °C dans un moule de 23 cm.'), findsOneWidget);
-    // Pas de « Quantités recalculées » : seules les unités changent.
     expect(find.text('Quantités recalculées'), findsNothing);
   });
 

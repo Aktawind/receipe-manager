@@ -3,14 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/format/durations.dart';
-import '../../core/settings/kitchen_settings.dart';
 import '../../core/widgets/formatted_text.dart';
 import '../../core/widgets/linked_text.dart';
 import '../../data/app_services.dart';
 import '../../domain/ingredient_scaling.dart';
 import '../../domain/ingredient_text.dart';
 import '../../domain/recipe.dart';
-import '../../domain/unit_conversion.dart';
 import '../../l10n/app_localizations.dart';
 import '../classification/label_chips.dart';
 import '../equipment/equipment_providers.dart';
@@ -665,10 +663,7 @@ class _IngredientsSection extends ConsumerWidget {
     final lines = recipe.ingredients.where((l) => !l.isBlank).toList();
     if (lines.isEmpty) return const SizedBox.shrink();
     final factor = ref.watch(recipeScaleProvider(recipe.id));
-    final system = ref.watch(unitSystemProvider);
-    final scaled = factor == 1 && system == UnitSystem.recipe
-        ? null
-        : IngredientScaling.scale(lines, factor, system: system);
+    final scaled = factor == 1 ? null : IngredientScaling.scale(lines, factor);
 
     final children = <Widget>[];
     for (final (index, line) in lines.indexed) {
@@ -696,7 +691,6 @@ class _IngredientsSection extends ConsumerWidget {
         _IngredientRow(
           line: line,
           scaled: scaled?[index],
-          showOriginal: factor != 1,
           optionalLabel: l10n.optionalIngredient,
           substitutesPrefix: l10n.substitutesPrefix,
         ),
@@ -714,7 +708,6 @@ class _IngredientRow extends StatelessWidget {
   const _IngredientRow({
     required this.line,
     this.scaled,
-    this.showOriginal = false,
     required this.optionalLabel,
     required this.substitutesPrefix,
   });
@@ -724,8 +717,6 @@ class _IngredientRow extends StatelessWidget {
   /// La ligne recalculée pour d'autres portions ; `null` telle qu'enregistrée.
   final ScaledIngredient? scaled;
 
-  /// Rappeler la quantité de la recette (portions changées).
-  final bool showOriginal;
   final String optionalLabel;
   final String substitutesPrefix;
 
@@ -735,14 +726,11 @@ class _IngredientRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final muted = TextStyle(color: theme.colorScheme.onSurfaceVariant);
     final scaled = this.scaled;
-    final shown = IngredientText.formatAmount(scaled?.scaledLine ?? line);
-    final amount = shown.isNotEmpty && (scaled?.approximate ?? false)
-        ? '≈ $shown'
-        : shown;
+    final amount = IngredientText.formatAmount(scaled?.scaledLine ?? line);
     final original = IngredientText.formatAmount(line);
     final extras = <TextSpan>[];
     if (scaled != null) {
-      if (showOriginal && original.isNotEmpty && original != shown) {
+      if (original.isNotEmpty && original != amount) {
         extras.add(
           TextSpan(text: ' · ${l10n.scaleInsteadOf(original)}', style: muted),
         );
@@ -778,8 +766,7 @@ class _IngredientRow extends StatelessWidget {
     final name = line.name.trim();
     // « 200 g de farine », « 1 yaourt nature », « Sel, selon le goût » : une
     // seule phrase, la quantité juste avant l'ingrédient.
-    final unit = scaled?.unit ?? line.unit;
-    final connector = unit.isNotEmpty && name.isNotEmpty
+    final connector = line.unit.isNotEmpty && name.isNotEmpty
         ? IngredientText.partitive(name)
         : '';
 
@@ -853,19 +840,13 @@ class _IngredientRow extends StatelessWidget {
   }
 }
 
-class _StepsSection extends ConsumerWidget {
+class _StepsSection extends StatelessWidget {
   const _StepsSection({required this.recipe});
 
   final Recipe recipe;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final temperature = ref.watch(temperatureUnitProvider);
-    final system = ref.watch(unitSystemProvider);
-    String convert(String text) => UnitConversion.convertLengths(
-      UnitConversion.convertTemperatures(text, temperature),
-      system,
-    );
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final steps = recipe.steps.where((s) => s.text.trim().isNotEmpty).toList();
@@ -911,7 +892,7 @@ class _StepsSection extends ConsumerWidget {
                           ),
                         ),
                       FormattedText(
-                        convert(step.text),
+                        step.text,
                         style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
                       ),
                     ],

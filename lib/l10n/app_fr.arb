@@ -766,17 +766,5 @@
   "scaleNoticeLeavening": "à doser",
   "scaleNoticeSeasoning": "à goûter",
   "scaleNoticeManual": "à ajuster",
-  "scaledNote": "Quantités recalculées",
-  "settingsKitchen": "Cuisine",
-  "settingsUnits": "Unités des quantités",
-  "unitsRecipe": "Comme dans la recette",
-  "unitsMetric": "Grammes, millilitres",
-  "unitsImperial": "Onces, tasses",
-  "settingsTemperature": "Températures du four",
-  "temperatureRecipe": "Comme dans la recette",
-  "temperatureCelsius": "°C",
-  "temperatureFahrenheit": "°F",
-  "settingsDefaultServings": "Personnes par défaut",
-  "settingsDefaultServingsSubtitle": "Pour une nouvelle recette",
-  "defaultServingsNone": "Aucun"
+  "scaledNote": "Quantités recalculées"
 }

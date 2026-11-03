@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/format/text_search.dart';
-import '../../core/settings/kitchen_settings.dart';
 import '../../data/app_services.dart';
 import '../../data/photo_store.dart';
 import '../../data/recipe_repository.dart';
@@ -70,9 +69,6 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
   var _known = const <Recipe>[];
   final _replacedPhotos = <String>{};
 
-  /// Le nombre de personnes par défaut proposé à une recette neuve.
-  int? _presetServings;
-
   Timer? _saveTimer;
   Future<void>? _pendingSave;
   var _saveState = _SaveState.idle;
@@ -108,8 +104,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     String number(int? value) => value?.toString() ?? '';
     _title.text = recipe.title;
     _description.text = recipe.description;
-    _presetServings = widget.isNew ? ref.read(defaultServingsProvider) : null;
-    _servings.text = number(recipe.servings ?? _presetServings);
+    _servings.text = number(recipe.servings);
     _servingsUnit.text = recipe.servingsUnit;
     _prep.text = number(recipe.prepMinutes);
     _cook.text = number(recipe.cookMinutes);
@@ -205,16 +200,6 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     );
   }
 
-  /// Une recette neuve où rien n'a été saisi (le nombre de personnes par
-  /// défaut ne compte pas).
-  bool _isUntouched(Recipe recipe) {
-    final preset = _presetServings;
-    if (preset != null && recipe.servings == preset) {
-      return recipe.copyWith(servings: () => null).isBlank;
-    }
-    return recipe.isBlank;
-  }
-
   /// Dernier enregistrement à la sortie, puis nettoyage : recette neuve
   /// restée vide, photos remplacées.
   Future<void> _close() async {
@@ -222,7 +207,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _closed = true;
     final base = _recipe;
     if (base == null) return;
-    if (widget.isNew && _isUntouched(_build(base))) {
+    if (widget.isNew && _build(base).isBlank) {
       _saveTimer?.cancel();
       await _pendingSave;
       final unused = await _repository.deletePermanently([base.id]);
