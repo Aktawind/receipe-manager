@@ -14,7 +14,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.4](#04--synchronisation-google-drive) | Synchronisation Google Drive | ✅ |
 | [0.5](#05--recherche-et-filtres) | Recherche et filtres | ✅ |
 | [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ✅ |
-| [0.7](#07--mode-cuisine) | Mode cuisine | 🟨 |
+| [0.7](#07--mode-cuisine) | Mode cuisine | ✅ |
 | [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ⬜ |
 | [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ⬜ |
 | [0.10](#010--listes-de-courses) | Listes de courses | ⬜ |
@@ -247,11 +247,13 @@ de la feuille de route.
   préparation en grand. L'écran allumé passe par un petit canal Android maison (`MainActivity`),
   sans nouveau plugin. Retour : plus de rappel « Quantités recalculées » sur la fiche (les
   quantités reviennent à celles de la recette en la quittant).
-- **Étape 2 (à tester)** : minuteurs. Les durées de chaque étape (« 20 minutes », « 1 h 30 »,
+- **Étape 2 (validée le 2026-11-04)** : minuteurs. Les durées de chaque étape (« 20 minutes », « 1 h 30 »,
   « une demi-heure ») deviennent des boutons ; minuteur libre depuis la barre du haut ; plusieurs
   à la fois en bas de l'écran (pause, une minute de plus, arrêt). À la fin, notification avec la
   sonnerie d'alarme, répétée jusqu'à ce qu'on la touche, même app fermée : alarmes Android
   (`TimerAlarms.kt`), là encore sans plugin.
+- Retour du 2026-11-04 : texte du mode cuisine un peu plus petit par défaut, et réglable
+  (Réglages → Apparence → Texte du mode cuisine : petit, moyen, grand, très grand).
 
 ## 0.8 — Import depuis Internet et depuis du texte
 

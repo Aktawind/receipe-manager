@@ -2,6 +2,9 @@
 
 Le détail de chaque version (avec sa checklist de test) est dans [docs/releases](docs/releases).
 
+## v0.7.0 — Mode cuisine
+Mode cuisine depuis la fiche : écran toujours allumé, ingrédients et préparation en grand (taille réglable), minuteurs lancés depuis les étapes, plusieurs à la fois, avec sonnerie même application fermée.
+
 ## v0.6.0 — Portions et quantités
 Changer le nombre de personnes sur la fiche (− / +, 2, 4, 6, 8, 12 ou libre) : quantités recalculées et arrondies pour la cuisine, œufs et sachets entiers avec la quantité exacte, levure, sel et épices signalés.
 
