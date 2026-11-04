@@ -132,12 +132,23 @@ abstract final class TextRecipeParser {
       text = bold.group(1)!;
     }
     // Emojis en début de ligne (« 🥕 Ingrédients », « ⏱️ Temps »).
-    text = text.replaceFirst(
-      RegExp(r'^[\p{Extended_Pictographic}️‍\s]+', unicode: true),
-      '',
-    );
+    text = _withoutLeadingSymbols(text);
     text = text.replaceAll('**', '').replaceAll('__', '').trim();
     return (text: text, heading: heading);
+  }
+
+  /// Retire les emojis et symboles en tête de ligne : tout caractère au-delà
+  /// des lettres latines, grecques et cyrilliques (flèches, pictogrammes,
+  /// sélecteurs de variante, liants d'emoji), et les espaces.
+  static String _withoutLeadingSymbols(String text) {
+    final runes = text.runes.toList();
+    var start = 0;
+    while (start < runes.length &&
+        (runes[start] >= 0x2190 ||
+            const {0x20, 0xA0, 0x200C, 0x200D}.contains(runes[start]))) {
+      start++;
+    }
+    return String.fromCharCodes(runes.sublist(start));
   }
 
   static _Section? _sectionOf(String line) {
