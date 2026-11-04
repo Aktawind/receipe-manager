@@ -102,21 +102,25 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
 
   /// Scanner une ou plusieurs pages, en lire le texte, puis le montrer dans
   /// l'onglet « Texte » (pour corriger une erreur de lecture) et l'analyser.
-  Future<void> _scan() async {
+  Future<void> _scan({bool? camera}) async {
     final scanner = ref.read(pageScannerProvider);
     setState(() {
       _scanError = null;
       _recipe = null;
       _error = null;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context).photoImportOpening),
-        persist: false,
-      ),
-    );
+    if (camera == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).photoImportOpening),
+          persist: false,
+        ),
+      );
+    }
     try {
-      final images = await scanner.scan();
+      final images = camera == null
+          ? await scanner.scan()
+          : await scanner.pick(camera: camera);
       if (images == null || !mounted) return;
       setState(() => _scanning = true);
       final text = OcrText.clean(await scanner.read(images));
@@ -304,6 +308,28 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
               onPressed: _scanning ? null : _scan,
               icon: const Icon(Icons.document_scanner_outlined),
               label: Text(l10n.photoImportScan),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('photo-import-camera'),
+                    onPressed: _scanning ? null : () => _scan(camera: true),
+                    icon: const Icon(Icons.photo_camera_outlined),
+                    label: Text(l10n.photoImportCamera),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('photo-import-gallery'),
+                    onPressed: _scanning ? null : () => _scan(camera: false),
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: Text(l10n.photoImportGallery),
+                  ),
+                ),
+              ],
             ),
             if (_scanning)
               Padding(

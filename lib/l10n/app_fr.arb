@@ -870,7 +870,7 @@
   "photoImportScan": "Scanner une page",
   "photoImportReading": "Lecture du texte…",
   "photoImportNoText": "Aucun texte lisible sur cette photo. Réessaie avec plus de lumière, la page bien à plat.",
-  "photoImportUnavailable": "Le scanner n’a pas pu s’ouvrir. Vérifie la connexion (la première fois, Google télécharge le scanner), puis réessaie.",
+  "photoImportUnavailable": "Le scanner de Google n’a pas pu s’ouvrir. Tu peux utiliser « Prendre une photo » ou « Choisir une image » : la lecture du texte fonctionne de la même façon.",
   "photoImportOpening": "Ouverture du scanner… La première fois, Google le télécharge : cela peut prendre un moment.",
   "photoImportDetail": "Détail : {detail}",
   "@photoImportDetail": {
@@ -879,5 +879,7 @@
         "type": "String"
       }
     }
-  }
+  },
+  "photoImportCamera": "Prendre une photo",
+  "photoImportGallery": "Choisir une image"
 }
