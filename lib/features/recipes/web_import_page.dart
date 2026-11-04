@@ -5,12 +5,19 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/format/durations.dart';
 import '../../data/app_services.dart';
+import '../../data/import/page_scanner.dart';
 import '../../data/import/text_recipe.dart';
 import '../../data/import/web_import.dart';
 import '../../data/import/web_recipe.dart';
 import '../../domain/ingredient_text.dart';
+import '../../domain/ocr_text.dart';
 import '../../domain/step_text.dart';
 import '../../l10n/app_localizations.dart';
+
+/// Photographie et lit les pages de livres. Remplacé dans les tests.
+final pageScannerProvider = Provider<PageScanner>(
+  (ref) => const MlKitPageScanner(),
+);
 
 /// Télécharge et lit les pages de recettes. Remplacé dans les tests.
 final webImporterProvider = Provider<WebImporter>((ref) {
@@ -39,6 +46,9 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
   final _url = TextEditingController();
   final _text = TextEditingController();
   var _textMode = false;
+  var _photoMode = false;
+  var _scanning = false;
+  PageScanError? _scanError;
   var _loading = false;
   var _saving = false;
   WebRecipe? _recipe;
@@ -86,6 +96,38 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
       }
     } on PlatformException {
       // Presse-papiers inaccessible : on saisit à la main.
+    }
+  }
+
+  /// Scanner une ou plusieurs pages, en lire le texte, puis le montrer dans
+  /// l'onglet « Texte » (pour corriger une erreur de lecture) et l'analyser.
+  Future<void> _scan() async {
+    final scanner = ref.read(pageScannerProvider);
+    setState(() {
+      _scanError = null;
+      _recipe = null;
+      _error = null;
+    });
+    try {
+      final images = await scanner.scan();
+      if (images == null || !mounted) return;
+      setState(() => _scanning = true);
+      final text = OcrText.clean(await scanner.read(images));
+      if (!mounted) return;
+      setState(() {
+        _scanning = false;
+        _photoMode = false;
+        _textMode = true;
+        _text.text = text;
+      });
+      _readText();
+    } on PageScanException catch (e) {
+      if (mounted) {
+        setState(() {
+          _scanning = false;
+          _scanError = e.error;
+        });
+      }
     }
   }
 
@@ -202,10 +244,10 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
           24 + MediaQuery.paddingOf(context).bottom,
         ),
         children: [
-          SegmentedButton<bool>(
+          SegmentedButton<int>(
             segments: [
               ButtonSegment(
-                value: false,
+                value: 0,
                 icon: const Icon(Icons.public),
                 label: Text(
                   l10n.importModeWeb,
@@ -213,23 +255,76 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
                 ),
               ),
               ButtonSegment(
-                value: true,
+                value: 1,
                 icon: const Icon(Icons.notes),
                 label: Text(
                   l10n.importModeText,
                   key: const ValueKey('import-mode-text'),
                 ),
               ),
+              ButtonSegment(
+                value: 2,
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: Text(
+                  l10n.importModePhoto,
+                  key: const ValueKey('import-mode-photo'),
+                ),
+              ),
             ],
-            selected: {_textMode},
+            showSelectedIcon: false,
+            selected: {
+              _photoMode
+                  ? 2
+                  : _textMode
+                  ? 1
+                  : 0,
+            },
             onSelectionChanged: (selection) => setState(() {
-              _textMode = selection.first;
+              _photoMode = selection.first == 2;
+              _textMode = selection.first == 1;
               _recipe = null;
               _error = null;
+              _scanError = null;
             }),
           ),
           const SizedBox(height: 16),
-          if (_textMode) ...[
+          if (_photoMode) ...[
+            Text(l10n.photoImportHelp, style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              key: const ValueKey('photo-import-scan'),
+              onPressed: _scanning ? null : _scan,
+              icon: const Icon(Icons.document_scanner_outlined),
+              label: Text(l10n.photoImportScan),
+            ),
+            if (_scanning)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 12),
+                    Text(l10n.photoImportReading),
+                  ],
+                ),
+              ),
+            if (_scanError case final scanError?) ...[
+              const SizedBox(height: 16),
+              Card(
+                color: theme.colorScheme.errorContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    scanError == PageScanError.noText
+                        ? l10n.photoImportNoText
+                        : l10n.photoImportUnavailable,
+                    key: const ValueKey('photo-import-error'),
+                    style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                  ),
+                ),
+              ),
+            ],
+          ] else if (_textMode) ...[
             TextField(
               key: const ValueKey('text-import-field'),
               controller: _text,

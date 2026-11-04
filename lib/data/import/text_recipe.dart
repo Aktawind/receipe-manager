@@ -295,13 +295,24 @@ abstract final class TextRecipeParser {
   static String _noColon(String line) =>
       line.replaceFirst(RegExp(r'\s*:\s*$'), '');
 
-  static String _cleanTitle(String line) => line
-      .replaceFirst(
-        RegExp(r'^(recette|titre)\s*:\s*', caseSensitive: false),
-        '',
-      )
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
+  static String _cleanTitle(String line) {
+    final title = line
+        .replaceFirst(
+          RegExp(r'^(recette|titre)\s*:\s*', caseSensitive: false),
+          '',
+        )
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    // Un titre de livre en capitales (« TARTE AUX POMMES ») : en minuscules,
+    // avec une majuscule initiale.
+    if (title.length > 3 &&
+        title == title.toUpperCase() &&
+        title != title.toLowerCase()) {
+      final lower = title.toLowerCase();
+      return lower[0].toUpperCase() + lower.substring(1);
+    }
+    return title;
+  }
 
   /// « Pour 4 personnes », « 6 parts », « Portions : 4 », « 24 biscuits ».
   static (int, String)? _servings(String line) {

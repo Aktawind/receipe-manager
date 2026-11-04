@@ -16,7 +16,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ✅ |
 | [0.7](#07--mode-cuisine) | Mode cuisine | ✅ |
 | [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ✅ |
-| [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ⬜ |
+| [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | 🟨 |
 | [0.10](#010--listes-de-courses) | Listes de courses | ⬜ |
 | [0.11](#011--planning-des-repas) | Planning des repas | ⬜ |
 | [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ⬜ |
@@ -287,14 +287,29 @@ des doublons.
 ## 0.9 — Import depuis photos et documents
 
 - Photographier une recette dans un livre, scanner une fiche papier (recadrage, redressement)
-- Capture d'écran, PDF, document texte
+- Capture d'écran (image de la galerie)
 - Plusieurs pages pour une même recette
 - Reconnaissance du texte (OCR) **sur l'appareil, hors ligne et gratuite** (Google ML Kit)
-- Reconnaissance des ingrédients et des étapes, extraction de la photo principale par recadrage
+- Reconnaissance des ingrédients et des étapes, photo de la recette recadrée sur la page ou prise
+  à part
 - Correction des erreurs avant import
 
 > ✅ Validé le 2026-10-21 : l'OCR sur l'appareil (ML Kit, hors ligne) est accepté
 > ([décision 0004](decisions/0004-sans-ia.md)).
+
+*Décisions du 2026-11-04* : pas de PDF ni de documents (Word…) pour l'instant ; la photo du plat
+se recadre sur la page scannée **ou** se prend à part ; le scanner de pages de Google Play
+(services Google Play du téléphone) est accepté.
+
+*Avancement* : deux étapes.
+- **Étape 1 (à tester)** : onglet « Photo » de l'import : scanner de pages de Google Play
+  (cadrage et redressement automatiques, jusqu'à 5 pages, image de la galerie), lecture du texte
+  sur l'appareil (ML Kit, modèle latin inclus dans l'app), remise en forme du texte lu (lignes
+  coupées par la largeur de la page, mots coupés, « l00 g », « 2O cl », titres en capitales),
+  puis le texte dans l'onglet « Texte » pour le corriger, et la même analyse que pour un texte
+  collé.
+- **Étape 2** : mise en page en colonnes (ingrédients à côté de la préparation), photo de la
+  recette recadrée sur la page ou prise à part.
 
 ## 0.10 — Listes de courses
 
