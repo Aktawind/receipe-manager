@@ -12,6 +12,7 @@ import '../../features/recipes/cooking_mode_page.dart';
 import '../../features/recipes/recipe_detail_page.dart';
 import '../../features/recipes/recipe_editor_page.dart';
 import '../../features/recipes/recipes_page.dart';
+import '../../features/recipes/web_import_page.dart';
 import '../../features/settings/settings_page.dart';
 import '../../features/settings/trash_page.dart';
 import '../../features/shopping/shopping_page.dart';
@@ -31,6 +32,14 @@ GoRouter buildRouter() => GoRouter(
               path: '/recettes',
               builder: (context, state) => const RecipesPage(),
               routes: [
+                // Avant « :id », sinon « importer » serait pris pour une recette.
+                GoRoute(
+                  path: 'importer',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => WebImportPage(
+                    initialUrl: state.uri.queryParameters['url'],
+                  ),
+                ),
                 // Fiche et éditeur en plein écran, au-dessus de la navigation.
                 GoRoute(
                   path: ':id',

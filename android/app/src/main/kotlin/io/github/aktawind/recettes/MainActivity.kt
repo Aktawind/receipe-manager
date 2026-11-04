@@ -1,6 +1,7 @@
 package io.github.aktawind.recettes
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.view.WindowManager
@@ -9,9 +10,28 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+    /** Texte partagé depuis une autre app (adresse d'une recette), pas encore lu. */
+    private var sharedText: String? = null
+    private var shareChannel: MethodChannel? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         val messenger = flutterEngine.dartExecutor.binaryMessenger
+
+        // Partage Android (« Partager » → Recettes) : l'app lit le texte partagé
+        // au démarrage, puis est prévenue des partages suivants.
+        sharedText = sharedTextOf(intent)
+        shareChannel = MethodChannel(messenger, "recettes/share").also { channel ->
+            channel.setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "takeShared" -> {
+                        result.success(sharedText)
+                        sharedText = null
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+        }
 
         // Mode cuisine : garder l'écran allumé tant qu'il est ouvert.
         MethodChannel(messenger, "recettes/screen").setMethodCallHandler { call, result ->
@@ -58,5 +78,21 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val text = sharedTextOf(intent) ?: return
+        val channel = shareChannel
+        if (channel == null) {
+            sharedText = text
+        } else {
+            channel.invokeMethod("shared", text)
+        }
+    }
+
+    private fun sharedTextOf(intent: Intent?): String? {
+        if (intent?.action != Intent.ACTION_SEND) return null
+        return intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }
     }
 }

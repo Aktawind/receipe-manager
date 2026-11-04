@@ -15,7 +15,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.5](#05--recherche-et-filtres) | Recherche et filtres | ✅ |
 | [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ✅ |
 | [0.7](#07--mode-cuisine) | Mode cuisine | ✅ |
-| [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ⬜ |
+| [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | 🟨 |
 | [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ⬜ |
 | [0.10](#010--listes-de-courses) | Listes de courses | ⬜ |
 | [0.11](#011--planning-des-repas) | Planning des repas | ⬜ |
@@ -263,10 +263,21 @@ de la feuille de route.
   portions, commentaires si disponibles (format standard des sites de recettes + règles par site)
 - Aperçu et correction avant import, URL source conservée
 - Sites incompatibles ou erreurs : message clair et solution de secours (texte à coller)
-- Pages protégées (connexion requise) : ouverture dans un navigateur intégré, extraction après
-  connexion
 - Coller du texte brut → analyse en ingrédients et étapes
-- Détection des doublons
+
+*Décisions du 2026-11-04* : pas de navigateur intégré pour les pages protégées, pas de détection
+des doublons.
+
+*Avancement* : deux étapes.
+- **Étape 1 (à tester)** : adresse saisie, collée (proposée d'office si le presse-papiers en
+  contient une) ou partagée depuis le navigateur ; lecture du format standard schema.org/Recipe
+  (JSON-LD, y compris dans un `@graph`, et microdonnées) ; aperçu (photo, titre, portions, temps,
+  ingrédients et étapes tels que l'app les a compris) ; import avec la photo et l'adresse en
+  source, puis l'éditeur pour corriger ; message clair si le site est injoignable, refuse la page
+  ou n'a pas de recette lisible, avec « Saisir la recette à la main ». Partage reçu par un canal
+  Android maison (`MainActivity`, activité en `singleTask`), sans plugin.
+- **Étape 2** : coller le texte d'une recette entière (titre, ingrédients et étapes devinés) ;
+  règles pour les sites sans format standard ; commentaires et astuces quand le site en donne.
 
 ## 0.9 — Import depuis photos et documents
 
