@@ -28,6 +28,7 @@ abstract final class TextRecipeParser {
 
     var section = _Section.intro;
     var sawSection = false;
+    String? chatterTitle;
 
     for (final (index, raw) in lines.indexed) {
       final line = raw.text;
@@ -50,14 +51,25 @@ abstract final class TextRecipeParser {
         total ??= times[_Time.total];
       }
 
-      // Rubrique : « ## Ingrédients », « **Préparation :** », « Étapes ».
-      // « Préparation : 20 min » est un temps, pas une rubrique.
+      // Les phrases de conclusion d'une IA (« Bon appétit ! Veux-tu… ? »).
+      if (_isClosing(line)) continue;
+
+      // Rubrique : « ## Ingrédients », « **Préparation :** », « Étapes »,
+      // « Préparation (15 minutes) ». « Préparation : 20 min » est un temps,
+      // pas une rubrique.
       final heading = _sectionOf(line);
-      if (heading != null &&
-          (raw.heading || (_looksLikeHeading(line) && times.isEmpty))) {
+      if (heading != null && (raw.heading || _looksLikeHeading(line))) {
         section = heading;
         sawSection = true;
         keepInfo();
+        continue;
+      }
+
+      // « Le petit plus : … », « Astuce : … » : une astuce, même au milieu.
+      if (heading == _Section.notes && line.contains(':')) {
+        section = _Section.notes;
+        sawSection = true;
+        notes.add(line);
         continue;
       }
 
@@ -66,8 +78,14 @@ abstract final class TextRecipeParser {
         if (_isOnlyInfo(line)) continue;
       }
 
-      // Les phrases d'introduction d'une IA (« Voici une recette… : »).
-      if (section == _Section.intro && _isChatter(line)) continue;
+      // Les phrases d'introduction d'une IA (« Voici une recette… »). Le
+      // plat qu'elles annoncent sert de titre s'il n'y en a pas, et une
+      // vraie présentation est gardée en description.
+      if (section == _Section.intro && _isChatter(line)) {
+        chatterTitle ??= _titleFromChatter(line);
+        if (line.length > 80 && !line.endsWith(':')) description.add(line);
+        continue;
+      }
 
       switch (section) {
         case _Section.intro:
@@ -102,6 +120,8 @@ abstract final class TextRecipeParser {
       description.clear();
     }
 
+    if (title.isEmpty) title = chatterTitle ?? '';
+
     return WebRecipe(
       title: title,
       description: description.join('\n'),
@@ -119,7 +139,7 @@ abstract final class TextRecipeParser {
   // Retire le Markdown d'une ligne ; dit si c'était un titre (« # », gras
   // seul sur sa ligne, ligne finie par « : »).
   static ({String text, bool heading}) _strip(String raw) {
-    var text = raw.trim();
+    var text = raw.trim().replaceFirst(RegExp(r'^(>\s*)+'), '');
     var heading = false;
     final hashes = RegExp(r'^#{1,6}\s*(.*)$').firstMatch(text);
     if (hashes != null) {
@@ -180,10 +200,34 @@ abstract final class TextRecipeParser {
         (line.endsWith(':') && line.length > 40);
   }
 
-  /// Une rubrique écrite sans Markdown : courte, éventuellement finie par
-  /// « : ».
-  static bool _looksLikeHeading(String line) =>
-      line.length <= 40 || line.endsWith(':');
+  /// Une rubrique écrite sans Markdown : quelques mots sans chiffres, hors
+  /// parenthèses (« Préparation (15 minutes) », « Ingrédients : »).
+  static bool _looksLikeHeading(String line) {
+    final bare = _noColon(line.replaceAll(RegExp(r'\(.*?\)'), '')).trim();
+    return bare.length <= 40 && !RegExp(r'\d').hasMatch(bare);
+  }
+
+  static bool _isClosing(String line) => RegExp(
+    r"^(bon appetit|bonne degustation|n.hesite|n.hesitez|veux-tu|voulez-vous|souhaites-tu|souhaitez-vous|dis-moi|dites-moi|j.espere|si tu veux|si vous voulez)\b",
+  ).hasMatch(normalizeForSearch(line));
+
+  /// « Voici une délicieuse recette de biscuits (ou petits gâteaux) moelleux
+  /// à la banane, idéale… » → « Biscuits moelleux à la banane ».
+  static String? _titleFromChatter(String line) {
+    final match = RegExp(
+      r"recette (?:de |d'|d’|du |des |pour )(.+)",
+      caseSensitive: false,
+    ).firstMatch(line);
+    if (match == null) return null;
+    var dish = match
+        .group(1)!
+        .replaceAll(RegExp(r'\s*\(.*?\)'), '')
+        .split(RegExp(r'[,.!:;]| qui | que | idéale| parfaite| pour '))
+        .first
+        .trim();
+    if (dish.isEmpty || dish.length > 60) return null;
+    return dish[0].toUpperCase() + dish.substring(1);
+  }
 
   static String _noColon(String line) =>
       line.replaceFirst(RegExp(r'\s*:\s*$'), '');
