@@ -196,4 +196,95 @@ Bon appétit ! Veux-tu une autre idée de gourmandise à faire avec des bananes 
       expect(recipe.notes, isNot(contains('Bon appétit')));
     },
   );
+
+  test('réponse d’IA en fiche : titre ###, infos sur deux lignes, image', () {
+    final recipe = TextRecipeParser.parse('''
+Je te propose une recette de petits biscuits moelleux à la banane, parfaits pour le goûter ou le petit-déjeuner ! 🍌
+
+Ils sont naturellement sucrés grâce aux bananes, sans avoir besoin de beaucoup de sucre.
+
+![Galletitas de avena y banana](https://images.openai.com/static-rsc-4/bwAtTe5c5HjE?purpose=fullsize)
+
+### 🍌 Biscuits moelleux à la banane
+
+PRÉPARATION
+
+10 min
+
+CUISSON
+
+15 min
+
+QUANTITÉ
+
+12 biscuits
+
+### Ingrédients
+
+* 2 bananes bien mûres
+
+* 150 g de farine
+
+* 50 g de flocons d'avoine
+
+* 40 g de beurre fondu
+
+* 40 g de sucre roux
+
+* 1 œuf
+
+* ½ cuillère à café de bicarbonate alimentaire
+
+* 1 cuillère à café de cannelle (facultatif)
+
+* 1 pincée de sel
+
+* Quelques pépites de chocolat (facultatif)
+
+### Préparation
+
+* Préchauffe ton four à 180 °C.
+
+* Écrase les deux bananes dans un saladier à l'aide d'une fourchette.
+
+* Ajoute l'œuf, le beurre fondu et le sucre. Mélange.
+
+* Incorpore la farine, les flocons d'avoine, le bicarbonate, le sel et la cannelle.
+
+* Ajoute éventuellement quelques pépites de chocolat.
+
+* Dépose des petits tas de pâte sur une plaque recouverte de papier cuisson.
+
+* Aplatis légèrement chaque biscuit avec le dos d'une cuillère.
+
+* Enfourne pendant 12 à 15 minutes, jusqu'à ce que les bords soient légèrement dorés.
+
+### Mes petites astuces
+
+* Pour des biscuits plus croustillants : prolonge la cuisson de 2 à 3 minutes.
+
+* Pour des biscuits plus gourmands : ajoute des noix concassées ou du chocolat noir.
+
+* Pour une version plus saine : remplace le sucre par 20 g de miel ou supprime-le complètement.
+
+Petit-déjeuner et goûter
+
+Ils se conservent 3 à 4 jours dans une boîte hermétique.
+
+Mon conseil : avec les deux bananes bien mûres, les flocons d'avoine et quelques pépites de chocolat, tu obtiens de délicieux petits biscuits façon banana bread ! 😋
+''');
+    expect(recipe.title, 'Biscuits moelleux à la banane');
+    expect(recipe.description, contains('naturellement sucrés'));
+    expect(recipe.imageUrl?.host, 'images.openai.com');
+    expect(recipe.prepMinutes, 10);
+    expect(recipe.cookMinutes, 15);
+    expect(recipe.servings, 12);
+    expect(recipe.servingsUnit, 'biscuits');
+    expect(recipe.ingredients, hasLength(10));
+    expect(recipe.steps, hasLength(8));
+    expect(recipe.steps.first, contains('Préchauffe ton four'));
+    expect(recipe.notes, contains('plus croustillants'));
+    expect(recipe.notes, contains('se conservent 3 à 4 jours'));
+    expect(recipe.notes, contains('Mon conseil'));
+  });
 }

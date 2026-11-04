@@ -11,9 +11,19 @@ import 'web_recipe.dart';
 /// `StepText`, comme une saisie.
 abstract final class TextRecipeParser {
   static WebRecipe parse(String input) {
-    final lines = [
-      for (final raw in input.split(RegExp(r'\r?\n'))) _strip(raw),
-    ];
+    // Une image Markdown (« ![…](https://…) ») : la photo de la recette.
+    Uri? image;
+    final rawLines = <String>[];
+    for (final raw in input.split(RegExp(r'\r?\n'))) {
+      final picture = RegExp(r'^\s*!\[[^\]]*\]\((https?://[^)\s]+)\)')
+          .firstMatch(raw);
+      if (picture != null) {
+        image ??= Uri.tryParse(picture.group(1)!);
+        continue;
+      }
+      rawLines.add(raw);
+    }
+    final lines = _joinLabels([for (final raw in rawLines) _strip(raw)]);
 
     var title = '';
     final description = <String>[];
@@ -29,6 +39,7 @@ abstract final class TextRecipeParser {
     var section = _Section.intro;
     var sawSection = false;
     String? chatterTitle;
+    var titleFromHeading = false;
 
     for (final (index, raw) in lines.indexed) {
       final line = raw.text;
@@ -89,7 +100,19 @@ abstract final class TextRecipeParser {
 
       switch (section) {
         case _Section.intro:
-          if (title.isEmpty && index < 6 && line.length <= 90) {
+          if (raw.heading) {
+            // Un titre Markdown avant les rubriques : le nom de la recette,
+            // même après une ou deux phrases de présentation.
+            if (title.isNotEmpty && !titleFromHeading) {
+              description.insert(0, title);
+            }
+            if (!titleFromHeading) {
+              title = _cleanTitle(line);
+              titleFromHeading = true;
+            } else {
+              description.add(line);
+            }
+          } else if (title.isEmpty && index < 6 && _looksLikeTitle(line)) {
             title = _cleanTitle(line);
           } else {
             description.add(line);
@@ -123,6 +146,7 @@ abstract final class TextRecipeParser {
     if (title.isEmpty) title = chatterTitle ?? '';
 
     return WebRecipe(
+      imageUrl: image,
       title: title,
       description: description.join('\n'),
       ingredients: ingredients,
@@ -171,6 +195,45 @@ abstract final class TextRecipeParser {
     return String.fromCharCodes(runes.sublist(start));
   }
 
+  /// Un titre plausible : court, sans phrase (pas de point final).
+  static bool _looksLikeTitle(String line) =>
+      line.length <= 70 &&
+      !RegExp(r'[.!?…]$').hasMatch(line) &&
+      line.split(' ').length <= 12;
+
+  /// « PRÉPARATION » puis « 10 min » sur la ligne suivante (fiches des IA) :
+  /// une seule ligne « PRÉPARATION : 10 min ».
+  static List<({String text, bool heading})> _joinLabels(
+    List<({String text, bool heading})> lines,
+  ) {
+    final label = RegExp(
+      r'^(preparation|cuisson|repos|temps( de \w+)?|temps total|total|quantite|portions?|personnes?|parts?|rendement|difficulte)\s*:?$',
+    );
+    final result = <({String text, bool heading})>[];
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      if (!line.heading && label.hasMatch(normalizeForSearch(line.text))) {
+        var next = i + 1;
+        while (next < lines.length && lines[next].text.isEmpty) {
+          next++;
+        }
+        // Une valeur courte (« 10 min », « 12 biscuits »), pas une étape.
+        if (next < lines.length &&
+            lines[next].text.length <= 24 &&
+            RegExp(r'^[\d½¼¾]').hasMatch(lines[next].text)) {
+          result.add((
+            text: '${_noColon(line.text)} : ${lines[next].text}',
+            heading: false,
+          ));
+          i = next;
+          continue;
+        }
+      }
+      result.add(line);
+    }
+    return result;
+  }
+
   static _Section? _sectionOf(String line) {
     final key = normalizeForSearch(line)
         .replaceAll(RegExp(r'\(.*?\)'), '')
@@ -185,7 +248,7 @@ abstract final class TextRecipeParser {
       return _Section.steps;
     }
     if (RegExp(
-      r'^(astuces?|conseils?|notes?|variantes?|suggestions?|le petit plus|a savoir|bon appetit|conservation)\b',
+      r'^((mes|mon|ma|nos|notre|les|quelques) )?((petite?s?|bonne?s?) )?(astuces?|conseils?|notes?|variantes?|suggestions?|le petit plus|petit plus|a savoir|conservation)\b',
     ).hasMatch(key)) {
       return _Section.notes;
     }
@@ -250,7 +313,7 @@ abstract final class TextRecipeParser {
       return (int.parse(people.group(1) ?? people.group(2)!), '');
     }
     final pieces = RegExp(
-      r'(?:pour|donne|rendement)\s*:?\s*(?:environ\s+)?(\d+)\s+([a-z]+)',
+      r'(?:pour|donne|rendement|quantite)\s*:?\s*(?:environ\s+)?(\d+)\s+([a-z]+)',
     ).firstMatch(text);
     if (pieces != null &&
         !RegExp(r'^(g|kg|ml|cl|l|min|minutes|h|heures?)$')
@@ -290,7 +353,7 @@ abstract final class TextRecipeParser {
     return line.length <= 120 &&
         !RegExp(r'[.!?]\s+\p{Lu}', unicode: true).hasMatch(line) &&
         RegExp(
-          r'(preparation|cuisson|repos|total|temps|personnes?|portions?|parts?|pour \d|difficulte)',
+          r'(preparation|cuisson|repos|total|temps|personnes?|portions?|parts?|pour \d|difficulte|quantite)',
         ).hasMatch(text);
   }
 }
