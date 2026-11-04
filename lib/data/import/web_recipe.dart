@@ -8,7 +8,7 @@ import 'package:html/parser.dart' as html;
 /// `IngredientText` et `StepText`).
 class WebRecipe {
   const WebRecipe({
-    required this.source,
+    this.source,
     this.title = '',
     this.description = '',
     this.ingredients = const [],
@@ -22,7 +22,8 @@ class WebRecipe {
     this.notes = '',
   });
 
-  final Uri source;
+  /// La page lue ; `null` pour un texte collé.
+  final Uri? source;
   final String title;
   final String description;
 

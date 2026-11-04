@@ -831,8 +831,8 @@
   "textSizeMedium": "Moyen",
   "textSizeLarge": "Grand",
   "textSizeExtraLarge": "Très grand",
-  "webImportTitle": "Importer depuis le web",
-  "webImportMenu": "Importer depuis une page web",
+  "webImportTitle": "Importer une recette",
+  "webImportMenu": "Importer une recette",
   "webImportUrl": "Adresse de la page",
   "webImportPaste": "Coller",
   "webImportRead": "Lire la recette",
@@ -858,5 +858,11 @@
         "type": "int"
       }
     }
-  }
+  },
+  "importModeWeb": "Page web",
+  "importModeText": "Texte",
+  "textImportField": "Texte de la recette",
+  "textImportRead": "Analyser le texte",
+  "textImportHelp": "Colle une recette entière : réponse d’une IA, message, document. Titre, personnes, temps, ingrédients, étapes et astuces sont repérés ; tu corriges ensuite dans l’éditeur.",
+  "textImportNothing": "Je ne trouve ni ingrédients ni étapes dans ce texte. Vérifie qu’il contient bien la recette, ou saisis-la à la main."
 }

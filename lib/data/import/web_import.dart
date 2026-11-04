@@ -46,6 +46,11 @@ Uri? findUrl(String text) {
   return uri != null && uri.host.isNotEmpty ? uri : null;
 }
 
+/// Plusieurs lignes et assez de texte : la recette elle-même, pas une simple
+/// adresse.
+bool looksLikeRecipeText(String text) =>
+    '\n'.allMatches(text.trim()).length >= 3 && text.trim().length >= 80;
+
 /// Télécharge une page de recette et la convertit en [Recipe].
 class WebImporter {
   WebImporter({http.Client? client, this.timeout = const Duration(seconds: 20)})
@@ -146,7 +151,7 @@ Recipe applyWebRecipe(Recipe base, WebRecipe web, {String? photo}) {
   return base.copyWith(
     title: web.title,
     description: web.description,
-    source: web.source.toString(),
+    source: web.source?.toString() ?? '',
     notes: notes,
     servings: () => web.servings,
     servingsUnit: web.servingsUnit,
