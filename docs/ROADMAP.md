@@ -269,15 +269,20 @@ de la feuille de route.
 des doublons.
 
 *Avancement* : deux étapes.
-- **Étape 1 (à tester)** : adresse saisie, collée (proposée d'office si le presse-papiers en
+- **Étape 1 (validée le 2026-11-04, essayée avec Marmiton)** : adresse saisie, collée (proposée d'office si le presse-papiers en
   contient une) ou partagée depuis le navigateur ; lecture du format standard schema.org/Recipe
   (JSON-LD, y compris dans un `@graph`, et microdonnées) ; aperçu (photo, titre, portions, temps,
   ingrédients et étapes tels que l'app les a compris) ; import avec la photo et l'adresse en
   source, puis l'éditeur pour corriger ; message clair si le site est injoignable, refuse la page
   ou n'a pas de recette lisible, avec « Saisir la recette à la main ». Partage reçu par un canal
   Android maison (`MainActivity`, activité en `singleTask`), sans plugin.
-- **Étape 2** : coller le texte d'une recette entière (titre, ingrédients et étapes devinés) ;
-  règles pour les sites sans format standard ; commentaires et astuces quand le site en donne.
+- **Étape 2 (à tester)** : coller le texte d'une recette entière, surtout les réponses d'IA
+  (Markdown, emojis, phrase d'introduction) : titre, description, personnes (ou pièces), temps de
+  préparation et de cuisson, ingrédients avec leurs groupes, étapes avec leurs parties, astuces
+  dans les notes ; sans rubriques, les lignes avec une quantité deviennent des ingrédients. Le
+  presse-papiers est proposé d'office, et un texte partagé depuis une autre app (une IA) ouvre
+  l'import du texte. Décision du 2026-11-04 : pas de règles par site ni de commentaires pour
+  l'instant (un site qui ne passe pas sera signalé).
 
 ## 0.9 — Import depuis photos et documents
 

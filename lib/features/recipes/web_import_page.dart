@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/format/durations.dart';
 import '../../data/app_services.dart';
+import '../../data/import/text_recipe.dart';
 import '../../data/import/web_import.dart';
 import '../../data/import/web_recipe.dart';
 import '../../domain/ingredient_text.dart';
@@ -18,13 +19,17 @@ final webImporterProvider = Provider<WebImporter>((ref) {
   return importer;
 });
 
-/// Importer une recette depuis une adresse web : saisie (ou partage depuis le
-/// navigateur), lecture, aperçu, puis import et correction dans l'éditeur.
+/// Importer une recette : depuis une adresse web (saisie, collée ou partagée
+/// depuis le navigateur) ou depuis un texte collé (réponse d'une IA, message).
+/// Lecture, aperçu, puis import et correction dans l'éditeur.
 class WebImportPage extends ConsumerStatefulWidget {
-  const WebImportPage({super.key, this.initialUrl});
+  const WebImportPage({super.key, this.initialUrl, this.initialText});
 
   /// L'adresse partagée depuis une autre app ; vide pour la saisir.
   final String? initialUrl;
+
+  /// Un texte partagé depuis une autre app (sans adresse) : la recette elle-même.
+  final String? initialText;
 
   @override
   ConsumerState<WebImportPage> createState() => _WebImportPageState();
@@ -32,6 +37,8 @@ class WebImportPage extends ConsumerStatefulWidget {
 
 class _WebImportPageState extends ConsumerState<WebImportPage> {
   final _url = TextEditingController();
+  final _text = TextEditingController();
+  var _textMode = false;
   var _loading = false;
   var _saving = false;
   WebRecipe? _recipe;
@@ -41,9 +48,14 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
   void initState() {
     super.initState();
     final initial = widget.initialUrl;
+    final text = widget.initialText;
     if (initial != null && initial.isNotEmpty) {
       _url.text = initial;
       WidgetsBinding.instance.addPostFrameCallback((_) => _read());
+    } else if (text != null && text.trim().isNotEmpty) {
+      _textMode = true;
+      _text.text = text;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _readText());
     } else {
       _pasteFromClipboard();
     }
@@ -52,20 +64,40 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
   @override
   void dispose() {
     _url.dispose();
+    _text.dispose();
     super.dispose();
   }
 
-  /// Une adresse dans le presse-papiers : on la propose d'office.
+  /// Ce que contient le presse-papiers est proposé d'office : une adresse, ou
+  /// le texte d'une recette (copié depuis une IA, par exemple).
   Future<void> _pasteFromClipboard() async {
     try {
       final data = await Clipboard.getData(Clipboard.kTextPlain);
-      final url = findUrl(data?.text ?? '');
-      if (url != null && mounted && _url.text.isEmpty) {
+      final clip = data?.text ?? '';
+      if (!mounted || clip.trim().isEmpty) return;
+      final url = findUrl(clip);
+      if (looksLikeRecipeText(clip)) {
+        setState(() {
+          _textMode = true;
+          if (_text.text.isEmpty) _text.text = clip;
+        });
+      } else if (url != null && _url.text.isEmpty) {
         setState(() => _url.text = url.toString());
       }
     } on PlatformException {
-      // Presse-papiers inaccessible : on saisit l'adresse.
+      // Presse-papiers inaccessible : on saisit à la main.
     }
+  }
+
+  void _readText() {
+    FocusScope.of(context).unfocus();
+    final recipe = TextRecipeParser.parse(_text.text);
+    setState(() {
+      _recipe = recipe.ingredients.isEmpty && recipe.steps.isEmpty
+          ? null
+          : recipe;
+      _error = _recipe == null ? WebImportError.noRecipe : null;
+    });
   }
 
   Future<void> _read() async {
@@ -117,7 +149,9 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
     final repository = ref.read(recipeRepositoryProvider);
     final created = await repository.create();
     final url = _url.text.trim();
-    if (url.isNotEmpty) {
+    if (_textMode) {
+      await repository.save(created.copyWith(notes: _text.text.trim()));
+    } else if (url.isNotEmpty) {
       await repository.save(created.copyWith(source: url));
     }
     if (!mounted) return;
@@ -129,7 +163,8 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
         WebImportError.invalidUrl => l10n.webImportInvalidUrl,
         WebImportError.network => l10n.webImportNetwork,
         WebImportError.http => l10n.webImportHttp,
-        WebImportError.noRecipe => l10n.webImportNoRecipe,
+        WebImportError.noRecipe =>
+          _textMode ? l10n.textImportNothing : l10n.webImportNoRecipe,
       };
 
   @override
@@ -167,41 +202,106 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
           24 + MediaQuery.paddingOf(context).bottom,
         ),
         children: [
-          TextField(
-            key: const ValueKey('web-import-url'),
-            controller: _url,
-            keyboardType: TextInputType.url,
-            textInputAction: TextInputAction.go,
-            autocorrect: false,
-            decoration: InputDecoration(
-              labelText: l10n.webImportUrl,
-              hintText: 'https://…',
-              suffixIcon: IconButton(
-                tooltip: l10n.webImportPaste,
-                icon: const Icon(Icons.content_paste),
-                onPressed: () async {
-                  final data = await Clipboard.getData(Clipboard.kTextPlain);
-                  final url = findUrl(data?.text ?? '');
-                  if (url != null) setState(() => _url.text = url.toString());
-                },
+          SegmentedButton<bool>(
+            segments: [
+              ButtonSegment(
+                value: false,
+                icon: const Icon(Icons.public),
+                label: Text(
+                  l10n.importModeWeb,
+                  key: const ValueKey('import-mode-web'),
+                ),
+              ),
+              ButtonSegment(
+                value: true,
+                icon: const Icon(Icons.notes),
+                label: Text(
+                  l10n.importModeText,
+                  key: const ValueKey('import-mode-text'),
+                ),
+              ),
+            ],
+            selected: {_textMode},
+            onSelectionChanged: (selection) => setState(() {
+              _textMode = selection.first;
+              _recipe = null;
+              _error = null;
+            }),
+          ),
+          const SizedBox(height: 16),
+          if (_textMode) ...[
+            TextField(
+              key: const ValueKey('text-import-field'),
+              controller: _text,
+              minLines: 8,
+              maxLines: 16,
+              keyboardType: TextInputType.multiline,
+              decoration: InputDecoration(
+                labelText: l10n.textImportField,
+                alignLabelWithHint: true,
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  tooltip: l10n.webImportPaste,
+                  icon: const Icon(Icons.content_paste),
+                  onPressed: () async {
+                    final data = await Clipboard.getData(Clipboard.kTextPlain);
+                    final clip = data?.text ?? '';
+                    if (clip.isNotEmpty) setState(() => _text.text = clip);
+                  },
+                ),
               ),
             ),
-            onSubmitted: (_) => _read(),
-          ),
-          const SizedBox(height: 12),
-          FilledButton.tonalIcon(
-            key: const ValueKey('web-import-read'),
-            onPressed: _loading ? null : _read,
-            icon: const Icon(Icons.travel_explore),
-            label: Text(l10n.webImportRead),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.webImportHelp,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              key: const ValueKey('text-import-read'),
+              onPressed: _readText,
+              icon: const Icon(Icons.auto_fix_high),
+              label: Text(l10n.textImportRead),
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.textImportHelp,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ] else ...[
+            TextField(
+              key: const ValueKey('web-import-url'),
+              controller: _url,
+              keyboardType: TextInputType.url,
+              textInputAction: TextInputAction.go,
+              autocorrect: false,
+              decoration: InputDecoration(
+                labelText: l10n.webImportUrl,
+                hintText: 'https://…',
+                suffixIcon: IconButton(
+                  tooltip: l10n.webImportPaste,
+                  icon: const Icon(Icons.content_paste),
+                  onPressed: () async {
+                    final data = await Clipboard.getData(Clipboard.kTextPlain);
+                    final url = findUrl(data?.text ?? '');
+                    if (url != null) setState(() => _url.text = url.toString());
+                  },
+                ),
+              ),
+              onSubmitted: (_) => _read(),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              key: const ValueKey('web-import-read'),
+              onPressed: _loading ? null : _read,
+              icon: const Icon(Icons.travel_explore),
+              label: Text(l10n.webImportRead),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.webImportHelp,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           if (_loading)
             const Padding(
               padding: EdgeInsets.all(32),
@@ -304,7 +404,7 @@ class _Preview extends StatelessWidget {
           Text(facts.join(' · '), style: muted),
         ],
         const SizedBox(height: 4),
-        Text(recipe.source.host, style: muted),
+        if (recipe.source case final source?) Text(source.host, style: muted),
         const SizedBox(height: 16),
         Text(
           l10n.webImportIngredientsCount(ingredients.length),

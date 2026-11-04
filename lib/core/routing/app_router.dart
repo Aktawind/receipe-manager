@@ -38,6 +38,9 @@ GoRouter buildRouter() => GoRouter(
                   parentNavigatorKey: _rootKey,
                   builder: (context, state) => WebImportPage(
                     initialUrl: state.uri.queryParameters['url'],
+                    initialText: state.extra is String
+                        ? state.extra as String
+                        : null,
                   ),
                 ),
                 // Fiche et éditeur en plein écran, au-dessus de la navigation.

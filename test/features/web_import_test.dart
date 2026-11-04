@@ -123,6 +123,90 @@ void main() {
     expect(find.byKey(const ValueKey('web-import-by-hand')), findsOneWidget);
   });
 
+  testWidgets('coller le texte d’une recette (réponse d’IA)', (tester) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(TestApp.create))!;
+    await app.pump(tester);
+    await tester.tap(find.byKey(const ValueKey('web-import-open')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('import-mode-text')));
+    await settle(tester);
+    await tester.enterText(
+      find.byKey(const ValueKey('text-import-field')),
+      '''Voici une recette simple :
+
+# Gâteau au yaourt
+**Pour 6 personnes** – Préparation : 10 min – Cuisson : 35 min
+
+## Ingrédients
+- 1 pot de yaourt
+- 3 œufs
+- 2 pots de farine
+
+## Préparation
+1. Mélanger le yaourt et les œufs.
+2. Ajouter la farine, cuire 35 minutes.
+
+## Astuce
+Ajoutez un zeste de citron.''',
+    );
+    await tester.tap(find.byKey(const ValueKey('text-import-read')));
+    await settle(tester);
+    await tester.ensureVisible(find.text('2 étapes', skipOffstage: false));
+    await settle(tester);
+    expect(find.text('Gâteau au yaourt'), findsOneWidget);
+    expect(find.text('3 ingrédients'), findsOneWidget);
+    expect(find.text('2 étapes'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('web-import-save')));
+    await tester.runAsync(
+      () => Future.delayed(const Duration(milliseconds: 100)),
+    );
+    await settle(tester);
+    final recipe = (await tester.runAsync(
+      app.services.recipes.getAllWithDetails,
+    ))!.single;
+    expect(recipe.title, 'Gâteau au yaourt');
+    expect(recipe.servings, 6);
+    expect(recipe.prepMinutes, 10);
+    expect(recipe.cookMinutes, 35);
+    expect(recipe.ingredients, hasLength(3));
+    expect(recipe.steps, hasLength(2));
+    expect(recipe.notes, 'Ajoutez un zeste de citron.');
+    expect(recipe.source, isEmpty);
+  });
+
+  testWidgets('un texte sans recette : message', (tester) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(TestApp.create))!;
+    await app.pump(tester);
+    await tester.tap(find.byKey(const ValueKey('web-import-open')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('import-mode-text')));
+    await settle(tester);
+    await tester.enterText(
+      find.byKey(const ValueKey('text-import-field')),
+      'Bonjour',
+    );
+    await tester.tap(find.byKey(const ValueKey('text-import-read')));
+    await settle(tester);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('web-import-error'), skipOffstage: false),
+    );
+    await settle(tester);
+    expect(find.textContaining('ni ingrédients ni étapes'), findsOneWidget);
+  });
+
+  test('texte partagé : recette ou adresse', () {
+    expect(looksLikeRecipeText('https://www.marmiton.org/x'), isFalse);
+    expect(
+      looksLikeRecipeText(
+        'Crêpes\nIngrédients\n250 g de farine\n4 œufs\nMélanger la farine et les œufs, puis cuire à la poêle.',
+      ),
+      isTrue,
+    );
+  });
+
   test('adresse dans un texte partagé', () {
     expect(
       findUrl('Super recette https://www.marmiton.org/recettes/x.aspx.')

@@ -35,6 +35,11 @@ class _RecettesAppState extends ConsumerState<RecettesApp>
   }
 
   void _openShared(String text) {
+    // Une recette entière (réponse d'une IA partagée) : import du texte.
+    if (looksLikeRecipeText(text)) {
+      _router.push('/recettes/importer', extra: text);
+      return;
+    }
     final url = findUrl(text);
     if (url == null) return;
     _router.push(
