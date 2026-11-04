@@ -156,4 +156,44 @@ Faire cuire les pâtes dans l’eau bouillante salée.
     expect(recipe.ingredients, ['200 g de pâtes', '2 c. à soupe de pesto']);
     expect(recipe.steps, hasLength(2));
   });
+
+  test(
+    'réponse d’IA réelle : sans titre, « Préparation (15 minutes) », citation',
+    () {
+      final recipe = TextRecipeParser.parse('''
+Voici une délicieuse recette de biscuits (ou petits gâteaux) moelleux à la banane, idéale pour utiliser deux bananes mûres tout en se régalant. Ils ont une texture ultra-fondante, parfaite pour le goûter !
+Ingrédients
+ * 2 bananes mûres (bien tachetées)
+ * 1 œuf
+ * 50 g de sucre (ou de sucre roux/vergeoise pour un goût caramélisé)
+ * 40 g de beurre fondu (ou d'huile de coco)
+ * 120 g de farine (ou un mélange farine / poudre d'amandes pour plus de moelleux)
+ * 1 cuillère à café de levure chimique
+ * 1 pincée de sel
+ * Optionnel : Une pincée de cannelle, une poignée de pépites de chocolat ou de noix concassées.
+Préparation (15 minutes)
+ * Préchauffer le four à 180 °C (chaleur tournante de préférence) et tapisser une plaque de cuisson de papier sulfurisé.
+ * Écraser les bananes : Dans un saladier, réduisez les deux bananes en purée bien lisse à l'aide d'une fourchette.
+ * Mélanger les liquides : Ajoutez l'œuf, le sucre et le beurre fondu à la purée de bananes. Mélangez bien au fouet.
+ * Ajouter les secs : Incorporez la farine, la levure chimique, la pincée de sel et la cannelle (si vous en mettez). Mélangez délicatement avec une spatule juste ce qu'il faut pour obtenir une pâte homogène (ne pas trop travailler la pâte).
+ * Façonner les biscuits : La pâte obtenue est assez souple. Déposez des petits tas de pâte à l'aide d'une cuillère à soupe sur la plaque de cuisson, en espaçant bien chaque biscuit (ils vont un peu s'étaler).
+ * Cuisson : Enfournez pour 12 à 15 minutes. Les bords doivent être légèrement dorés et le centre doit rester bien moelleux.
+> 💡 Le petit plus : Si vous aimez le chocolat, ces biscuits se marient à merveille avec des pépites de chocolat noir (notamment du chocolat à 70 % de cacao) ou de petits morceaux de noix.
+> 
+Bon appétit ! Veux-tu une autre idée de gourmandise à faire avec des bananes ?
+''');
+      expect(recipe.title, 'Biscuits moelleux à la banane');
+      expect(recipe.description, contains('texture ultra-fondante'));
+      expect(recipe.prepMinutes, 15);
+      expect(recipe.ingredients, hasLength(8));
+      expect(recipe.steps, hasLength(6));
+      expect(recipe.steps.first, contains('Préchauffer le four'));
+      expect(recipe.steps.last, contains('Enfournez pour 12 à 15 minutes'));
+      expect(
+        recipe.notes,
+        startsWith('Le petit plus : Si vous aimez le chocolat'),
+      );
+      expect(recipe.notes, isNot(contains('Bon appétit')));
+    },
+  );
 }
