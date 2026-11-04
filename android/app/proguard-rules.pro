@@ -24,3 +24,10 @@
 -dontwarn com.google.mlkit.vision.text.devanagari.**
 -dontwarn com.google.mlkit.vision.text.japanese.**
 -dontwarn com.google.mlkit.vision.text.korean.**
+
+# ML Kit (scanner de pages, lecture du texte) et installation des modules Google Play : ces
+# bibliothèques trouvent une partie de leurs classes par leur nom (registres de composants).
+# R8 en mode complet pourrait les renommer ou les supprimer ; les tests n'utilisent pas R8.
+-keep class com.google.mlkit.** { *; }
+-keep class com.google.android.gms.internal.mlkit_** { *; }
+-keep class com.google.android.gms.common.moduleinstall.** { *; }

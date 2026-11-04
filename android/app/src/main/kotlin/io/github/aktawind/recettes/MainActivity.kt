@@ -50,7 +50,9 @@ class MainActivity : FlutterActivity() {
         }
 
         // Scanner de pages de Google Play (PageScanner).
-        MethodChannel(messenger, "recettes/scanner").setMethodCallHandler { call, result ->
+        val scannerChannel = MethodChannel(messenger, "recettes/scanner")
+        pageScanner.onStatus = { status -> scannerChannel.invokeMethod("status", status) }
+        scannerChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "scan" -> pageScanner.scan(call.argument<Int>("pageLimit") ?: 5, result)
                 else -> result.notImplemented()

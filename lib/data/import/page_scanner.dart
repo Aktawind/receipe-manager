@@ -32,7 +32,9 @@ class PageScanException implements Exception {
 abstract class PageScanner {
   /// Ouvre le scanner (cadrage, redressement, plusieurs pages, import depuis
   /// la galerie) ; renvoie les images des pages, `null` si on annule.
-  Future<List<String>?> scan();
+  /// [onDownload] reçoit l'avancement (0 à 100) quand Google télécharge le
+  /// scanner, et `null` quand il s'ouvre.
+  Future<List<String>?> scan({void Function(int? percent)? onDownload});
 
   /// Sans le scanner de Google : une photo prise avec l'appareil photo, ou une
   /// ou plusieurs images de la galerie ; `null` si on annule.
@@ -48,7 +50,16 @@ class MlKitPageScanner implements PageScanner {
   static const _channel = MethodChannel('recettes/scanner');
 
   @override
-  Future<List<String>?> scan() async {
+  Future<List<String>?> scan({void Function(int? percent)? onDownload}) async {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method != 'status' || call.arguments is! String) return;
+      final status = call.arguments as String;
+      if (status.startsWith('download:')) {
+        onDownload?.call(int.tryParse(status.substring('download:'.length)));
+      } else {
+        onDownload?.call(null);
+      }
+    });
     try {
       final pages = await _channel.invokeListMethod<String>('scan', {
         'pageLimit': 5,
