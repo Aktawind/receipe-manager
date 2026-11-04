@@ -758,5 +758,77 @@
   "scaleNoticeLeavening": "à doser",
   "scaleNoticeSeasoning": "à goûter",
   "scaleNoticeManual": "à ajuster",
-  "scaledNote": "Quantités recalculées"
+  "cookingMode": "Mode cuisine",
+  "cookingClose": "Quitter le mode cuisine",
+  "cookingNoIngredients": "Pas d’ingrédients",
+  "cookingNoSteps": "Pas de préparation",
+  "timerSeconds": "{count} s",
+  "@timerSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timerMinutes": "{count} min",
+  "@timerMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timerHours": "{count} h",
+  "@timerHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timerDone": "Terminé !",
+  "timerPause": "Mettre en pause",
+  "timerResume": "Reprendre",
+  "timerAddMinute": "Une minute de plus",
+  "timerStop": "Arrêter",
+  "timerNew": "Nouveau minuteur",
+  "timerMinutesField": "Minutes",
+  "timerStart": "Lancer",
+  "timerChannel": "Minuteurs",
+  "timerAlarmTitle": "Minuteur terminé",
+  "timerLabelStep": "{recipe} · étape {step}",
+  "@timerLabelStep": {
+    "placeholders": {
+      "recipe": {
+        "type": "String"
+      },
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "timerLabelCustom": "{recipe} · {duration}",
+  "@timerLabelCustom": {
+    "placeholders": {
+      "recipe": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "timerLaunch": "Lancer un minuteur de {duration}",
+  "@timerLaunch": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsCookingTextSize": "Texte du mode cuisine",
+  "textSizeSmall": "Petit",
+  "textSizeMedium": "Moyen",
+  "textSizeLarge": "Grand",
+  "textSizeExtraLarge": "Très grand"
 }

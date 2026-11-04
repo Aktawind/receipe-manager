@@ -61,6 +61,10 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
 
 enum _MenuAction { duplicate, delete }
 
+/// Marge du bas : de quoi faire défiler le contenu au-dessus du bouton du
+/// mode cuisine.
+const _bottomSpace = 104.0;
+
 /// Hauteur de la barre système (navigation Android) à ne pas recouvrir.
 double _bottomInset(BuildContext context) =>
     MediaQuery.paddingOf(context).bottom;
@@ -162,6 +166,14 @@ class _RecipeDetail extends ConsumerWidget {
     );
   }
 
+  Widget _cookButton(BuildContext context) => FloatingActionButton.extended(
+    key: const ValueKey('cooking-open'),
+    heroTag: null,
+    onPressed: () => context.push('/recettes/${recipe.id}/cuisine'),
+    icon: const Icon(Icons.soup_kitchen_outlined),
+    label: Text(AppLocalizations.of(context).cookingMode),
+  );
+
   Widget _backButton(BuildContext context) => _CircleButton(
     icon: Icons.arrow_back,
     tooltip: MaterialLocalizations.of(context).backButtonTooltip,
@@ -181,6 +193,7 @@ class _RecipeDetail extends ConsumerWidget {
     // Photo carrée sur toute la largeur ; sans photo, un bandeau plus bas.
     final heroHeight = hasPhoto ? width : 200.0;
     return Scaffold(
+      floatingActionButton: _cookButton(context),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -213,7 +226,7 @@ class _RecipeDetail extends ConsumerWidget {
                 20,
                 0,
                 20,
-                40 + _bottomInset(context),
+                _bottomSpace + _bottomInset(context),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,6 +255,7 @@ class _RecipeDetail extends ConsumerWidget {
 
   Widget _buildWide(BuildContext context, WidgetRef ref) {
     return Scaffold(
+      floatingActionButton: _cookButton(context),
       body: Row(
         children: [
           SizedBox(
@@ -276,7 +290,7 @@ class _RecipeDetail extends ConsumerWidget {
                     20,
                     20,
                     20,
-                    40 + _bottomInset(context),
+                    _bottomSpace + _bottomInset(context),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,7 +319,7 @@ class _RecipeDetail extends ConsumerWidget {
                 32,
                 12,
                 32,
-                40 + _bottomInset(context),
+                _bottomSpace + _bottomInset(context),
               ),
               children: [
                 Align(
@@ -552,31 +566,7 @@ class _ServingsRow extends ConsumerWidget {
         ),
       ],
     );
-    if (!changed) return row;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        row,
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n.scaledNote,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            IconButton(
-              key: const ValueKey('scale-reset'),
-              tooltip: l10n.scaleReset,
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.undo, size: 20),
-              onPressed: () => scale.set(1),
-            ),
-          ],
-        ),
-      ],
-    );
+    return row;
   }
 }
 

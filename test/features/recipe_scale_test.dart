@@ -46,8 +46,6 @@ void main() {
     );
     expect(find.text('4 pers.'), findsOneWidget);
     expect(find.text('250 g de farine'), findsOneWidget);
-    expect(find.text('Quantités recalculées'), findsNothing);
-
     // Deux personnes de plus : × 1,5.
     await tester.tap(find.byKey(const ValueKey('servings-more')));
     await tester.pump();
@@ -57,7 +55,6 @@ void main() {
     expect(find.text('375 g de farine'), findsOneWidget);
     expect(find.text('5 œufs · 4 ½ exactement'), findsOneWidget);
     expect(find.text('1 ½ pincée de sel · à goûter'), findsOneWidget);
-    expect(find.text('Quantités recalculées'), findsOneWidget);
 
     // Choix direct dans la liste : 2 personnes.
     await tester.tap(find.byKey(const ValueKey('servings-pill')));
@@ -76,12 +73,13 @@ void main() {
     expect(find.text('10 pers.'), findsOneWidget);
     expect(find.text('625 g de farine'), findsOneWidget);
 
-    // Retour à la recette.
-    await tester.tap(find.byKey(const ValueKey('scale-reset')));
+    // Quitter la fiche puis y revenir : les quantités de la recette.
+    await tester.tap(find.byTooltip('Retour'));
+    await settle(tester);
+    await tester.tap(find.text('Crêpes'));
     await settle(tester);
     expect(find.text('4 pers.'), findsOneWidget);
     expect(find.text('250 g de farine'), findsOneWidget);
-    expect(find.text('Quantités recalculées'), findsNothing);
   });
 
   testWidgets('une recette sans nombre de personnes ne propose rien', (
