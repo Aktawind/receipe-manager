@@ -49,6 +49,7 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
   var _photoMode = false;
   var _scanning = false;
   PageScanError? _scanError;
+  var _scanErrorDetail = '';
   var _loading = false;
   var _saving = false;
   WebRecipe? _recipe;
@@ -108,6 +109,12 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
       _recipe = null;
       _error = null;
     });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context).photoImportOpening),
+        persist: false,
+      ),
+    );
     try {
       final images = await scanner.scan();
       if (images == null || !mounted) return;
@@ -126,6 +133,7 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
         setState(() {
           _scanning = false;
           _scanError = e.error;
+          _scanErrorDetail = e.detail;
         });
       }
     }
@@ -314,12 +322,28 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
                 color: theme.colorScheme.errorContainer,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Text(
-                    scanError == PageScanError.noText
-                        ? l10n.photoImportNoText
-                        : l10n.photoImportUnavailable,
-                    key: const ValueKey('photo-import-error'),
-                    style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        scanError == PageScanError.noText
+                            ? l10n.photoImportNoText
+                            : l10n.photoImportUnavailable,
+                        key: const ValueKey('photo-import-error'),
+                        style: TextStyle(
+                          color: theme.colorScheme.onErrorContainer,
+                        ),
+                      ),
+                      if (_scanErrorDetail.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          l10n.photoImportDetail(_scanErrorDetail),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),

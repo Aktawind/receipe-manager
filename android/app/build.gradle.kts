@@ -81,3 +81,9 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Scanner de pages de Google Play (MainActivity / PageScanner.kt) : appelé directement, sans
+    // plugin, pour télécharger le module à la demande et remonter les vraies erreurs.
+    implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
+}

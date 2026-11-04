@@ -870,5 +870,14 @@
   "photoImportScan": "Scanner une page",
   "photoImportReading": "Lecture du texte…",
   "photoImportNoText": "Aucun texte lisible sur cette photo. Réessaie avec plus de lumière, la page bien à plat.",
-  "photoImportUnavailable": "Le scanner n’est pas disponible sur ce téléphone (il utilise les services Google Play)."
+  "photoImportUnavailable": "Le scanner n’a pas pu s’ouvrir. Vérifie la connexion (la première fois, Google télécharge le scanner), puis réessaie.",
+  "photoImportOpening": "Ouverture du scanner… La première fois, Google le télécharge : cela peut prendre un moment.",
+  "photoImportDetail": "Détail : {detail}",
+  "@photoImportDetail": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  }
 }

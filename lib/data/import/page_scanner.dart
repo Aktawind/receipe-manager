@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:google_mlkit_document_scanner/google_mlkit_document_scanner.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 /// Pourquoi une page n'a pas pu être lue.
+///
+/// Le scanner est celui des services Google Play, appelé par un canal Android maison
+/// (`PageScanner.kt`) qui télécharge le module à la demande.
 enum PageScanError {
   /// Le scanner de Google Play n'est pas disponible sur l'appareil.
   unavailable,
@@ -38,34 +40,23 @@ abstract class PageScanner {
 class MlKitPageScanner implements PageScanner {
   const MlKitPageScanner();
 
+  static const _channel = MethodChannel('recettes/scanner');
+
   @override
   Future<List<String>?> scan() async {
-    final scanner = DocumentScanner(
-      options: DocumentScannerOptions(
-        documentFormats: const {DocumentFormat.jpeg},
-        mode: ScannerMode.full,
-        pageLimit: 5,
-        isGalleryImport: true,
-      ),
-    );
     try {
-      final result = await scanner.scanDocument();
-      final images = result.images;
-      return images == null || images.isEmpty ? null : images;
+      final pages = await _channel.invokeListMethod<String>('scan', {
+        'pageLimit': 5,
+      });
+      return pages == null || pages.isEmpty ? null : pages;
     } on PlatformException catch (e) {
-      // Annulation : le scanner renvoie une erreur plutôt qu'un résultat vide.
-      if (_isCancel(e)) return null;
-      throw PageScanException(PageScanError.unavailable, e.message ?? e.code);
+      throw PageScanException(
+        PageScanError.unavailable,
+        [e.code, e.message].whereType<String>().join(' : '),
+      );
     } on MissingPluginException catch (e) {
       throw PageScanException(PageScanError.unavailable, '$e');
-    } finally {
-      unawaited(scanner.close().catchError((Object _) {}));
     }
-  }
-
-  static bool _isCancel(PlatformException e) {
-    final text = '${e.code} ${e.message}'.toLowerCase();
-    return text.contains('cancel') || text.contains('annul');
   }
 
   @override
