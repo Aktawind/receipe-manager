@@ -864,5 +864,11 @@
   "textImportField": "Texte de la recette",
   "textImportRead": "Analyser le texte",
   "textImportHelp": "Colle une recette entière : réponse d’une IA, message, document. Titre, personnes, temps, ingrédients, étapes et astuces sont repérés ; tu corriges ensuite dans l’éditeur.",
-  "textImportNothing": "Je ne trouve ni ingrédients ni étapes dans ce texte. Vérifie qu’il contient bien la recette, ou saisis-la à la main."
+  "textImportNothing": "Je ne trouve ni ingrédients ni étapes dans ce texte. Vérifie qu’il contient bien la recette, ou saisis-la à la main.",
+  "importModePhoto": "Photo",
+  "photoImportHelp": "Photographie la page d’un livre ou une fiche : le cadrage et le redressement sont automatiques, et tu peux ajouter plusieurs pages ou choisir une image de la galerie. Le texte est lu sur le téléphone, sans connexion, puis tu peux le corriger avant l’import.",
+  "photoImportScan": "Scanner une page",
+  "photoImportReading": "Lecture du texte…",
+  "photoImportNoText": "Aucun texte lisible sur cette photo. Réessaie avec plus de lumière, la page bien à plat.",
+  "photoImportUnavailable": "Le scanner n’est pas disponible sur ce téléphone (il utilise les services Google Play)."
 }
