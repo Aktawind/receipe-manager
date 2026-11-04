@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../core/settings/cooking_text_size.dart';
 import '../../core/settings/theme_mode_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../recipes/recipe_providers.dart';
@@ -55,6 +56,33 @@ class SettingsPage extends ConsumerWidget {
               onChanged: (mode) {
                 if (mode != null) {
                   ref.read(themeModeProvider.notifier).set(mode);
+                }
+              },
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.format_size),
+            title: Text(l10n.settingsCookingTextSize),
+            trailing: DropdownButton<CookingTextSize>(
+              key: const ValueKey('setting-cooking-text'),
+              value: ref.watch(cookingTextSizeProvider),
+              underline: const SizedBox.shrink(),
+              borderRadius: BorderRadius.circular(12),
+              items: [
+                for (final size in CookingTextSize.values)
+                  DropdownMenuItem(
+                    value: size,
+                    child: Text(switch (size) {
+                      CookingTextSize.small => l10n.textSizeSmall,
+                      CookingTextSize.medium => l10n.textSizeMedium,
+                      CookingTextSize.large => l10n.textSizeLarge,
+                      CookingTextSize.extraLarge => l10n.textSizeExtraLarge,
+                    }),
+                  ),
+              ],
+              onChanged: (size) {
+                if (size != null) {
+                  ref.read(cookingTextSizeProvider.notifier).set(size);
                 }
               },
             ),

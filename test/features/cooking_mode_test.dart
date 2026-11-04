@@ -76,4 +76,30 @@ void main() {
     expect(calls, [true, false]);
     expect(find.byKey(const ValueKey('cooking-open')), findsOneWidget);
   });
+
+  testWidgets('taille du texte réglable', (tester) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(
+      () => TestApp.create(prefs: {'cooking_text_size': 'large'}),
+    ))!;
+    await tester.runAsync(() async {
+      final repo = app.services.recipes;
+      final created = await repo.create();
+      await repo.save(
+        created.copyWith(
+          title: 'Crêpes',
+          ingredients: [
+            IngredientLine(id: RecipeRepository.newId(), name: 'farine'),
+          ],
+        ),
+      );
+    });
+    await app.pump(tester);
+    await tester.tap(find.text('Crêpes'));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('cooking-open')));
+    await settle(tester);
+    final text = tester.widget<Text>(find.text('farine'));
+    expect(text.style?.fontSize, 23);
+  });
 }

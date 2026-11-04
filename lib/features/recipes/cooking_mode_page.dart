@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/platform/screen_awake.dart';
+import '../../core/settings/cooking_text_size.dart';
 import '../../core/widgets/formatted_text.dart';
 import '../../domain/ingredient_scaling.dart';
 import '../../domain/ingredient_text.dart';
@@ -51,8 +52,13 @@ class _CookingModePageState extends ConsumerState<CookingModePage> {
     final title = recipe.title.trim().isEmpty
         ? l10n.untitledRecipe
         : recipe.title.trim();
-    final ingredients = _Ingredients(recipe: recipe, factor: factor);
-    final steps = _Steps(recipe: recipe, title: title);
+    final fontSize = ref.watch(cookingTextSizeProvider).fontSize;
+    final ingredients = _Ingredients(
+      recipe: recipe,
+      factor: factor,
+      fontSize: fontSize,
+    );
+    final steps = _Steps(recipe: recipe, title: title, fontSize: fontSize);
     final wide = MediaQuery.sizeOf(context).width >= _wideBreakpoint;
 
     final appBar = AppBar(
@@ -129,21 +135,26 @@ EdgeInsets _listPadding(BuildContext context) =>
     EdgeInsets.fromLTRB(24, 16, 24, 32 + MediaQuery.paddingOf(context).bottom);
 
 /// Le texte du mode cuisine : nettement plus grand que sur la fiche.
-TextStyle? _bigText(BuildContext context) =>
+TextStyle? _bigText(BuildContext context, double fontSize) =>
     Theme.of(context).textTheme.headlineSmall
-        ?.copyWith(fontSize: 24, height: 1.4);
+        ?.copyWith(fontSize: fontSize, height: 1.4);
 
 class _Ingredients extends StatelessWidget {
-  const _Ingredients({required this.recipe, required this.factor});
+  const _Ingredients({
+    required this.recipe,
+    required this.factor,
+    required this.fontSize,
+  });
 
   final Recipe recipe;
   final double factor;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final style = _bigText(context);
+    final style = _bigText(context, fontSize);
     final muted = TextStyle(color: theme.colorScheme.onSurfaceVariant);
     final lines = recipe.ingredients.where((l) => !l.isBlank).toList();
     if (lines.isEmpty) {
@@ -211,16 +222,21 @@ class _Ingredients extends StatelessWidget {
 }
 
 class _Steps extends ConsumerWidget {
-  const _Steps({required this.recipe, required this.title});
+  const _Steps({
+    required this.recipe,
+    required this.title,
+    required this.fontSize,
+  });
 
   final Recipe recipe;
   final String title;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final style = _bigText(context);
+    final style = _bigText(context, fontSize);
     final steps = recipe.steps.where((s) => s.text.trim().isNotEmpty).toList();
     if (steps.isEmpty) return Center(child: Text(l10n.cookingNoSteps));
     return ListView(

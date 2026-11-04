@@ -825,5 +825,10 @@
         "type": "String"
       }
     }
-  }
+  },
+  "settingsCookingTextSize": "Texte du mode cuisine",
+  "textSizeSmall": "Petit",
+  "textSizeMedium": "Moyen",
+  "textSizeLarge": "Grand",
+  "textSizeExtraLarge": "Très grand"
 }
