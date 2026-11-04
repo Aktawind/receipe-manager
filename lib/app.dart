@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/platform/shared_text.dart';
 import 'core/routing/app_router.dart';
 import 'core/settings/theme_mode_controller.dart';
 import 'core/theme/app_theme.dart';
+import 'data/import/web_import.dart';
 import 'features/sync/sync_providers.dart';
 import 'l10n/app_localizations.dart';
 
@@ -25,6 +27,22 @@ class _RecettesAppState extends ConsumerState<RecettesApp>
     WidgetsBinding.instance.addObserver(this);
     // Démarre la synchronisation si elle est activée.
     ref.read(syncControllerProvider);
+    // Une page partagée depuis le navigateur ouvre l'import.
+    SharedText.listen(_openShared);
+    SharedText.takeInitial().then((text) {
+      if (text != null) _openShared(text);
+    });
+  }
+
+  void _openShared(String text) {
+    final url = findUrl(text);
+    if (url == null) return;
+    _router.push(
+      Uri(
+        path: '/recettes/importer',
+        queryParameters: {'url': url.toString()},
+      ).toString(),
+    );
   }
 
   @override
