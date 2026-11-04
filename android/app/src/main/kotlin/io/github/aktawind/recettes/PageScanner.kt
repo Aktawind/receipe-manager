@@ -7,6 +7,7 @@ import com.google.android.gms.common.moduleinstall.InstallStatusListener
 import com.google.android.gms.common.moduleinstall.ModuleInstall
 import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.google.android.gms.common.moduleinstall.ModuleInstallStatusUpdate
+import com.google.mlkit.common.MlKitException
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanner
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
@@ -96,7 +97,7 @@ class PageScanner(private val activity: Activity) {
             .addOnFailureListener { e ->
                 if (!done) {
                     done = true
-                    result.error("download", e.message ?: e.javaClass.simpleName, null)
+                    result.error("download", describe(e), null)
                 }
             }
     }
@@ -109,20 +110,30 @@ class PageScanner(private val activity: Activity) {
                     activity.startIntentSenderForResult(sender, REQUEST_CODE, null, 0, 0, 0)
                 } catch (e: IntentSender.SendIntentException) {
                     pending = null
-                    result.error("start", e.message ?: "SendIntentException", null)
+                    result.error("start", describe(e), null)
                 }
             }
             .addOnFailureListener { e ->
-                result.error("unavailable", e.message ?: e.javaClass.simpleName, null)
+                result.error("unavailable", describe(e), null)
             }
+    }
+
+    /** Le type de l'erreur, son code ML Kit et son message : de quoi savoir ce qui bloque. */
+    private fun describe(e: Exception): String {
+        val code = (e as? MlKitException)?.errorCode?.let { " code $it" } ?: ""
+        return "${e.javaClass.simpleName}$code : ${e.message ?: "sans message"}"
     }
 
     /** Résultat du scanner : les images des pages, ou `null` si on a annulé. */
     fun onActivityResult(resultCode: Int, data: Intent?) {
         val result = pending ?: return
         pending = null
-        if (resultCode != Activity.RESULT_OK) {
+        if (resultCode == Activity.RESULT_CANCELED) {
             result.success(null)
+            return
+        }
+        if (resultCode != Activity.RESULT_OK) {
+            result.error("result", "Le scanner a répondu $resultCode", null)
             return
         }
         val scanned = GmsDocumentScanningResult.fromActivityResultIntent(data)

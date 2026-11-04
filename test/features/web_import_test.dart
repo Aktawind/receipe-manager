@@ -56,6 +56,14 @@ class FakeScanner implements PageScanner {
     return ['page1.jpg'];
   }
 
+  var picks = <bool>[];
+
+  @override
+  Future<List<String>?> pick({required bool camera}) async {
+    picks.add(camera);
+    return ['photo.jpg'];
+  }
+
   @override
   Future<String> read(List<String> images) async {
     if (error != null) throw PageScanException(error!);
@@ -287,6 +295,39 @@ Cuire 25 minutes à 180 °C.''');
     expect(find.textContaining('Aucun texte lisible'), findsOneWidget);
   });
 
+  testWidgets('scanner indisponible : une image de la galerie, lue pareil', (
+    tester,
+  ) async {
+    usePhoneSize(tester);
+    final scanner = _UnavailableScanner();
+    final app = (await tester.runAsync(
+      () => TestApp.create(
+        overrides: [pageScannerProvider.overrideWithValue(scanner)],
+      ),
+    ))!;
+    await app.pump(tester);
+    await tester.tap(find.byKey(const ValueKey('web-import-open')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('import-mode-photo')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('photo-import-scan')));
+    await tester.runAsync(
+      () => Future.delayed(const Duration(milliseconds: 50)),
+    );
+    await settle(tester);
+    expect(find.textContaining('MlKitException code 13'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('photo-import-gallery')));
+    await tester.runAsync(
+      () => Future.delayed(const Duration(milliseconds: 50)),
+    );
+    await settle(tester);
+    final field = tester.widget<TextField>(
+      find.byKey(const ValueKey('text-import-field')),
+    );
+    expect(field.controller!.text, contains('200 g de farine'));
+  });
+
   test('texte partagé : recette ou adresse', () {
     expect(looksLikeRecipeText('https://www.marmiton.org/x'), isFalse);
     expect(
@@ -349,4 +390,15 @@ Cuire 25 minutes à 180 °C.''');
       ),
     );
   });
+}
+
+class _UnavailableScanner extends FakeScanner {
+  _UnavailableScanner()
+    : super('Crêpes\nIngrédients\n200 g de farine\nPréparation\nMélanger.');
+
+  @override
+  Future<List<String>?> scan() async => throw const PageScanException(
+    PageScanError.unavailable,
+    'unavailable : MlKitException code 13 : Erreur',
+  );
 }

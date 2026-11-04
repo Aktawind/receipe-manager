@@ -308,6 +308,10 @@ se recadre sur la page scannée **ou** se prend à part ; le scanner de pages de
   coupées par la largeur de la page, mots coupés, « l00 g », « 2O cl », titres en capitales),
   puis le texte dans l'onglet « Texte » pour le corriger, et la même analyse que pour un texte
   collé.
+  Retour du 2026-11-04 (Galaxy Tab S9) : le scanner ne s'ouvrait pas. Il est désormais appelé
+  directement (`PageScanner.kt` : téléchargement du module à la demande, erreur détaillée), et
+  « Prendre une photo » / « Choisir une image » (sélecteur d'images d'Android) lisent le texte
+  sans passer par le scanner.
 - **Étape 2** : mise en page en colonnes (ingrédients à côté de la préparation), photo de la
   recette recadrée sur la page ou prise à part.
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:image_picker/image_picker.dart';
 
 /// Pourquoi une page n'a pas pu être lue.
 ///
@@ -33,6 +34,10 @@ abstract class PageScanner {
   /// la galerie) ; renvoie les images des pages, `null` si on annule.
   Future<List<String>?> scan();
 
+  /// Sans le scanner de Google : une photo prise avec l'appareil photo, ou une
+  /// ou plusieurs images de la galerie ; `null` si on annule.
+  Future<List<String>?> pick({required bool camera});
+
   /// Le texte des pages, dans l'ordre.
   Future<String> read(List<String> images);
 }
@@ -57,6 +62,26 @@ class MlKitPageScanner implements PageScanner {
     } on MissingPluginException catch (e) {
       throw PageScanException(PageScanError.unavailable, '$e');
     }
+  }
+
+  @override
+  Future<List<String>?> pick({required bool camera}) async {
+    final picker = ImagePicker();
+    // Assez de détails pour lire le texte, sans garder une photo énorme.
+    const maxSide = 3000.0;
+    if (camera) {
+      final photo = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: maxSide,
+        maxHeight: maxSide,
+      );
+      return photo == null ? null : [photo.path];
+    }
+    final images = await picker.pickMultiImage(
+      maxWidth: maxSide,
+      maxHeight: maxSide,
+    );
+    return images.isEmpty ? null : [for (final image in images) image.path];
   }
 
   @override
