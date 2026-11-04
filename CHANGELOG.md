@@ -2,6 +2,9 @@
 
 Le détail de chaque version (avec sa checklist de test) est dans [docs/releases](docs/releases).
 
+## v0.8.0 — Import depuis Internet et depuis du texte
+Importer une recette depuis une page web (partage depuis le navigateur ou adresse collée : titre, photo, ingrédients, étapes, temps, portions) ou depuis un texte collé, notamment une réponse d'IA (titre, rubriques, astuces, image), avec aperçu puis correction dans l'éditeur.
+
 ## v0.7.0 — Mode cuisine
 Mode cuisine depuis la fiche : écran toujours allumé, ingrédients et préparation en grand (taille réglable), minuteurs lancés depuis les étapes, plusieurs à la fois, avec sonnerie même application fermée.
 

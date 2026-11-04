@@ -15,7 +15,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.5](#05--recherche-et-filtres) | Recherche et filtres | ✅ |
 | [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ✅ |
 | [0.7](#07--mode-cuisine) | Mode cuisine | ✅ |
-| [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | 🟨 |
+| [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ✅ |
 | [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ⬜ |
 | [0.10](#010--listes-de-courses) | Listes de courses | ⬜ |
 | [0.11](#011--planning-des-repas) | Planning des repas | ⬜ |
@@ -276,7 +276,7 @@ des doublons.
   source, puis l'éditeur pour corriger ; message clair si le site est injoignable, refuse la page
   ou n'a pas de recette lisible, avec « Saisir la recette à la main ». Partage reçu par un canal
   Android maison (`MainActivity`, activité en `singleTask`), sans plugin.
-- **Étape 2 (à tester)** : coller le texte d'une recette entière, surtout les réponses d'IA
+- **Étape 2 (validée le 2026-11-04, après deux retours sur de vraies réponses d'IA)** : coller le texte d'une recette entière, surtout les réponses d'IA
   (Markdown, emojis, phrase d'introduction) : titre, description, personnes (ou pièces), temps de
   préparation et de cuisson, ingrédients avec leurs groupes, étapes avec leurs parties, astuces
   dans les notes ; sans rubriques, les lignes avec une quantité deviennent des ingrédients. Le
