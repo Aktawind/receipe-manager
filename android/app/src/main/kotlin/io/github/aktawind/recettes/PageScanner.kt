@@ -22,6 +22,9 @@ import io.flutter.plugin.common.MethodChannel
  * renvoyées avec leur message, pour qu'on sache ce qui bloque.
  */
 class PageScanner(private val activity: Activity) {
+    /** Prévient l'app de l'avancement : « download:45 », « opening ». */
+    var onStatus: ((String) -> Unit)? = null
+
     companion object {
         const val REQUEST_CODE = 0x5ca7
     }
@@ -33,6 +36,16 @@ class PageScanner(private val activity: Activity) {
             result.error("busy", "Un scan est déjà en cours", null)
             return
         }
+        // Une exception imprévue (sans message) arrivait côté app comme un simple « error » :
+        // on la rattrape pour en dire le type et l'endroit.
+        try {
+            start(pageLimit, result)
+        } catch (e: Exception) {
+            result.error("crash", describe(e), null)
+        }
+    }
+
+    private fun start(pageLimit: Int, result: MethodChannel.Result) {
         val options = GmsDocumentScannerOptions.Builder()
             .setGalleryImportAllowed(true)
             .setPageLimit(pageLimit)
@@ -54,10 +67,18 @@ class PageScanner(private val activity: Activity) {
     }
 
     private fun install(scanner: GmsDocumentScanner, result: MethodChannel.Result) {
+        onStatus?.invoke("download:0")
         val modules = ModuleInstall.getClient(activity)
         var done = false
         val listener = object : InstallStatusListener {
             override fun onInstallStatusUpdated(update: ModuleInstallStatusUpdate) {
+                update.progressInfo?.let { progress ->
+                    if (progress.totalBytesToDownload > 0) {
+                        val percent =
+                            (100 * progress.bytesDownloaded / progress.totalBytesToDownload).toInt()
+                        onStatus?.invoke("download:$percent")
+                    }
+                }
                 when (update.installState) {
                     ModuleInstallStatusUpdate.InstallState.STATE_COMPLETED -> {
                         modules.unregisterListener(this)
@@ -103,6 +124,7 @@ class PageScanner(private val activity: Activity) {
     }
 
     private fun launch(scanner: GmsDocumentScanner, result: MethodChannel.Result) {
+        onStatus?.invoke("opening")
         scanner.getStartScanIntent(activity)
             .addOnSuccessListener { sender ->
                 pending = result
@@ -121,7 +143,9 @@ class PageScanner(private val activity: Activity) {
     /** Le type de l'erreur, son code ML Kit et son message : de quoi savoir ce qui bloque. */
     private fun describe(e: Exception): String {
         val code = (e as? MlKitException)?.errorCode?.let { " code $it" } ?: ""
-        return "${e.javaClass.simpleName}$code : ${e.message ?: "sans message"}"
+        val where = e.stackTrace.take(2).joinToString(" < ") { "${it.className}.${it.methodName}" }
+        val cause = e.cause?.let { " (cause : ${it.javaClass.simpleName} ${it.message ?: ""})" } ?: ""
+        return "${e.javaClass.name}$code : ${e.message ?: "sans message"}$cause — $where"
     }
 
     /** Résultat du scanner : les images des pages, ou `null` si on a annulé. */

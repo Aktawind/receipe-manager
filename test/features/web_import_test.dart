@@ -51,7 +51,7 @@ class FakeScanner implements PageScanner {
   var scans = 0;
 
   @override
-  Future<List<String>?> scan() async {
+  Future<List<String>?> scan({void Function(int? percent)? onDownload}) async {
     scans++;
     return ['page1.jpg'];
   }
@@ -397,8 +397,9 @@ class _UnavailableScanner extends FakeScanner {
     : super('Crêpes\nIngrédients\n200 g de farine\nPréparation\nMélanger.');
 
   @override
-  Future<List<String>?> scan() async => throw const PageScanException(
-    PageScanError.unavailable,
-    'unavailable : MlKitException code 13 : Erreur',
-  );
+  Future<List<String>?> scan({void Function(int? percent)? onDownload}) async =>
+      throw const PageScanException(
+        PageScanError.unavailable,
+        'unavailable : MlKitException code 13 : Erreur',
+      );
 }

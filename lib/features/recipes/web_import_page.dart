@@ -48,6 +48,11 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
   var _textMode = false;
   var _photoMode = false;
   var _scanning = false;
+
+  /// Le scanner de Google s'ouvre (ou se télécharge), avec l'avancement du
+  /// téléchargement s'il y en a un.
+  var _opening = false;
+  int? _downloadPercent;
   PageScanError? _scanError;
   var _scanErrorDetail = '';
   var _loading = false;
@@ -109,18 +114,19 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
       _recipe = null;
       _error = null;
     });
-    if (camera == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).photoImportOpening),
-          persist: false,
-        ),
-      );
-    }
+    setState(() {
+      _opening = camera == null;
+      _downloadPercent = null;
+    });
     try {
       final images = camera == null
-          ? await scanner.scan()
+          ? await scanner.scan(
+              onDownload: (percent) {
+                if (mounted) setState(() => _downloadPercent = percent);
+              },
+            )
           : await scanner.pick(camera: camera);
+      if (mounted) setState(() => _opening = false);
       if (images == null || !mounted) return;
       setState(() => _scanning = true);
       final text = OcrText.clean(await scanner.read(images));
@@ -136,6 +142,7 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
       if (mounted) {
         setState(() {
           _scanning = false;
+          _opening = false;
           _scanError = e.error;
           _scanErrorDetail = e.detail;
         });
@@ -331,6 +338,24 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
                 ),
               ],
             ),
+            if (_opening)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  key: const ValueKey('photo-import-opening'),
+                  children: [
+                    if (_downloadPercent case final percent?) ...[
+                      LinearProgressIndicator(value: percent / 100),
+                      const SizedBox(height: 8),
+                      Text(l10n.photoImportDownloading(percent)),
+                    ] else ...[
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 8),
+                      Text(l10n.photoImportOpeningShort),
+                    ],
+                  ],
+                ),
+              ),
             if (_scanning)
               Padding(
                 padding: const EdgeInsets.all(24),
