@@ -830,5 +830,39 @@
   "textSizeSmall": "Petit",
   "textSizeMedium": "Moyen",
   "textSizeLarge": "Grand",
-  "textSizeExtraLarge": "Très grand"
+  "textSizeExtraLarge": "Très grand",
+  "webImportTitle": "Importer une recette",
+  "webImportMenu": "Importer une recette",
+  "webImportUrl": "Adresse de la page",
+  "webImportPaste": "Coller",
+  "webImportRead": "Lire la recette",
+  "webImportHelp": "Astuce : depuis le navigateur, « Partager » puis « Recettes » ouvre directement cet écran.",
+  "webImportSave": "Importer la recette",
+  "webImportByHand": "Saisir la recette à la main",
+  "webImportInvalidUrl": "Ce n’est pas une adresse de page web (elle commence par https://).",
+  "webImportNetwork": "Impossible de joindre le site. Vérifie la connexion, puis réessaie.",
+  "webImportHttp": "Le site a refusé d’envoyer la page (page introuvable ou protégée).",
+  "webImportNoRecipe": "Aucune recette lisible sur cette page. Copie le texte de la recette et colle-le dans une nouvelle recette.",
+  "webImportIngredientsCount": "{count, plural, =0{Aucun ingrédient trouvé} =1{1 ingrédient} other{{count} ingrédients}}",
+  "@webImportIngredientsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "webImportStepsCount": "{count, plural, =0{Aucune étape trouvée} =1{1 étape} other{{count} étapes}}",
+  "@webImportStepsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importModeWeb": "Page web",
+  "importModeText": "Texte",
+  "textImportField": "Texte de la recette",
+  "textImportRead": "Analyser le texte",
+  "textImportHelp": "Colle une recette entière : réponse d’une IA, message, document. Titre, personnes, temps, ingrédients, étapes et astuces sont repérés ; tu corriges ensuite dans l’éditeur.",
+  "textImportNothing": "Je ne trouve ni ingrédients ni étapes dans ce texte. Vérifie qu’il contient bien la recette, ou saisis-la à la main."
 }

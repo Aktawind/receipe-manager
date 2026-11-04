@@ -117,6 +117,12 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
             ),
             onPressed: () => _showFilterSheet(context),
           ),
+          IconButton(
+            key: const ValueKey('web-import-open'),
+            tooltip: l10n.webImportMenu,
+            icon: const Icon(Icons.add_link),
+            onPressed: () => context.push('/recettes/importer'),
+          ),
           const _DisplayMenu(),
         ],
       ),
