@@ -278,7 +278,7 @@ void main() {
       expect(find.text('Boissons'), findsOneWidget);
       expect(find.text('Autres'), findsNothing);
       final memory = (await tester.runAsync(
-        () => app.services.shopping.getAllProductAisles(),
+        app.services.shopping.getAllProductAisles,
       ))!;
       expect(memory.single.key, 'kombucha');
 
