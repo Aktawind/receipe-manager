@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -200,7 +202,7 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
     if (!mounted) return;
     // La fiche, puis l'éditeur par-dessus pour corriger ce qui doit l'être.
     context.go('/recettes/${saved.id}');
-    context.push('/recettes/${saved.id}/modifier');
+    unawaited(context.push('/recettes/${saved.id}/modifier'));
   }
 
   /// Le site ne donne rien de lisible : on crée la recette à la main, avec
@@ -553,7 +555,6 @@ class _Preview extends StatelessWidget {
               child: Image.network(
                 image.toString(),
                 fit: BoxFit.cover,
-                alignment: Alignment.center,
                 errorBuilder: (context, error, stack) => ColoredBox(
                   color: theme.colorScheme.surfaceContainerHighest,
                   child: const Icon(Icons.image_not_supported_outlined),

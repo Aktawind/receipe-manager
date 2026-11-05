@@ -43,7 +43,7 @@ void main() {
       ]);
       batch.insert(
         oldDb.ingredients,
-        v1.IngredientsData(
+        const v1.IngredientsData(
           id: 'i1',
           recipeId: 'both',
           position: 0,
@@ -56,13 +56,13 @@ void main() {
         ),
       );
       batch.insertAll(oldDb.recipeSteps, [
-        v1.RecipeStepsData(
+        const v1.RecipeStepsData(
           id: 's1',
           recipeId: 'both',
           position: 0,
           body: 'Mélanger.',
         ),
-        v1.RecipeStepsData(
+        const v1.RecipeStepsData(
           id: 's2',
           recipeId: 'both',
           position: 1,
@@ -94,7 +94,9 @@ void main() {
     // Après la migration, on peut écrire des titres d'étapes.
     final saved = await repo.save(
       both.copyWith(
-        steps: [RecipeStep(id: 's1', title: 'Biscuit', text: 'Mélanger.')],
+        steps: [
+          const RecipeStep(id: 's1', title: 'Biscuit', text: 'Mélanger.'),
+        ],
       ),
     );
     expect((await repo.getRecipe('both'))!.steps.single.title, 'Biscuit');

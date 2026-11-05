@@ -155,9 +155,7 @@ void main() {
 
     await goBack(tester);
     final saved = (await tester.runAsync(() => repo.getRecipe(ids.$2)))!;
-    final catalog = (await tester.runAsync(
-      () => app.services.equipment.getAll(),
-    ))!;
+    final catalog = (await tester.runAsync(app.services.equipment.getAll))!;
     final moule = catalog.firstWhere((e) => e.name == 'Moule');
     expect(saved.equipmentIds, [rouleau.id, moule.id]);
     expect(saved.steps.single.text, 'Cuire **longtemps**');

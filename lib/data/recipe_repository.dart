@@ -415,7 +415,6 @@ class RecipeRepository {
     isFavorite: row.isFavorite,
     rating: row.rating,
     status: RecipeStatus.fromCode(row.status),
-    labelIds: const [],
     lastViewedAt: row.lastViewedAt,
     videoLinks: _lines(row.videoLinks),
     createdAt: row.createdAt,

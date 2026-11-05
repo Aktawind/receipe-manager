@@ -10,10 +10,10 @@ import 'package:path/path.dart' as p;
 
 import '../../core/settings/theme_mode_controller.dart';
 import '../../data/app_services.dart';
+import '../../data/sync/background_sync.dart';
 import '../../data/sync/drive_auth.dart';
 import '../../data/sync/drive_backup.dart';
 import '../../data/sync/drive_remote.dart';
-import '../../data/sync/background_sync.dart';
 import '../../data/sync/sync_engine.dart';
 import '../../data/sync/sync_gate.dart';
 import '../../data/sync/sync_prefs.dart';

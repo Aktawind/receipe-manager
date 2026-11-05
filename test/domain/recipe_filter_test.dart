@@ -3,7 +3,7 @@ import 'package:recettes/domain/label.dart';
 import 'package:recettes/domain/recipe.dart';
 import 'package:recettes/domain/recipe_filter.dart';
 
-final _date = DateTime(2026, 1, 1);
+final _date = DateTime(2026);
 
 Recipe recipe(
   String id, {
@@ -42,8 +42,8 @@ void main() {
   final recipes = [
     recipe('Crêpes', favorite: true, prep: 10, cook: 20, rating: 4),
     recipe('Gratin', prep: 20, cook: 60, status: RecipeStatus.toTest),
-    recipe('Salade', prep: 10, rating: 5, viewed: DateTime(2026, 3, 1)),
-    recipe('Tarte', rating: 3, viewed: DateTime(2026, 2, 1)),
+    recipe('Salade', prep: 10, rating: 5, viewed: DateTime(2026, 3)),
+    recipe('Tarte', rating: 3, viewed: DateTime(2026, 2)),
   ];
 
   test('sans filtre : toutes, par titre', () {

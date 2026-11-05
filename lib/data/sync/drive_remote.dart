@@ -72,8 +72,7 @@ class DriveRemote implements DriveFolder {
     final stored = await cache.read(_foldersKey);
     if (stored != null && stored.isNotEmpty) {
       final decoded = (jsonDecode(stored) as Map).cast<String, String>();
-      if (decoded.containsKey('') &&
-          subfolders.every((name) => decoded.containsKey(name))) {
+      if (decoded.containsKey('') && subfolders.every(decoded.containsKey)) {
         return _folders = decoded;
       }
     }

@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/format/text_search.dart';
@@ -72,12 +72,12 @@ class Label {
 
   Label copyWith({
     String? name,
-    ValueGetter<String?>? parentId,
+    String? Function()? parentId,
     String? icon,
     String? color,
     int? position,
     DateTime? updatedAt,
-    ValueGetter<DateTime?>? deletedAt,
+    DateTime? Function()? deletedAt,
   }) => Label(
     id: id,
     kind: kind,
