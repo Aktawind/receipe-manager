@@ -208,7 +208,7 @@ void main() {
     expect(find.text('1 produit à acheter'), findsOneWidget);
     await tester.tap(find.text('Semaine'));
     await settle(tester);
-    expect(find.text('pour : Quiche, Crêpes'), findsOneWidget);
+    expect(find.text('Quiche, Crêpes'), findsOneWidget);
   });
 
   testWidgets('réutiliser une liste : mêmes produits, tous à acheter', (
@@ -238,4 +238,59 @@ void main() {
     expect(copy.items.single.name, 'Lait');
     expect(copy.items.single.checked, isFalse);
   });
+
+  testWidgets(
+    'les produits sont rangés par rayon ; un rayon choisi est retenu',
+    (tester) async {
+      usePhoneSize(tester);
+      final app = (await tester.runAsync(TestApp.create))!;
+      await app.pump(tester);
+      await _openNewList(tester, 'Semaine');
+      await _type(tester, 'tomates');
+      await _type(tester, 'beurre');
+      await _type(tester, 'sauce soja');
+      await _type(tester, 'kombucha');
+      expect(find.text('Fruits et légumes'), findsOneWidget);
+      expect(find.text('Produits frais'), findsOneWidget);
+      expect(find.text('Épicerie salée'), findsOneWidget);
+      expect(find.text('Autres'), findsOneWidget);
+      // Dans l'ordre des rayons.
+      final y = {
+        for (final name in [
+          'Fruits et légumes',
+          'Produits frais',
+          'Épicerie salée',
+          'Autres',
+        ])
+          name: tester.getTopLeft(find.text(name)).dy,
+      };
+      expect(y.values.toList(), [...y.values]..sort());
+
+      // Kombucha → Boissons, à la main : retenu pour la prochaine fois.
+      await tester.tap(find.textContaining('Kombucha', findRichText: true));
+      await settle(tester);
+      await tester.tap(find.byKey(const ValueKey('shopping-item-aisle')));
+      await settle(tester);
+      await tester.tap(find.text('Boissons').last);
+      await settle(tester);
+      await tester.tap(find.byKey(const ValueKey('shopping-item-save')));
+      await settle(tester);
+      expect(find.text('Boissons'), findsOneWidget);
+      expect(find.text('Autres'), findsNothing);
+      final memory = (await tester.runAsync(
+        app.services.shopping.getAllProductAisles,
+      ))!;
+      expect(memory.single.key, 'kombucha');
+
+      // Une autre liste : le kombucha retourne dans Boissons.
+      await goBack(tester);
+      await tester.tap(find.byKey(const ValueKey('shopping-new-list')));
+      await settle(tester);
+      await tester.enterText(find.byType(TextField).last, 'Fête');
+      await tester.tap(find.text('Valider'));
+      await settle(tester);
+      await _type(tester, 'Kombuchas');
+      expect(find.text('Boissons'), findsOneWidget);
+    },
+  );
 }

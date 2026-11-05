@@ -18,3 +18,13 @@ final knownProductsProvider = FutureProvider<List<String>>((ref) {
   ref.watch(shoppingListsProvider);
   return ref.watch(shoppingRepositoryProvider).knownProducts();
 });
+
+/// Les rayons, dans l'ordre choisi.
+final aislesProvider = StreamProvider<List<Aisle>>(
+  (ref) => ref.watch(shoppingRepositoryProvider).watchAisles(),
+);
+
+/// Le rayon retenu pour chaque produit (clé du produit → rayon).
+final productAislesProvider = StreamProvider<Map<String, String>>(
+  (ref) => ref.watch(shoppingRepositoryProvider).watchProductAisles(),
+);

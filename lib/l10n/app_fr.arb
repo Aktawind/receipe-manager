@@ -987,12 +987,6 @@
       "count": {"type": "int"}
     }
   },
-  "productForRecipes": "pour : {titles}",
-  "@productForRecipes": {
-    "placeholders": {
-      "titles": {"type": "String"}
-    }
-  },
   "productToBuyLine": "j'achète : {text}",
   "@productToBuyLine": {
     "placeholders": {
@@ -1008,6 +1002,20 @@
   "productFormat": "Format",
   "productFormatHint": "bouteille de 1 L, bio…",
   "productNote": "Commentaire",
+  "productAisle": "Rayon",
+  "noAisle": "Sans rayon",
+  "aislesTitle": "Rayons",
+  "aislesSubtitle": "Les rayons des listes de courses, dans l'ordre de ton parcours",
+  "addAisle": "Ajouter un rayon",
+  "aisleName": "Nom du rayon",
+  "renameAisle": "Renommer le rayon",
+  "deleteAisleConfirm": "Supprimer le rayon « {name} » ? Ses produits iront dans un autre rayon ou dans « Sans rayon ».",
+  "@deleteAisleConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "aislesHint": "Glisse ☰ pour changer l'ordre. Un produit rangé à la main dans un rayon y retourne ensuite.",
   "removeProduct": "Retirer de la liste",
   "save": "Enregistrer",
   "moveProduct": "Déplacer"

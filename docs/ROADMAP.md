@@ -348,11 +348,14 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   glisser pour retirer. Base v10, sauvegarde v9, synchro Drive des listes et des rayons.
   Retour du 2026-11-05 : la dictée en une phrase sépare mal les produits → **dictée continue** (le
   micro reste ouvert, une phrase = un produit, jusqu'à « Arrêter »).
-- **Étape 2 (à tester)** : 🛒 « Ajouter aux courses » sur la fiche d'une recette (avec les portions
+- **Étape 2 (validée le 2026-11-05)** : 🛒 « Ajouter aux courses » sur la fiche d'une recette (avec les portions
   affichées) et « Ajouter des recettes » depuis une liste (plusieurs d'un coup) : personnes par
   recette, ingrédients à cocher (sel, poivre, eau et facultatifs décochés), recettes liées
   dépliées en proportion, fusion avec la liste, recettes d'origine.
-- **Étape 3** : rayons (rangement automatique, réglages, mémoire par produit).
+- **Étape 3 (à tester)** : la liste est rangée **par rayon**, dans l'ordre choisi dans Réglages →
+  Rayons (ajouter, renommer, réordonner, supprimer) ; chaque produit va dans le rayon choisi à la
+  main pour lui (retenu, pluriel compris), sinon celui d'un dictionnaire de produits courants,
+  sinon « Autres ». Retour du 2026-11-05 : lignes plus compactes, recette d'origine sans « pour : ».
 - **Étape 4** : partage en texte, PDF et impression sur une page A4.
 
 ## 0.11 — Planning des repas
