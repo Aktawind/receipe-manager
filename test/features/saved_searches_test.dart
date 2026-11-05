@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/domain/recipe.dart';
-import 'package:recettes/features/recipes/recipe_providers.dart';
+import 'package:recettes/domain/recipe_filter.dart';
 import 'package:recettes/features/recipes/saved_searches.dart';
 
 import '../helpers/test_app.dart';
