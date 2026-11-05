@@ -35,6 +35,7 @@ abstract final class TextRecipeParser {
     int? prep;
     int? cook;
     int? total;
+    int? rest;
 
     var section = _Section.intro;
     var sawSection = false;
@@ -60,6 +61,7 @@ abstract final class TextRecipeParser {
         prep ??= times[_Time.prep];
         cook ??= times[_Time.cook];
         total ??= times[_Time.total];
+        if (times[_Time.rest] case final r?) rest = (rest ?? 0) + r;
       }
 
       // Les phrases de conclusion d'une IA (« Bon appétit ! Veux-tu… ? »).
@@ -156,6 +158,7 @@ abstract final class TextRecipeParser {
       prepMinutes: prep,
       cookMinutes: cook,
       totalMinutes: total,
+      rest: rest,
       notes: notes.join('\n'),
     );
   }
@@ -317,6 +320,21 @@ abstract final class TextRecipeParser {
   /// « Pour 4 personnes », « 6 parts », « Portions : 4 », « 24 biscuits ».
   static (int, String)? _servings(String line) {
     final text = normalizeForSearch(line);
+    // « Pour 4 à 6 tartelettes » : des pièces, pas des personnes.
+    final range = RegExp(
+      r'pour\s+(?:environ\s+)?(\d+)\s*(?:a|-|ou)\s*\d+\s+([a-z]+)',
+    ).firstMatch(text);
+    if (range != null &&
+        !RegExp(r'^(personnes?|pers|portions?|parts?|couverts?)$')
+            .hasMatch(range.group(2)!)) {
+      final word = line
+          .split(RegExp(r'\s+'))
+          .firstWhere(
+            (w) => normalizeForSearch(w) == range.group(2),
+            orElse: () => range.group(2)!,
+          );
+      return (int.parse(range.group(1)!), word.toLowerCase());
+    }
     final people = RegExp(
       r'(?:pour|portions?|parts?|personnes?|couverts?)\s*:?\s*(\d+)|(\d+)\s*(personnes?|pers\b|portions?|parts?|couverts?)',
     ).firstMatch(text);
@@ -342,7 +360,7 @@ abstract final class TextRecipeParser {
   static Map<_Time, int> _times(String line) {
     final result = <_Time, int>{};
     final text = normalizeForSearch(line);
-    for (final part in text.split(RegExp(r'[|•·–—,;/]|\s-\s'))) {
+    for (final part in text.split(RegExp(r'[|•·–—,;/@©®◎⊙○●]|\s-\s'))) {
       final durations = StepDurations.find(part);
       if (durations.isEmpty) continue;
       final minutes = durations.first.inMinutes;
@@ -350,8 +368,12 @@ abstract final class TextRecipeParser {
         result[_Time.prep] = minutes;
       } else if (RegExp(r'\bcuisson\b').hasMatch(part)) {
         result[_Time.cook] = minutes;
-      } else if (RegExp(r'\b(total|temps total)\b').hasMatch(part)) {
+      } else if (RegExp(r'\b(total|temps total|pret en)\b').hasMatch(part)) {
         result[_Time.total] = minutes;
+      } else if (RegExp(
+        r'\b(repos|refrigeration|attente|marinade|levee|pousse|congelation)\b',
+      ).hasMatch(part)) {
+        result[_Time.rest] = (result[_Time.rest] ?? 0) + minutes;
       }
     }
     return result;
@@ -364,11 +386,11 @@ abstract final class TextRecipeParser {
     return line.length <= 120 &&
         !RegExp(r'[.!?]\s+\p{Lu}', unicode: true).hasMatch(line) &&
         RegExp(
-          r'(preparation|cuisson|repos|total|temps|personnes?|portions?|parts?|pour \d|difficulte|quantite)',
+          r'(preparation|cuisson|repos|refrigeration|total|temps|pret en|personnes?|portions?|parts?|pour \d|difficulte|quantite)',
         ).hasMatch(text);
   }
 }
 
 enum _Section { intro, ingredients, steps, notes }
 
-enum _Time { prep, cook, total }
+enum _Time { prep, cook, total, rest }

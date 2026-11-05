@@ -10,7 +10,6 @@ import '../../data/import/text_recipe.dart';
 import '../../data/import/web_import.dart';
 import '../../data/import/web_recipe.dart';
 import '../../domain/ingredient_text.dart';
-import '../../domain/ocr_text.dart';
 import '../../domain/step_text.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -129,7 +128,7 @@ class _WebImportPageState extends ConsumerState<WebImportPage> {
       if (mounted) setState(() => _opening = false);
       if (images == null || !mounted) return;
       setState(() => _scanning = true);
-      final text = OcrText.clean(await scanner.read(images));
+      final text = await scanner.read(images);
       if (!mounted) return;
       setState(() {
         _scanning = false;
