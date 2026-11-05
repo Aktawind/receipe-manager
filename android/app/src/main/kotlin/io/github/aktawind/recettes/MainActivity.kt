@@ -85,6 +85,33 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        // Partager un texte, imprimer un PDF (listes de courses).
+        MethodChannel(messenger, "recettes/export").setMethodCallHandler { call, result ->
+            try {
+                when (call.method) {
+                    "shareText" -> {
+                        ExportActions.shareText(
+                            this,
+                            call.argument<String>("text") ?: "",
+                            call.argument<String>("subject") ?: "",
+                        )
+                        result.success(null)
+                    }
+                    "printPdf" -> {
+                        ExportActions.printPdf(
+                            this,
+                            call.argument<String>("path")!!,
+                            call.argument<String>("name") ?: "Liste",
+                        )
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            } catch (e: Exception) {
+                result.error("export", e.message, null)
+            }
+        }
+
         // Minuteurs : alarmes et notifications (TimerAlarms).
         MethodChannel(messenger, "recettes/timers").setMethodCallHandler { call, result ->
             when (call.method) {

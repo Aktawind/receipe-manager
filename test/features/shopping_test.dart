@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:recettes/core/platform/export_actions.dart';
 import 'package:recettes/core/platform/speech_input.dart';
 import 'package:recettes/domain/shopping.dart';
 
@@ -34,6 +36,25 @@ class _FakeSpeech implements SpeechInput {
   Future<void> stop() async {
     stopped = true;
     _onStop?.call(SpeechStop.user);
+  }
+}
+
+class _FakeExport implements ExportActions {
+  String? text;
+  String? subject;
+  Uint8List? pdf;
+  String? pdfName;
+
+  @override
+  Future<void> shareText(String text, {String subject = ''}) async {
+    this.text = text;
+    this.subject = subject;
+  }
+
+  @override
+  Future<void> printPdf(Uint8List pdf, {required String name}) async {
+    this.pdf = pdf;
+    pdfName = name;
   }
 }
 
@@ -301,4 +322,39 @@ void main() {
       expect(find.text('Boissons'), findsOneWidget);
     },
   );
+
+  testWidgets('partager la liste en texte, l’imprimer en PDF', (tester) async {
+    usePhoneSize(tester);
+    final export = _FakeExport();
+    final app = (await tester.runAsync(
+      () => TestApp.create(
+        overrides: [exportActionsProvider.overrideWithValue(export)],
+      ),
+    ))!;
+    await app.pump(tester);
+    await _openNewList(tester, 'Semaine');
+    await _type(tester, '2 kg de pommes de terre');
+    await _type(tester, 'beurre');
+
+    await tester.tap(find.byKey(const ValueKey('shopping-list-menu')));
+    await settle(tester);
+    await tester.tap(find.text('Partager la liste'));
+    await settle(tester);
+    expect(export.subject, 'Semaine');
+    expect(
+      export.text,
+      'Semaine\n\nFRUITS ET LÉGUMES\n- 2 kg Pommes de terre\n\n'
+      'PRODUITS FRAIS\n- Beurre',
+    );
+
+    await tester.tap(find.byKey(const ValueKey('shopping-list-menu')));
+    await settle(tester);
+    await tester.tap(find.text('Imprimer ou enregistrer en PDF'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await settle(tester);
+    expect(export.pdfName, 'Semaine');
+    expect(String.fromCharCodes(export.pdf!.take(4)), '%PDF');
+  });
 }

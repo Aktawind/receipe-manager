@@ -903,6 +903,8 @@
     }
   },
   "renameShoppingList": "Renommer la liste",
+  "shareShoppingList": "Partager la liste",
+  "printShoppingList": "Imprimer ou enregistrer en PDF",
   "reuseShoppingList": "Réutiliser la liste",
   "reuseShoppingListHint": "Une nouvelle liste avec les mêmes produits, tous à acheter",
   "reusedListName": "{name} (nouvelle)",
