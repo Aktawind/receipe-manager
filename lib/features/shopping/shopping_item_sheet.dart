@@ -9,14 +9,18 @@ typedef ShoppingItemEdit = ({ShoppingItem? item, bool removed});
 
 /// Modifier un produit : nom, quantité nécessaire, ce qu'on achète, format,
 /// commentaire. Renvoie `null` si on ferme sans enregistrer.
+/// [aisleId] : le rayon où le produit est rangé en ce moment.
 Future<ShoppingItemEdit?> showShoppingItemSheet(
   BuildContext context,
-  ShoppingItem item,
-) => showModalBottomSheet<ShoppingItemEdit>(
+  ShoppingItem item, {
+  List<Aisle> aisles = const [],
+  String? aisleId,
+}) => showModalBottomSheet<ShoppingItemEdit>(
   context: context,
   isScrollControlled: true,
   showDragHandle: true,
-  builder: (context) => _ItemSheet(item: item),
+  builder: (context) =>
+      _ItemSheet(item: item, aisles: aisles, aisleId: aisleId),
 );
 
 /// « 250 g », « 2 », « » → la quantité et l'unité d'un produit.
@@ -29,9 +33,15 @@ Future<ShoppingItemEdit?> showShoppingItemSheet(
 }
 
 class _ItemSheet extends StatefulWidget {
-  const _ItemSheet({required this.item});
+  const _ItemSheet({
+    required this.item,
+    required this.aisles,
+    required this.aisleId,
+  });
 
   final ShoppingItem item;
+  final List<Aisle> aisles;
+  final String? aisleId;
 
   @override
   State<_ItemSheet> createState() => _ItemSheetState();
@@ -43,6 +53,7 @@ class _ItemSheetState extends State<_ItemSheet> {
   late final _toBuy = TextEditingController(text: widget.item.toBuy);
   late final _format = TextEditingController(text: widget.item.format);
   late final _note = TextEditingController(text: widget.item.note);
+  late String? _aisleId = widget.aisleId;
 
   @override
   void dispose() {
@@ -64,6 +75,8 @@ class _ItemSheetState extends State<_ItemSheet> {
         toBuy: _toBuy.text.trim(),
         format: _format.text.trim(),
         note: _note.text.trim(),
+        aisleId: () =>
+            _aisleId == widget.aisleId ? widget.item.aisleId : _aisleId,
       ),
       removed: false,
     ));
@@ -129,6 +142,29 @@ class _ItemSheetState extends State<_ItemSheet> {
               hint: l10n.productFormatHint,
             ),
             field('note', _note, l10n.productNote),
+            if (widget.aisles.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DropdownButtonFormField<String>(
+                  key: const ValueKey('shopping-item-aisle'),
+                  initialValue: widget.aisles.any((a) => a.id == _aisleId)
+                      ? _aisleId
+                      : null,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: l10n.productAisle,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: [
+                    for (final aisle in widget.aisles)
+                      DropdownMenuItem(
+                        value: aisle.id,
+                        child: Text(aisle.name),
+                      ),
+                  ],
+                  onChanged: (id) => setState(() => _aisleId = id),
+                ),
+              ),
             // Côte à côte, ou l'un sous l'autre si la place manque.
             OverflowBar(
               alignment: MainAxisAlignment.spaceBetween,

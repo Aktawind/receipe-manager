@@ -271,6 +271,56 @@ class ShoppingRepository {
 
   // --- Rayon retenu pour chaque produit ---
 
+  /// Le rayon retenu pour chaque produit : clé du produit → rayon.
+  Stream<Map<String, String>> watchProductAisles() => _db
+      .select(_db.productAisles)
+      .watch()
+      .map((rows) => {for (final r in rows) r.key: r.aisleId});
+
+  /// Retient [aisleId] pour le produit [name] (et ses variantes au pluriel).
+  Future<void> rememberAisle(String name, String aisleId) => putProductAisle(
+    ProductAisle(
+      key: ShoppingProducts.keyOf(name),
+      aisleId: aisleId,
+      updatedAt: _clock(),
+    ),
+  );
+
+  Future<Aisle> createAisle(String name) async {
+    final now = _clock();
+    final existing = await getAllAisles();
+    final position = existing.isEmpty
+        ? 0
+        : existing.map((a) => a.position).reduce((a, b) => a > b ? a : b) + 1;
+    final aisle = Aisle(
+      id: _uuid.v4(),
+      name: name.trim(),
+      position: position,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await putAisle(aisle);
+    return aisle;
+  }
+
+  Future<void> renameAisle(Aisle aisle, String name) =>
+      putAisle(aisle.copyWith(name: name.trim(), updatedAt: _clock()));
+
+  Future<void> deleteAisle(Aisle aisle) {
+    final now = _clock();
+    return putAisle(aisle.copyWith(updatedAt: now, deletedAt: () => now));
+  }
+
+  /// Range les rayons dans l'ordre de [ordered].
+  Future<void> reorderAisles(List<Aisle> ordered) => _db.transaction(() async {
+    final now = _clock();
+    for (final (position, aisle) in ordered.indexed) {
+      if (aisle.position != position) {
+        await putAisle(aisle.copyWith(position: position, updatedAt: now));
+      }
+    }
+  });
+
   Future<List<ProductAisle>> getAllProductAisles() async => [
     for (final r in await _db.select(_db.productAisles).get())
       ProductAisle(key: r.key, aisleId: r.aisleId, updatedAt: r.updatedAt),

@@ -137,7 +137,7 @@ void main() {
     final farine = list.items.firstWhere((i) => i.name == 'Farine');
     expect(farine.amount, '500 g');
     expect(list.items.firstWhere((i) => i.name == 'Œufs').amount, '7');
-    expect(find.text('pour : Quiche, Crêpes'), findsWidgets);
+    expect(find.text('Quiche, Crêpes'), findsWidgets);
   });
 }
 

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/format/text_search.dart';
 import '../../core/platform/speech_input.dart';
 import '../../data/app_services.dart';
+import '../../domain/aisle_guess.dart';
+import '../../domain/default_aisles.dart';
 import '../../domain/shopping.dart';
 import '../../l10n/app_localizations.dart';
 import 'add_to_shopping_sheet.dart';
@@ -147,25 +149,45 @@ class _Items extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     ShoppingItem item,
+    String? aisleId,
   ) async {
-    final result = await showShoppingItemSheet(context, item);
-    if (result == null) return;
-    if (!context.mounted) return;
+    final aisles = ref.read(aislesProvider).value ?? const <Aisle>[];
+    final result = await showShoppingItemSheet(
+      context,
+      item,
+      aisles: aisles,
+      aisleId: aisleId,
+    );
+    if (result == null || !context.mounted) return;
     if (result.removed) {
       _remove(context, ref, item);
       return;
     }
+    final edited = result.item!;
+    // Rangé à la main : le produit retournera dans ce rayon.
+    if (edited.aisleId != null && edited.aisleId != aisleId) {
+      await ref
+          .read(shoppingRepositoryProvider)
+          .rememberAisle(edited.name, edited.aisleId!);
+    }
     await _saveItems(ref, list, [
       for (final i in list.items)
-        if (i.id == item.id) result.item! else i,
+        if (i.id == item.id) edited else i,
     ]);
   }
 
-  void _reorder(WidgetRef ref, int from, int to) {
-    final toBuy = [...list.toBuy];
-    final moved = toBuy.removeAt(from);
-    toBuy.insert(to, moved);
-    _saveItems(ref, list, [...toBuy, ...list.inCart]);
+  /// Déplace un produit au sein de son rayon ([group] : les produits à
+  /// acheter de ce rayon, dans l'ordre affiché).
+  void _reorder(WidgetRef ref, List<ShoppingItem> group, int from, int to) {
+    final reordered = [...group];
+    reordered.insert(to, reordered.removeAt(from));
+    // Les produits du rayon reprennent leurs places, dans le nouvel ordre.
+    final ids = {for (final i in group) i.id};
+    final queue = [...reordered];
+    _saveItems(ref, list, [
+      for (final i in list.items)
+        if (ids.contains(i.id)) queue.removeAt(0) else i,
+    ]);
   }
 
   @override
@@ -193,8 +215,28 @@ class _Items extends ConsumerWidget {
         ),
       );
     }
-    final toBuy = list.toBuy;
+    final aisles = ref.watch(aislesProvider).value ?? const <Aisle>[];
+    final memory = ref.watch(productAislesProvider).value ?? const {};
+    final aisleIds = {for (final a in aisles) a.id};
+    // Un produit inconnu va dans « Autres » (s'il existe encore).
+    final other = DefaultAisles.idFor('Autres');
+    String? aisleOf(ShoppingItem item) =>
+        AisleGuess.of(item, memory: memory, aisles: aisleIds) ??
+        (aisleIds.contains(other) ? other : null);
+
+    // Les produits à acheter, par rayon dans l'ordre des réglages ; ceux
+    // sans rayon à la fin.
+    final groups = <String?, List<ShoppingItem>>{};
+    for (final item in list.toBuy) {
+      (groups[aisleOf(item)] ??= []).add(item);
+    }
+    final ordered = <(String, String?, List<ShoppingItem>)>[
+      for (final aisle in aisles)
+        if (groups[aisle.id] case final items?) (aisle.name, aisle.id, items),
+      if (groups[null] case final items?) (l10n.noAisle, null, items),
+    ];
     final inCart = list.inCart;
+
     Widget row(ShoppingItem item, {int? index}) => Dismissible(
       key: ValueKey('dismiss-${item.id}'),
       direction: DismissDirection.endToStart,
@@ -212,51 +254,68 @@ class _Items extends ConsumerWidget {
         item: item,
         index: index,
         onToggle: () => _toggle(ref, item),
-        onEdit: () => _edit(context, ref, item),
+        onEdit: () => _edit(context, ref, item, aisleOf(item)),
+      ),
+    );
+
+    Widget header(String text, {Widget? trailing}) => Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 8, 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          ?trailing,
+        ],
       ),
     );
 
     return CustomScrollView(
       slivers: [
-        SliverReorderableList(
-          itemCount: toBuy.length,
-          onReorderItem: (from, to) => _reorder(ref, from, to),
-          itemBuilder: (context, index) => Material(
-            key: ValueKey(toBuy[index].id),
-            child: row(toBuy[index], index: index),
+        for (final (name, id, items) in ordered) ...[
+          SliverToBoxAdapter(
+            key: ValueKey('aisle-${id ?? 'other'}'),
+            child: header(name),
           ),
-        ),
-        if (inCart.isNotEmpty)
+          SliverReorderableList(
+            itemCount: items.length,
+            onReorderItem: (from, to) => _reorder(ref, items, from, to),
+            itemBuilder: (context, index) => Material(
+              key: ValueKey(items[index].id),
+              child: row(items[index], index: index),
+            ),
+          ),
+        ],
+        if (inCart.isNotEmpty) ...[
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.inCartSection(inCart.length),
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                  TextButton.icon(
-                    key: const ValueKey('shopping-remove-checked'),
-                    onPressed: () => _removeChecked(context, ref),
-                    icon: const Icon(Icons.remove_done),
-                    label: Text(l10n.removeChecked),
-                  ),
-                ],
+              padding: const EdgeInsets.only(top: 8),
+              child: header(
+                l10n.inCartSection(inCart.length),
+                trailing: TextButton.icon(
+                  key: const ValueKey('shopping-remove-checked'),
+                  onPressed: () => _removeChecked(context, ref),
+                  icon: const Icon(Icons.remove_done, size: 18),
+                  label: Text(l10n.removeChecked),
+                ),
               ),
             ),
           ),
-        SliverList.list(children: [for (final item in inCart) row(item)]),
+          SliverList.list(children: [for (final item in inCart) row(item)]),
+        ],
         const SliverToBoxAdapter(child: SizedBox(height: 16)),
       ],
     );
   }
 }
 
+/// Une ligne de la liste, compacte : case, quantité et nom ; en petit
+/// dessous, ce qu'on achète, le format, le commentaire et les recettes.
 class _ItemTile extends StatelessWidget {
   const _ItemTile({
     required this.item,
@@ -267,8 +326,8 @@ class _ItemTile extends StatelessWidget {
 
   final ShoppingItem item;
 
-  /// Sa place parmi les produits à acheter (poignée de déplacement) ;
-  /// `null` dans le panier.
+  /// Sa place dans son rayon (poignée de déplacement) ; `null` dans le
+  /// panier.
   final int? index;
   final VoidCallback onToggle;
   final VoidCallback onEdit;
@@ -290,52 +349,76 @@ class _ItemTile extends StatelessWidget {
     };
     final small = theme.textTheme.bodySmall?.copyWith(
       color: scheme.onSurfaceVariant,
+      height: 1.2,
     );
-    return ListTile(
+    return InkWell(
       key: ValueKey('shopping-item-${item.id}'),
-      contentPadding: const EdgeInsets.only(left: 4, right: 4),
-      leading: Checkbox(value: checked, onChanged: (_) => onToggle()),
-      title: Text.rich(
-        TextSpan(
+      onTap: onEdit,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 4, right: 4),
+        child: Row(
           children: [
-            if (item.amount.isNotEmpty)
-              TextSpan(
-                text: '${item.amount} ',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+            Checkbox(
+              value: checked,
+              onChanged: (_) => onToggle(),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          if (item.amount.isNotEmpty)
+                            TextSpan(
+                              text: '${item.amount} ',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          TextSpan(text: item.name),
+                        ],
+                      ),
+                      style: checked
+                          ? TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: scheme.onSurfaceVariant,
+                            )
+                          : theme.textTheme.bodyLarge,
+                    ),
+                    if (details.isNotEmpty)
+                      Text(details.join(' · '), style: small),
+                    if (recipes.isNotEmpty)
+                      Text(
+                        recipes.join(', '),
+                        style: small?.copyWith(fontStyle: FontStyle.italic),
+                      ),
+                  ],
+                ),
               ),
-            TextSpan(text: item.name),
+            ),
+            if (index != null)
+              ReorderableDragStartListener(
+                index: index!,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Icon(
+                    Icons.drag_handle,
+                    size: 20,
+                    color: scheme.onSurfaceVariant,
+                    semanticLabel: l10n.moveProduct,
+                  ),
+                ),
+              ),
           ],
         ),
-        style: checked
-            ? TextStyle(
-                decoration: TextDecoration.lineThrough,
-                color: scheme.onSurfaceVariant,
-              )
-            : null,
       ),
-      subtitle: details.isEmpty && recipes.isEmpty
-          ? null
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (details.isNotEmpty) Text(details.join(' · '), style: small),
-                if (recipes.isNotEmpty)
-                  Text(
-                    l10n.productForRecipes(recipes.join(', ')),
-                    style: small?.copyWith(fontStyle: FontStyle.italic),
-                  ),
-              ],
-            ),
-      onTap: onEdit,
-      trailing: index == null
-          ? null
-          : ReorderableDragStartListener(
-              index: index!,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Icon(Icons.drag_handle, semanticLabel: l10n.moveProduct),
-              ),
-            ),
     );
   }
 }
