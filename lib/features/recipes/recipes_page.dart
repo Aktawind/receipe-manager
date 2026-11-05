@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/format/durations.dart';
 import '../../data/app_services.dart';
+import '../../domain/recipe_filter.dart';
 import '../../domain/label.dart';
 import '../../domain/recipe.dart';
 import '../../l10n/app_localizations.dart';
