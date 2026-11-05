@@ -8,10 +8,12 @@ import '../../core/format/text_search.dart';
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
 import '../../domain/recipe.dart';
+import '../../domain/shopping.dart';
 import '../equipment_repository.dart';
 import '../label_repository.dart';
 import '../photo_store.dart';
 import '../recipe_repository.dart';
+import '../shopping_repository.dart';
 import 'backup_format.dart';
 
 enum ImportMode {
@@ -35,9 +37,17 @@ class BackupContents {
     this.photos, {
     this.equipment = const [],
     this.labels = const [],
+    this.shoppingLists = const [],
+    this.aisles = const [],
+    this.productAisles = const [],
   });
 
   final List<Recipe> recipes;
+
+  /// Les listes de courses, les rayons et le rayon retenu pour les produits.
+  final List<ShoppingList> shoppingLists;
+  final List<Aisle> aisles;
+  final List<ProductAisle> productAisles;
 
   /// La liste commune du matériel.
   final List<EquipmentItem> equipment;
@@ -89,6 +99,7 @@ class BackupService {
     required this.repository,
     required this.equipment,
     required this.labels,
+    required this.shopping,
     required this.photos,
     required this.backupsDirectory,
     required this.appVersion,
@@ -98,6 +109,7 @@ class BackupService {
   final RecipeRepository repository;
   final EquipmentRepository equipment;
   final LabelRepository labels;
+  final ShoppingRepository shopping;
   final PhotoStore photos;
   final Directory backupsDirectory;
   final String appVersion;
@@ -115,6 +127,9 @@ class BackupService {
         recipes,
         equipment: await equipment.getAll(),
         labels: await labels.getAll(),
+        shoppingLists: await shopping.getAllLists(),
+        aisles: await shopping.getAllAisles(),
+        productAisles: await shopping.getAllProductAisles(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -141,6 +156,9 @@ class BackupService {
         await repository.getAllWithDetails(),
         equipment: await equipment.getAll(),
         labels: await labels.getAll(),
+        shoppingLists: await shopping.getAllLists(),
+        aisles: await shopping.getAllAisles(),
+        productAisles: await shopping.getAllProductAisles(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -162,6 +180,9 @@ class BackupService {
       const {},
       equipment: decoded.equipment,
       labels: decoded.labels,
+      shoppingLists: decoded.shoppingLists,
+      aisles: decoded.aisles,
+      productAisles: decoded.productAisles,
     );
   }
 
@@ -210,6 +231,9 @@ class BackupService {
       photoFiles,
       equipment: decoded.equipment,
       labels: decoded.labels,
+      shoppingLists: decoded.shoppingLists,
+      aisles: decoded.aisles,
+      productAisles: decoded.productAisles,
     );
   }
 
@@ -263,7 +287,22 @@ class BackupService {
       final existingEquipment = {
         for (final item in await equipment.getAll()) item.id: item,
       };
+      final existingLists = {
+        for (final l in await shopping.getAllLists()) l.id: l,
+      };
+      final existingAisles = {
+        for (final a in await shopping.getAllAisles()) a.id: a,
+      };
+      final existingProducts = {
+        for (final p in await shopping.getAllProductAisles()) p.key: p,
+      };
       if (mode == ImportMode.replace) {
+        // Les listes de courses d'une sauvegarde plus ancienne (sans listes)
+        // ne doivent pas effacer celles de l'appareil.
+        if (contents.shoppingLists.isNotEmpty) {
+          await shopping.deleteAllLists();
+          existingLists.clear();
+        }
         await repository.deleteAll();
         await equipment.deleteAll();
         existingEquipment.clear();
@@ -276,6 +315,27 @@ class BackupService {
             (mode != ImportMode.addMissing &&
                 item.updatedAt.isAfter(current.updatedAt))) {
           await labels.put(item);
+        }
+      }
+      bool newer(DateTime incoming, DateTime? current) =>
+          current == null ||
+          (mode != ImportMode.addMissing && incoming.isAfter(current));
+      for (final aisle in contents.aisles) {
+        if (newer(aisle.updatedAt, existingAisles[aisle.id]?.updatedAt)) {
+          await shopping.putAisle(aisle);
+        }
+      }
+      for (final product in contents.productAisles) {
+        if (newer(
+          product.updatedAt,
+          existingProducts[product.key]?.updatedAt,
+        )) {
+          await shopping.putProductAisle(product);
+        }
+      }
+      for (final list in contents.shoppingLists) {
+        if (newer(list.updatedAt, existingLists[list.id]?.updatedAt)) {
+          await shopping.putList(list);
         }
       }
       for (final item in contents.equipment) {

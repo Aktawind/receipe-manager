@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
 import '../../domain/recipe.dart';
+import '../../domain/shopping.dart';
 import '../backup/backup_format.dart';
 
 /// Les genres d'éléments synchronisés, avec leur dossier distant.
@@ -11,6 +12,9 @@ enum SyncKind {
   recipe('recipes'),
   label('labels'),
   equipment('equipment'),
+  aisle('aisles'),
+  product('products'),
+  shoppingList('shopping'),
   media('media');
 
   const SyncKind(this.folder);
@@ -70,6 +74,49 @@ abstract final class SyncCodec {
     ),
   );
 
+  static Uint8List aisle(Aisle aisle) => _bytes(
+    BackupFormat.encode(
+      const [],
+      aisles: [aisle],
+      exportedAt: aisle.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static Uint8List product(ProductAisle product) => _bytes(
+    BackupFormat.encode(
+      const [],
+      productAisles: [product],
+      exportedAt: product.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static Uint8List shoppingList(ShoppingList list) => _bytes(
+    BackupFormat.encode(
+      const [],
+      shoppingLists: [list],
+      exportedAt: list.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static Aisle decodeAisle(Uint8List bytes) =>
+      _single(_decode(bytes).aisles, 'aisles');
+
+  static ProductAisle decodeProduct(Uint8List bytes) =>
+      _single(_decode(bytes).productAisles, 'productAisles');
+
+  static ShoppingList decodeShoppingList(Uint8List bytes) =>
+      _single(_decode(bytes).shoppingLists, 'shoppingLists');
+
+  static T _single<T>(List<T> items, String what) {
+    if (items.length != 1) {
+      throw BackupFormatException(BackupError.invalid, what);
+    }
+    return items.single;
+  }
+
   static Recipe decodeRecipe(Uint8List bytes) {
     final data = _decode(bytes);
     if (data.recipes.length != 1) {
@@ -102,7 +149,14 @@ abstract final class SyncCodec {
   static String _canonical(Uint8List bytes) {
     final root = jsonDecode(utf8.decode(bytes)) as Map<String, Object?>;
     root.remove('exportedAt');
-    for (final key in const ['recipes', 'labels', 'equipment']) {
+    for (final key in const [
+      'recipes',
+      'labels',
+      'equipment',
+      'aisles',
+      'productAisles',
+      'shoppingLists',
+    ]) {
       for (final item in (root[key] as List? ?? const [])) {
         (item as Map<String, Object?>)
           ..remove('createdAt')
