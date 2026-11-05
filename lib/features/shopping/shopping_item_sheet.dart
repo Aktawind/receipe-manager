@@ -7,8 +7,7 @@ import '../../l10n/app_localizations.dart';
 /// Ce que la fiche d'un produit renvoie : le produit modifié, ou son retrait.
 typedef ShoppingItemEdit = ({ShoppingItem? item, bool removed});
 
-/// Modifier un produit : nom, quantité nécessaire, ce qu'on achète, format,
-/// commentaire. Renvoie `null` si on ferme sans enregistrer.
+/// Modifier un produit : nom, quantité, rayon, commentaire. Renvoie `null` si on ferme sans enregistrer.
 /// [aisleId] : le rayon où le produit est rangé en ce moment.
 Future<ShoppingItemEdit?> showShoppingItemSheet(
   BuildContext context,
@@ -50,14 +49,12 @@ class _ItemSheet extends StatefulWidget {
 class _ItemSheetState extends State<_ItemSheet> {
   late final _name = TextEditingController(text: widget.item.name);
   late final _amount = TextEditingController(text: widget.item.amount);
-  late final _toBuy = TextEditingController(text: widget.item.toBuy);
-  late final _format = TextEditingController(text: widget.item.format);
   late final _note = TextEditingController(text: widget.item.note);
   late String? _aisleId = widget.aisleId;
 
   @override
   void dispose() {
-    for (final c in [_name, _amount, _toBuy, _format, _note]) {
+    for (final c in [_name, _amount, _note]) {
       c.dispose();
     }
     super.dispose();
@@ -72,8 +69,6 @@ class _ItemSheetState extends State<_ItemSheet> {
         name: name,
         quantity: () => quantity,
         unit: unit,
-        toBuy: _toBuy.text.trim(),
-        format: _format.text.trim(),
         note: _note.text.trim(),
         aisleId: () =>
             _aisleId == widget.aisleId ? widget.item.aisleId : _aisleId,
@@ -129,19 +124,6 @@ class _ItemSheetState extends State<_ItemSheet> {
               l10n.productAmount,
               hint: l10n.productAmountHint,
             ),
-            field(
-              'to-buy',
-              _toBuy,
-              l10n.productToBuy,
-              hint: l10n.productToBuyHint,
-            ),
-            field(
-              'format',
-              _format,
-              l10n.productFormat,
-              hint: l10n.productFormatHint,
-            ),
-            field('note', _note, l10n.productNote),
             if (widget.aisles.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -165,6 +147,7 @@ class _ItemSheetState extends State<_ItemSheet> {
                   onChanged: (id) => setState(() => _aisleId = id),
                 ),
               ),
+            field('note', _note, l10n.productNote),
             // Côte à côte, ou l'un sous l'autre si la place manque.
             OverflowBar(
               alignment: MainAxisAlignment.spaceBetween,

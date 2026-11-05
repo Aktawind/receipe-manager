@@ -987,20 +987,10 @@
       "count": {"type": "int"}
     }
   },
-  "productToBuyLine": "j'achète : {text}",
-  "@productToBuyLine": {
-    "placeholders": {
-      "text": {"type": "String"}
-    }
-  },
   "editProduct": "Modifier le produit",
   "productName": "Produit",
   "productAmount": "Quantité nécessaire",
   "productAmountHint": "250 g, 2, 1 L…",
-  "productToBuy": "Ce que j'achète",
-  "productToBuyHint": "1 plaquette de 500 g",
-  "productFormat": "Format",
-  "productFormatHint": "bouteille de 1 L, bio…",
   "productNote": "Commentaire",
   "productAisle": "Rayon",
   "noAisle": "Sans rayon",

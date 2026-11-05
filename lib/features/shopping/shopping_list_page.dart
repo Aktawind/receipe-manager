@@ -315,7 +315,7 @@ class _Items extends ConsumerWidget {
 }
 
 /// Une ligne de la liste, compacte : case, quantité et nom ; en petit
-/// dessous, ce qu'on achète, le format, le commentaire et les recettes.
+/// dessous, le commentaire et les recettes.
 class _ItemTile extends StatelessWidget {
   const _ItemTile({
     required this.item,
@@ -338,11 +338,7 @@ class _ItemTile extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final checked = item.checked;
-    final details = [
-      if (item.toBuy.isNotEmpty) l10n.productToBuyLine(item.toBuy),
-      if (item.format.isNotEmpty) item.format,
-      if (item.note.isNotEmpty) item.note,
-    ];
+    final details = [if (item.note.isNotEmpty) item.note];
     final recipes = {
       for (final s in item.sources)
         if (s.recipeTitle.isNotEmpty) s.recipeTitle,

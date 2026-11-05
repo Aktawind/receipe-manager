@@ -7,13 +7,14 @@ import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 
 import 'drive_auth.dart';
+import 'sync_codec.dart';
 import 'sync_remote.dart';
 
 /// Le dossier de synchro dans Google Drive.
 ///
 /// ```
 /// <dossier>/            « Recettes » (ou « Recettes (test) »)
-///   recipes/ labels/ equipment/ media/ history/
+///   recipes/ labels/ equipment/ aisles/ products/ shopping/ media/ history/
 /// ```
 /// Avec le droit `drive.file`, l'application ne voit que ce qu'elle a créé :
 /// les fichiers du dossier, et rien d'autre dans le Drive.
@@ -34,11 +35,11 @@ class DriveRemote implements DriveFolder {
   /// Petit stockage propre à l'appareil (identifiants des dossiers Drive).
   final DriveCache cache;
 
-  static const subfolders = [
-    'recipes',
-    'labels',
-    'equipment',
-    'media',
+  /// Un dossier par genre d'élément synchronisé (y compris ceux ajoutés plus
+  /// tard : listes de courses, rayons…), plus l'historique et les
+  /// sauvegardes.
+  static final subfolders = [
+    for (final kind in SyncKind.values) kind.folder,
     'history',
     'backups',
   ];

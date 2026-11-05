@@ -143,39 +143,47 @@ void main() {
     expect(find.byKey(const ValueKey('shopping-listening')), findsNothing);
   });
 
-  testWidgets('modifier un produit : ce que j’achète, format, commentaire', (
-    tester,
-  ) async {
-    usePhoneSize(tester);
-    final app = (await tester.runAsync(TestApp.create))!;
-    await app.pump(tester);
-    await _openNewList(tester, 'Semaine');
-    await _type(tester, '250 g de beurre');
+  testWidgets(
+    'modifier un produit : quantité, rayon sous la quantité, commentaire',
+    (tester) async {
+      usePhoneSize(tester);
+      final app = (await tester.runAsync(TestApp.create))!;
+      await app.pump(tester);
+      await _openNewList(tester, 'Semaine');
+      await _type(tester, '250 g de beurre');
 
-    await tester.tap(find.textContaining('Beurre', findRichText: true));
-    await settle(tester);
-    await tester.enterText(
-      find.byKey(const ValueKey('shopping-item-to-buy')),
-      '1 plaquette',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('shopping-item-format')),
-      'doux',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('shopping-item-amount')),
-      '300 g',
-    );
-    await tester.tap(find.byKey(const ValueKey('shopping-item-save')));
-    await settle(tester);
+      await tester.tap(find.textContaining('Beurre', findRichText: true));
+      await settle(tester);
+      // Plus de « Ce que j'achète » ni de « Format » ; le rayon suit la quantité.
+      expect(find.byKey(const ValueKey('shopping-item-to-buy')), findsNothing);
+      expect(find.byKey(const ValueKey('shopping-item-format')), findsNothing);
+      final amountY = tester
+          .getTopLeft(find.byKey(const ValueKey('shopping-item-amount')))
+          .dy;
+      final aisleY = tester
+          .getTopLeft(find.byKey(const ValueKey('shopping-item-aisle')))
+          .dy;
+      final noteY = tester
+          .getTopLeft(find.byKey(const ValueKey('shopping-item-note')))
+          .dy;
+      expect(amountY < aisleY && aisleY < noteY, isTrue);
 
-    final item = (await _onlyList(app, tester)).items.single;
-    expect(
-      (item.amount, item.toBuy, item.format),
-      ('300 g', '1 plaquette', 'doux'),
-    );
-    expect(find.text('j\'achète : 1 plaquette · doux'), findsOneWidget);
-  });
+      await tester.enterText(
+        find.byKey(const ValueKey('shopping-item-amount')),
+        '300 g',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('shopping-item-note')),
+        'doux',
+      );
+      await tester.tap(find.byKey(const ValueKey('shopping-item-save')));
+      await settle(tester);
+
+      final item = (await _onlyList(app, tester)).items.single;
+      expect((item.amount, item.note), ('300 g', 'doux'));
+      expect(find.text('doux'), findsOneWidget);
+    },
+  );
 
   testWidgets('les recettes d’origine apparaissent sous le produit', (
     tester,
