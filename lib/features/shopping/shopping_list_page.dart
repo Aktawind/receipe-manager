@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format/text_search.dart';
+import '../../core/platform/export_actions.dart';
 import '../../core/platform/speech_input.dart';
 import '../../data/app_services.dart';
-import '../../domain/aisle_guess.dart';
-import '../../domain/default_aisles.dart';
 import '../../domain/shopping.dart';
+import '../../domain/shopping_export.dart';
 import '../../l10n/app_localizations.dart';
 import 'add_to_shopping_sheet.dart';
 import 'recipe_picker.dart';
 import 'shopping_item_sheet.dart';
 import 'shopping_page.dart';
+import 'shopping_pdf.dart';
 import 'shopping_providers.dart';
 
 /// Une liste de courses : les produits à acheter, dans l'ordre choisi, puis
@@ -42,10 +43,29 @@ class ShoppingListPage extends ConsumerWidget {
           PopupMenuButton<String>(
             key: const ValueKey('shopping-list-menu'),
             onSelected: (action) async {
+              if (action == 'share' || action == 'print') {
+                await _export(context, ref, list, print: action == 'print');
+                return;
+              }
               if (action == 'delete') Navigator.of(context).pop();
               await runShoppingListAction(context, ref, list, action);
             },
             itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'share',
+                child: ListTile(
+                  leading: const Icon(Icons.share_outlined),
+                  title: Text(l10n.shareShoppingList),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'print',
+                child: ListTile(
+                  leading: const Icon(Icons.print_outlined),
+                  title: Text(l10n.printShoppingList),
+                ),
+              ),
+              const PopupMenuDivider(),
               PopupMenuItem(
                 value: 'rename',
                 child: Text(l10n.renameShoppingList),
@@ -68,6 +88,35 @@ class ShoppingListPage extends ConsumerWidget {
           _AddBar(list: list),
         ],
       ),
+    );
+  }
+}
+
+/// Partage la liste en texte, ou l'imprime (PDF sur une page A4), rangée
+/// par rayon ; seuls les produits encore à acheter y figurent.
+Future<void> _export(
+  BuildContext context,
+  WidgetRef ref,
+  ShoppingList list, {
+  required bool print,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final sections = ShoppingExport.sections(
+    list,
+    aisles: ref.read(aislesProvider).value ?? const <Aisle>[],
+    memory: ref.read(productAislesProvider).value ?? const {},
+    noAisle: l10n.noAisle,
+  );
+  final export = ref.read(exportActionsProvider);
+  if (print) {
+    await export.printPdf(
+      await ShoppingPdf.build(list.name, sections),
+      name: list.name,
+    );
+  } else {
+    await export.shareText(
+      ShoppingExport.text(list.name, sections),
+      subject: list.name,
     );
   }
 }
@@ -217,24 +266,17 @@ class _Items extends ConsumerWidget {
     }
     final aisles = ref.watch(aislesProvider).value ?? const <Aisle>[];
     final memory = ref.watch(productAislesProvider).value ?? const {};
-    final aisleIds = {for (final a in aisles) a.id};
-    // Un produit inconnu va dans « Autres » (s'il existe encore).
-    final other = DefaultAisles.idFor('Autres');
-    String? aisleOf(ShoppingItem item) =>
-        AisleGuess.of(item, memory: memory, aisles: aisleIds) ??
-        (aisleIds.contains(other) ? other : null);
-
-    // Les produits à acheter, par rayon dans l'ordre des réglages ; ceux
-    // sans rayon à la fin.
-    final groups = <String?, List<ShoppingItem>>{};
-    for (final item in list.toBuy) {
-      (groups[aisleOf(item)] ??= []).add(item);
-    }
-    final ordered = <(String, String?, List<ShoppingItem>)>[
-      for (final aisle in aisles)
-        if (groups[aisle.id] case final items?) (aisle.name, aisle.id, items),
-      if (groups[null] case final items?) (l10n.noAisle, null, items),
-    ];
+    final sections = ShoppingExport.sections(
+      list,
+      aisles: aisles,
+      memory: memory,
+      noAisle: l10n.noAisle,
+    );
+    final aisleOfItem = {
+      for (final section in sections)
+        for (final item in section.items) item.id: section.aisleId,
+    };
+    String? aisleOf(ShoppingItem item) => aisleOfItem[item.id];
     final inCart = list.inCart;
 
     Widget row(ShoppingItem item, {int? index}) => Dismissible(
@@ -277,7 +319,7 @@ class _Items extends ConsumerWidget {
 
     return CustomScrollView(
       slivers: [
-        for (final (name, id, items) in ordered) ...[
+        for (final (aisleId: id, :name, :items) in sections) ...[
           SliverToBoxAdapter(
             key: ValueKey('aisle-${id ?? 'other'}'),
             child: header(name),

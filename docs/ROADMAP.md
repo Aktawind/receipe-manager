@@ -352,14 +352,18 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   affichées) et « Ajouter des recettes » depuis une liste (plusieurs d'un coup) : personnes par
   recette, ingrédients à cocher (sel, poivre, eau et facultatifs décochés), recettes liées
   dépliées en proportion, fusion avec la liste, recettes d'origine.
-- **Étape 3 (à tester)** : la liste est rangée **par rayon**, dans l'ordre choisi dans Réglages →
+- **Étape 3 (validée le 2026-11-05)** : la liste est rangée **par rayon**, dans l'ordre choisi dans Réglages →
   Rayons (ajouter, renommer, réordonner, supprimer) ; chaque produit va dans le rayon choisi à la
   main pour lui (retenu, pluriel compris), sinon celui d'un dictionnaire de produits courants,
   sinon « Autres ». Retour du 2026-11-05 : lignes plus compactes, recette d'origine sans « pour : ».
   Retour suivant : fiche du produit sans « Ce que j'achète » ni « Format », rayon sous la quantité ;
   **la synchro des listes ne marchait pas** (dossiers Drive `aisles/`, `products/`, `shopping/`
   jamais créés) et la restauration d'une sauvegarde Drive oubliait les listes : corrigé.
-- **Étape 4** : partage en texte, PDF et impression sur une page A4.
+- **Étape 4 (à tester)** : ⋮ → « Partager la liste » (texte rangé par rayon, vers une messagerie ou
+  un mail) et « Imprimer ou enregistrer en PDF » : PDF sur **une seule page A4**, rayons en
+  colonnes (2 ou 3) et taille du texte ajustée pour tout faire tenir, une case par produit ;
+  impression par le gestionnaire d'Android (qui propose « Enregistrer au format PDF »). Les
+  produits du panier n'y figurent pas.
 
 ## 0.11 — Planning des repas
 
