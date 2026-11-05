@@ -921,7 +921,17 @@
   "addProduct": "Ajouter un produit",
   "addProductHint": "2 kg de pommes de terre",
   "dictateProducts": "Dicter des produits",
-  "dictatePrompt": "Dites les produits : « deux kilos de pommes de terre et du beurre »",
+  "dictationListening": "J'écoute…",
+  "dictationHint": "Dites un produit, attendez qu'il s'ajoute, puis le suivant",
+  "dictationAdded": "Ajouté : {text}",
+  "@dictationAdded": {
+    "placeholders": {
+      "text": {"type": "String"}
+    }
+  },
+  "dictationStop": "Arrêter",
+  "speechPermission": "Le micro est refusé : autorise-le dans les réglages d'Android pour dicter",
+  "speechError": "La dictée s'est interrompue, réessaie",
   "speechUnavailable": "La dictée n'est pas disponible sur cet appareil",
   "productsAdded": "{count, plural, =1{1 produit ajouté} other{{count} produits ajoutés}}",
   "@productsAdded": {
