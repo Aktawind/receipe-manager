@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:recettes/data/sync/drive_auth.dart';
 import 'package:recettes/data/sync/drive_remote.dart';
+import 'package:recettes/data/sync/sync_codec.dart';
 
 class _FakeAuth implements DriveAuth {
   bool signedIn = true;
@@ -47,6 +48,9 @@ void main() {
     'recipes': 'f-recipes',
     'labels': 'f-labels',
     'equipment': 'f-equipment',
+    'aisles': 'f-aisles',
+    'products': 'f-products',
+    'shopping': 'f-shopping',
     'media': 'f-media',
     'history': 'f-history',
     'backups': 'f-backups',
@@ -70,6 +74,12 @@ void main() {
 
   setUp(() {
     cache = _MemoryCache()..values['drive_folders'] = jsonEncode(folders);
+  });
+
+  test('un dossier Drive pour chaque genre d’élément synchronisé', () {
+    for (final kind in SyncKind.values) {
+      expect(DriveRemote.subfolders, contains(kind.folder), reason: kind.name);
+    }
   });
 
   test('première synchro : tout le dossier, le jeton est pris avant', () async {
@@ -190,11 +200,53 @@ void main() {
       await drive.changes('1');
       expect(
         created,
-        7,
-        reason: 'le dossier principal et ses six sous-dossiers',
+        10,
+        reason: 'le dossier principal et ses neuf sous-dossiers',
       );
       final stored = jsonDecode(cache.values['drive_folders']!) as Map;
       expect(stored.keys, containsAll(['', 'recipes', 'media', 'history']));
     },
   );
+
+  test('un appareil d’avant les listes de courses retrouve ses dossiers et crée les nouveaux', () async {
+    cache.values['drive_folders'] = jsonEncode({
+      for (final e in folders.entries)
+        if (!const {'aisles', 'products', 'shopping'}.contains(e.key))
+          e.key: e.value,
+    });
+    final made = <String>[];
+    final drive = remote((request) {
+      if (request.method == 'POST') {
+        final name = (jsonDecode(request.body) as Map)['name'] as String;
+        made.add(name);
+        return _json({'id': 'f-$name'});
+      }
+      final q = request.url.queryParameters['q'] ?? '';
+      // Les dossiers déjà là sont retrouvés par leur nom.
+      for (final e in folders.entries) {
+        if (e.key.isNotEmpty &&
+            !const {'aisles', 'products', 'shopping'}.contains(e.key) &&
+            q.contains("name = '${e.key}'")) {
+          return _json({
+            'files': [
+              {'id': e.value, 'name': e.key},
+            ],
+          });
+        }
+      }
+      if (q.contains("name = 'Recettes'")) {
+        return _json({
+          'files': [
+            {'id': 'root-id', 'name': 'Recettes'},
+          ],
+        });
+      }
+      return _json({'files': <Object>[]});
+    });
+    await drive.changes('1');
+    expect(made, unorderedEquals(['aisles', 'products', 'shopping']));
+    final stored = jsonDecode(cache.values['drive_folders']!) as Map;
+    expect(stored['recipes'], 'f-recipes');
+    expect(stored['shopping'], 'f-shopping');
+  });
 }

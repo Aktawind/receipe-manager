@@ -321,7 +321,7 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   recette ajoute les ingrédients de cette recette, proportionnellement à la quantité demandée
   (demande du 2026-10-29)
 - Fusion des ingrédients identiques, addition des quantités, unités incompatibles séparées
-- Quantité à acheter différente de la quantité théorique, format, commentaire
+- Commentaire sur un produit (« quantité à acheter » et « format » retirés le 2026-11-05 : inutiles)
 - Cocher, supprimer, déplacer
 - Regroupement par rayon (Fruits et légumes, Produits frais, Épicerie, Surgelés…)
 - Exporter, imprimer, partager (texte, PDF)
@@ -344,7 +344,7 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
 - **Étape 1 (validée le 2026-11-05)** : listes (créer, renommer, supprimer, réutiliser), produits ajoutés en une
   ligne (« 2 kg de pommes de terre », « Beurre 50 g ») ou dictés, avec les produits déjà achetés en
   suggestion ; fusion du même produit (quantités additionnées) ; cocher → « Dans le panier »,
-  « Retirer les cochés » ; modifier (quantité, ce que j'achète, format, commentaire), déplacer,
+  « Retirer les cochés » ; modifier (quantité, rayon, commentaire), déplacer,
   glisser pour retirer. Base v10, sauvegarde v9, synchro Drive des listes et des rayons.
   Retour du 2026-11-05 : la dictée en une phrase sépare mal les produits → **dictée continue** (le
   micro reste ouvert, une phrase = un produit, jusqu'à « Arrêter »).
@@ -356,6 +356,9 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   Rayons (ajouter, renommer, réordonner, supprimer) ; chaque produit va dans le rayon choisi à la
   main pour lui (retenu, pluriel compris), sinon celui d'un dictionnaire de produits courants,
   sinon « Autres ». Retour du 2026-11-05 : lignes plus compactes, recette d'origine sans « pour : ».
+  Retour suivant : fiche du produit sans « Ce que j'achète » ni « Format », rayon sous la quantité ;
+  **la synchro des listes ne marchait pas** (dossiers Drive `aisles/`, `products/`, `shopping/`
+  jamais créés) et la restauration d'une sauvegarde Drive oubliait les listes : corrigé.
 - **Étape 4** : partage en texte, PDF et impression sur une page A4.
 
 ## 0.11 — Planning des repas

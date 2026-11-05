@@ -513,6 +513,10 @@ void main() {
       final tarte = await a.addRecipe('Tarte');
       await a.recipes.save(tarte.copyWith(mainPhoto: () => 'tarte.jpg'));
       final soupe = await a.addRecipe('Soupe');
+      final courses = await a.shopping.createList('Courses');
+      await a.shopping.save(
+        courses.copyWith(items: [ShoppingProducts.parse('2 kg de farine')]),
+      );
       a.at(t(1));
       await a.engine.sync();
       await b.engine.sync();
@@ -523,6 +527,7 @@ void main() {
       a.at(t(10));
       await a.recipes.deletePermanently([soupe.id]);
       await a.edit(tarte.id, 'Tarte ratée');
+      await a.shopping.delete((await a.shopping.getList(courses.id))!);
       await a.engine.sync();
       await b.engine.sync();
       expect(await b.titleOf(tarte.id), 'Tarte ratée');
@@ -535,6 +540,10 @@ void main() {
       expect(await a.titleOf(tarte.id), 'Tarte');
       expect(await a.titleOf(soupe.id), 'Soupe');
       expect(await a.photos.file('tarte.jpg').readAsBytes(), [1, 2]);
+      // Les listes de courses font partie de la sauvegarde.
+      final list = (await a.shopping.getList(courses.id))!;
+      expect(list.isDeleted, isFalse);
+      expect(list.items.single.name, 'Farine');
 
       // La version restaurée l'emporte sur celle de Drive, et gagne l'autre appareil.
       final sent = await a.engine.sync();
@@ -543,6 +552,7 @@ void main() {
       expect(received.ok, isTrue, reason: '${received.errors}');
       expect(await b.titleOf(tarte.id), 'Tarte');
       expect(await b.titleOf(soupe.id), 'Soupe');
+      expect((await b.shopping.getList(courses.id))!.isDeleted, isFalse);
     },
   );
 
@@ -584,7 +594,8 @@ void main() {
 
   test('un chemin distant inconnu est ignoré', () async {
     await remote.write('history/x.json', Uint8List(0));
-    await remote.write('autre/chose', Uint8List(0));
+    // Un fichier posé à la main dans un autre dossier.
+    remote.files['autre/chose'] = Uint8List(0);
     final report = await a.engine.sync();
     expect(report.ok, isTrue, reason: '${report.errors}');
     expect(SyncKind.parse('recipes/abc.json'), (SyncKind.recipe, 'abc'));
