@@ -5,7 +5,6 @@ import '../../domain/label.dart';
 import '../../features/classification/collection_order_page.dart';
 import '../../features/classification/labels_page.dart';
 import '../../features/equipment/equipment_page.dart';
-import '../../features/sync/sync_page.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/planning/planning_page.dart';
 import '../../features/recipes/cooking_mode_page.dart';
@@ -16,6 +15,7 @@ import '../../features/recipes/web_import_page.dart';
 import '../../features/settings/settings_page.dart';
 import '../../features/settings/trash_page.dart';
 import '../../features/shopping/shopping_page.dart';
+import '../../features/sync/sync_page.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
 

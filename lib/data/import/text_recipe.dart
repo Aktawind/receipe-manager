@@ -259,7 +259,7 @@ abstract final class TextRecipeParser {
   }
 
   static bool _isClosing(String line) => RegExp(
-    r"^(bon appetit|bonne degustation|n.hesite|n.hesitez|veux-tu|voulez-vous|souhaites-tu|souhaitez-vous|dis-moi|dites-moi|j.espere|si tu veux|si vous voulez)\b",
+    r'^(bon appetit|bonne degustation|n.hesite|n.hesitez|veux-tu|voulez-vous|souhaites-tu|souhaitez-vous|dis-moi|dites-moi|j.espere|si tu veux|si vous voulez)\b',
   ).hasMatch(normalizeForSearch(line));
 
   /// « Voici une délicieuse recette de biscuits (ou petits gâteaux) moelleux
@@ -270,7 +270,7 @@ abstract final class TextRecipeParser {
       caseSensitive: false,
     ).firstMatch(line);
     if (match == null) return null;
-    var dish = match
+    final dish = match
         .group(1)!
         .replaceAll(RegExp(r'\s*\(.*?\)'), '')
         .split(RegExp(r'[,.!:;]| qui | que | idéale| parfaite| pour '))

@@ -243,7 +243,7 @@ void main() {
     });
 
     test('liste complète collée depuis un site', () {
-      const pasted = """
+      const pasted = '''
 Pour la pâte :
 - 250 g de farine
 - 125 g de beurre froid (en dés)
@@ -255,7 +255,7 @@ Pour la pâte :
 • 20 cl de crème fraîche
 ---
 Sel, poivre
-""";
+''';
       final lines = IngredientText.parseList(pasted);
       expect(lines.map((l) => l.isSection), [
         true,

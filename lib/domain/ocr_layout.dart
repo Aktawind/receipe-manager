@@ -791,7 +791,7 @@ class _Page {
         break;
     }
     // « POUR LA MARINADE », « Pour la pâte : » : un groupe d'ingrédients.
-    final group = RegExp(r"^pour (la|le|les|l |un|une) .{2,30}$").firstMatch(n);
+    final group = RegExp(r'^pour (la|le|les|l |un|une) .{2,30}$').firstMatch(n);
     if (group != null && !RegExp(r'\d').hasMatch(n)) {
       final label = text.replaceFirst(RegExp(r'\s*:\s*$'), '');
       final pretty = label == label.toUpperCase()

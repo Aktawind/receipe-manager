@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format/text_search.dart';
+import '../../../domain/equipment.dart';
 import '../../../domain/label.dart';
 import '../../../domain/recipe.dart';
 import '../../../l10n/app_localizations.dart';
@@ -252,7 +253,8 @@ class EditorEquipmentField extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final names = {
-      for (final item in ref.watch(equipmentProvider).value ?? const [])
+      for (final item
+          in ref.watch(equipmentProvider).value ?? const <EquipmentItem>[])
         item.id: item.name,
     };
     return Wrap(

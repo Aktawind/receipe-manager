@@ -57,7 +57,7 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
   Future<void> _createRecipe() async {
     final recipe = await ref.read(recipeRepositoryProvider).create();
     if (!mounted) return;
-    context.push('/recettes/${recipe.id}/modifier?nouvelle=1');
+    unawaited(context.push('/recettes/${recipe.id}/modifier?nouvelle=1'));
   }
 
   @override

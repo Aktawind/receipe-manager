@@ -30,7 +30,7 @@ abstract final class StepText {
         lines.add(line);
       }
     }
-    final numberedMode = lines.any((l) => _numbered.hasMatch(l));
+    final numberedMode = lines.any(_numbered.hasMatch);
 
     final steps = <RecipeStep>[];
     String? currentTitle;

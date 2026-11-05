@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 
 /// Où en est la recette : à essayer, à refaire, à améliorer ou adoptée.
 enum RecipeStatus {
@@ -141,24 +141,24 @@ class Recipe {
     String? description,
     String? source,
     String? notes,
-    ValueGetter<int?>? servings,
+    int? Function()? servings,
     String? servingsUnit,
-    ValueGetter<int?>? prepMinutes,
-    ValueGetter<int?>? cookMinutes,
-    ValueGetter<int?>? restMinutes,
+    int? Function()? prepMinutes,
+    int? Function()? cookMinutes,
+    int? Function()? restMinutes,
     int? timesCooked,
-    ValueGetter<String?>? mainPhoto,
+    String? Function()? mainPhoto,
     List<String>? extraPhotos,
     bool? isFavorite,
-    ValueGetter<int?>? rating,
-    ValueGetter<RecipeStatus?>? status,
+    int? Function()? rating,
+    RecipeStatus? Function()? status,
     List<String>? labelIds,
-    ValueGetter<DateTime?>? lastViewedAt,
+    DateTime? Function()? lastViewedAt,
     List<String>? equipmentIds,
     List<String>? videoLinks,
     DateTime? createdAt,
     DateTime? updatedAt,
-    ValueGetter<DateTime?>? deletedAt,
+    DateTime? Function()? deletedAt,
     List<IngredientLine>? ingredients,
     List<RecipeStep>? steps,
   }) {

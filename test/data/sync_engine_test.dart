@@ -1,16 +1,16 @@
-import 'dart:typed_data';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/data/backup/backup_service.dart';
 import 'package:recettes/data/database.dart';
-import 'package:recettes/data/sync/drive_backup.dart';
 import 'package:recettes/data/equipment_repository.dart';
 import 'package:recettes/data/label_repository.dart';
 import 'package:recettes/data/photo_store.dart';
 import 'package:recettes/data/recipe_repository.dart';
+import 'package:recettes/data/sync/drive_backup.dart';
 import 'package:recettes/data/sync/hybrid_clock.dart';
 import 'package:recettes/data/sync/sync_codec.dart';
 import 'package:recettes/data/sync/sync_engine.dart';
@@ -511,7 +511,7 @@ void main() {
       BackupFrequency.weekly.isDue(DateTime.utc(2035, 1, 2), now),
       isFalse,
     );
-    expect(BackupFrequency.weekly.isDue(DateTime.utc(2035, 1, 1), now), isTrue);
+    expect(BackupFrequency.weekly.isDue(DateTime.utc(2035), now), isTrue);
     expect(
       BackupFrequency.monthly.isDue(DateTime.utc(2034, 12, 20), now),
       isFalse,

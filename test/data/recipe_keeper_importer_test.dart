@@ -109,7 +109,6 @@ void main() {
           id: 'aaaa-1',
           name: 'Aiguillettes de canard en sauce',
           favourite: 'True',
-          course: 'Plat',
           categories: ['Viandes'],
           collections: ['Automne', 'Été'],
           source: 'Page 32',
@@ -226,7 +225,7 @@ void main() {
   });
 
   test('temps : PT0S est absent, PT2H vaut 120 minutes', () {
-    final export = read([block(id: 'a', prep: 'PT2H', cook: 'PT0S')]);
+    final export = read([block(id: 'a', prep: 'PT2H')]);
     expect(export.recipes.single.prepMinutes, 120);
     expect(export.recipes.single.cookMinutes, isNull);
   });

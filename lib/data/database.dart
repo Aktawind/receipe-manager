@@ -409,7 +409,7 @@ UPDATE recipes SET
         ).getSingle();
         await customStatement(
           'INSERT INTO ingredients (id, recipe_id, position, is_section, name, '
-          "quantity, unit, note, optional, substitutes, linked_recipe_id) "
+          'quantity, unit, note, optional, substitutes, linked_recipe_id) '
           "VALUES (?, ?, ?, 0, ?, NULL, '', '', 0, '', ?)",
           [
             const Uuid().v4(),

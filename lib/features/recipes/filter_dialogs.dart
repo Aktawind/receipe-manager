@@ -45,7 +45,7 @@ class _TimeLimitsDialogState extends State<_TimeLimitsDialog> {
         isExpanded: true,
         decoration: InputDecoration(labelText: label),
         items: [
-          DropdownMenuItem(value: null, child: Text(l10n.durationAny)),
+          DropdownMenuItem(child: Text(l10n.durationAny)),
           for (final minutes in _durationChoices)
             DropdownMenuItem(
               value: minutes,

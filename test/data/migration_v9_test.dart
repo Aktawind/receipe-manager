@@ -26,7 +26,7 @@ void main() {
       await oldDb.batch((batch) {
         batch.insert(
           oldDb.labels,
-          v8.LabelsData(
+          const v8.LabelsData(
             id: 'noel',
             kind: 'collection',
             name: 'Noël',
@@ -39,7 +39,7 @@ void main() {
         );
         batch.insert(
           oldDb.recipes,
-          v8.RecipesData(
+          const v8.RecipesData(
             id: 'a',
             title: 'Bûche',
             description: '',
@@ -60,7 +60,11 @@ void main() {
         );
         batch.insert(
           oldDb.recipeLabels,
-          v8.RecipeLabelsData(recipeId: 'a', labelId: 'noel', sortIndex: 3),
+          const v8.RecipeLabelsData(
+            recipeId: 'a',
+            labelId: 'noel',
+            sortIndex: 3,
+          ),
         );
       });
       await oldDb.close();

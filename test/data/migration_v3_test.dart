@@ -22,7 +22,7 @@ void main() {
     await oldDb.batch((batch) {
       batch.insert(
         oldDb.recipes,
-        v2.RecipesData(
+        const v2.RecipesData(
           id: 'r1',
           title: 'Quiche lorraine',
           description: 'Une description',
@@ -40,7 +40,7 @@ void main() {
       );
       batch.insert(
         oldDb.ingredients,
-        v2.IngredientsData(
+        const v2.IngredientsData(
           id: 'i1',
           recipeId: 'r1',
           position: 0,
@@ -54,7 +54,7 @@ void main() {
       );
       batch.insert(
         oldDb.recipeSteps,
-        v2.RecipeStepsData(
+        const v2.RecipeStepsData(
           id: 's1',
           recipeId: 'r1',
           position: 0,

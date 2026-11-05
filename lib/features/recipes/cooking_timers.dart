@@ -158,10 +158,7 @@ class CookingTimers extends Notifier<List<CookingTimer>> {
     final timer = _find(id);
     if (timer == null || timer.isPaused || timer.isDone()) return;
     _replace(
-      timer.copyWith(
-        endsAt: () => null,
-        pausedRemaining: () => timer.remaining(),
-      ),
+      timer.copyWith(endsAt: () => null, pausedRemaining: timer.remaining),
     );
     await _alarms.cancel(id);
   }
@@ -448,7 +445,6 @@ class _CustomTimerDialogState extends State<_CustomTimerDialog> {
           TextField(
             key: const ValueKey('timer-minutes'),
             controller: _minutes,
-            autofocus: false,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(labelText: l10n.timerMinutesField),

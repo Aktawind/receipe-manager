@@ -35,7 +35,8 @@ téléphone et tablette. Nom provisoire : « Recettes ».
   versionné. Chaque migration a un test avec de vraies données (modèle : `test/data/migration_v2_test.dart`)
   et une évolution du format de sauvegarde (`BackupFormat.currentVersion`) en garde la lecture de l'ancien.
 - Les listes d'ingrédients et la préparation se saisissent en un seul champ de texte, analysé par
-  `IngredientText` et `StepText` (`lib/domain/`). Toute évolution des règles de lecture s'accompagne
+  `IngredientText` et `StepText` (`lib/domain/`). Le vocabulaire des recettes écrites (rubriques,
+  temps, portions) est commun aux imports de texte et de photo : `RecipeWords`. Toute évolution des règles de lecture s'accompagne
   de tests (`test/domain/`) avec des textes réalistes (sites de cuisine, sorties d'IA).
 - Modèle de données prêt pour la synchro : UUID, date de modification, suppression douce.
 - Toute chaîne visible passe par `lib/l10n/app_fr.arb` (jamais de texte en dur dans les widgets).
@@ -88,9 +89,10 @@ Les variantes `dev` et `prod` sont obligatoires pour `flutter build/run` (`--fla
 lib/
   main.dart, app.dart
   core/        thème, routage, réglages, formats, widgets communs
-  domain/      modèle métier (Recipe, analyse des lignes d'ingrédients)
+  domain/      modèle métier (Recipe, filtre, analyse du texte), sans Flutter ni Riverpod
   data/        base Drift, dépôt, photos, sauvegardes (backup/)
-  features/    un dossier par fonctionnalité (recipes, planning, shopping, settings…)
+  features/    un dossier par fonctionnalité (recipes, planning, shopping, settings…) ;
+               un écran trop long est découpé en sous-dossier (recipes/detail, list, editor)
   l10n/        traductions (app_fr.arb = modèle)
 test/          tests (mêmes dossiers que lib/)
 docs/          roadmap, décisions, notes de version, design

@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/formatted_text.dart';
 import '../../../core/widgets/linked_text.dart';
+import '../../../domain/equipment.dart';
 import '../../../domain/ingredient_scaling.dart';
 import '../../../domain/ingredient_text.dart';
 import '../../../domain/recipe.dart';
@@ -568,7 +569,8 @@ class DetailEquipmentSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (recipe.equipmentIds.isEmpty) return const SizedBox.shrink();
     final names = {
-      for (final item in ref.watch(equipmentProvider).value ?? const [])
+      for (final item
+          in ref.watch(equipmentProvider).value ?? const <EquipmentItem>[])
         item.id: item.name,
     };
     final items = [for (final id in recipe.equipmentIds) ?names[id]];

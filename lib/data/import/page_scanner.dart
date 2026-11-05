@@ -102,7 +102,7 @@ class MlKitPageScanner implements PageScanner {
 
   @override
   Future<String> read(List<String> images) async {
-    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    final recognizer = TextRecognizer();
     try {
       final pages = <List<OcrLine>>[];
       for (final path in images) {
