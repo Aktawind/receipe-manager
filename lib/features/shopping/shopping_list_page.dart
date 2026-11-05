@@ -6,6 +6,8 @@ import '../../core/platform/speech_input.dart';
 import '../../data/app_services.dart';
 import '../../domain/shopping.dart';
 import '../../l10n/app_localizations.dart';
+import 'add_to_shopping_sheet.dart';
+import 'recipe_picker.dart';
 import 'shopping_item_sheet.dart';
 import 'shopping_page.dart';
 import 'shopping_providers.dart';
@@ -29,6 +31,12 @@ class ShoppingListPage extends ConsumerWidget {
       appBar: AppBar(
         title: Text(list.name),
         actions: [
+          IconButton(
+            key: const ValueKey('shopping-add-recipes'),
+            tooltip: l10n.addRecipesToShopping,
+            icon: const Icon(Icons.menu_book_outlined),
+            onPressed: () => _addRecipes(context, ref, list),
+          ),
           PopupMenuButton<String>(
             key: const ValueKey('shopping-list-menu'),
             onSelected: (action) async {
@@ -60,6 +68,20 @@ class ShoppingListPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Choisir des recettes, puis leurs ingrédients à ajouter à [list].
+Future<void> _addRecipes(
+  BuildContext context,
+  WidgetRef ref,
+  ShoppingList list,
+) async {
+  final ids = await pickRecipes(context);
+  if (ids == null || ids.isEmpty || !context.mounted) return;
+  final repository = ref.read(recipeRepositoryProvider);
+  final recipes = [for (final id in ids) ?await repository.getRecipe(id)];
+  if (!context.mounted || recipes.isEmpty) return;
+  await showAddToShoppingSheet(context, recipes: recipes, listId: list.id);
 }
 
 /// Enregistre les produits de [list].
@@ -333,43 +355,132 @@ class _AddBarState extends ConsumerState<_AddBar> {
   TextEditingController? _controller;
   FocusNode? _focus;
 
-  Future<void> _add(List<String> lines) async {
-    var items = widget.list.items;
+  /// Le micro est ouvert (dictée continue).
+  var _listening = false;
+
+  /// Ce que la dictée entend en ce moment, puis le dernier produit ajouté.
+  var _heard = '';
+  var _lastAdded = '';
+
+  /// Ajoute les produits de [lines] à la liste telle qu'elle est en base
+  /// (deux phrases dictées coup sur coup ne s'écrasent pas). Renvoie le
+  /// nombre de produits ajoutés.
+  Future<int> _add(List<String> lines) async {
+    final repository = ref.read(shoppingRepositoryProvider);
+    final list = await repository.getList(widget.list.id) ?? widget.list;
+    var items = list.items;
     var added = 0;
     for (final line in lines) {
       if (line.trim().isEmpty) continue;
       items = ShoppingProducts.merge(items, ShoppingProducts.parse(line));
       added++;
     }
-    if (added == 0) return;
-    await _saveItems(ref, widget.list, items);
-    _controller?.clear();
-    if (added > 1 && mounted) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            persist: false,
-            content: Text(AppLocalizations.of(context).productsAdded(added)),
-          ),
-        );
-    }
+    if (added == 0) return 0;
+    await _saveItems(ref, list, items);
+    return added;
   }
 
-  Future<void> _dictate() async {
+  Future<void> _addTyped(String text) async {
+    final added = await _add([text]);
+    if (added > 0) _controller?.clear();
+  }
+
+  Future<void> _toggleDictation() async {
+    final speech = ref.read(speechInputProvider);
+    if (_listening) {
+      await speech.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    try {
-      final text = await ref
-          .read(speechInputProvider)
-          .listen(prompt: l10n.dictatePrompt);
-      if (text == null) return;
-      await _add(ShoppingProducts.splitDictation(text));
-    } on SpeechUnavailable {
-      messenger.showSnackBar(
-        SnackBar(persist: false, content: Text(l10n.speechUnavailable)),
-      );
-    }
+    setState(() {
+      _listening = true;
+      _heard = '';
+      _lastAdded = '';
+    });
+    await speech.start(
+      onPartial: (text) {
+        if (mounted) setState(() => _heard = text);
+      },
+      onResult: (text) async {
+        // Une phrase = un produit ; « et » et les virgules séparent encore.
+        final added = await _add(ShoppingProducts.splitDictation(text));
+        if (mounted && added > 0) {
+          setState(() {
+            _heard = '';
+            _lastAdded = text;
+          });
+        }
+      },
+      onStop: (reason) {
+        if (!mounted) return;
+        setState(() => _listening = false);
+        final message = switch (reason) {
+          SpeechStop.user => null,
+          SpeechStop.unavailable => l10n.speechUnavailable,
+          SpeechStop.permission => l10n.speechPermission,
+          SpeechStop.error => l10n.speechError,
+        };
+        if (message != null) {
+          messenger.showSnackBar(
+            SnackBar(persist: false, content: Text(message)),
+          );
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    if (_listening) ref.read(speechInputProvider).stop();
+    super.dispose();
+  }
+
+  Widget _listeningBanner(AppLocalizations l10n, ColorScheme scheme) {
+    final text = _heard.isNotEmpty
+        ? '« $_heard »'
+        : _lastAdded.isNotEmpty
+        ? l10n.dictationAdded(_lastAdded)
+        : l10n.dictationHint;
+    return Container(
+      key: const ValueKey('shopping-listening'),
+      color: scheme.primaryContainer,
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      child: Row(
+        children: [
+          Icon(Icons.mic, color: scheme.onPrimaryContainer),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  l10n.dictationListening,
+                  style: TextStyle(
+                    color: scheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  text,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: scheme.onPrimaryContainer),
+                ),
+              ],
+            ),
+          ),
+          FilledButton.tonalIcon(
+            key: const ValueKey('shopping-dictation-stop'),
+            onPressed: _toggleDictation,
+            icon: const Icon(Icons.stop),
+            label: Text(l10n.dictationStop),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -377,7 +488,7 @@ class _AddBarState extends ConsumerState<_AddBar> {
     final l10n = AppLocalizations.of(context);
     final known = ref.watch(knownProductsProvider).value ?? const <String>[];
     final scheme = Theme.of(context).colorScheme;
-    return Material(
+    final bar = Material(
       color: scheme.surfaceContainer,
       child: SafeArea(
         top: false,
@@ -402,7 +513,7 @@ class _AddBarState extends ConsumerState<_AddBar> {
                         )
                         .take(5);
                   },
-                  onSelected: (name) => _add([name]),
+                  onSelected: _addTyped,
                   fieldViewBuilder: (context, controller, focus, submit) {
                     _controller = controller;
                     _focus = focus;
@@ -419,7 +530,7 @@ class _AddBarState extends ConsumerState<_AddBar> {
                         isDense: true,
                       ),
                       onSubmitted: (text) async {
-                        await _add([text]);
+                        await _addTyped(text);
                         _focus?.requestFocus();
                       },
                     );
@@ -428,20 +539,26 @@ class _AddBarState extends ConsumerState<_AddBar> {
               ),
               IconButton(
                 key: const ValueKey('shopping-dictate'),
-                tooltip: l10n.dictateProducts,
+                tooltip: _listening ? l10n.dictationStop : l10n.dictateProducts,
+                isSelected: _listening,
                 icon: const Icon(Icons.mic_none),
-                onPressed: _dictate,
+                selectedIcon: const Icon(Icons.mic),
+                onPressed: _toggleDictation,
               ),
               IconButton(
                 key: const ValueKey('shopping-add'),
                 tooltip: l10n.addProduct,
                 icon: const Icon(Icons.add_circle_outline),
-                onPressed: () => _add([_controller?.text ?? '']),
+                onPressed: () => _addTyped(_controller?.text ?? ''),
               ),
             ],
           ),
         ),
       ),
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [if (_listening) _listeningBanner(l10n, scheme), bar],
     );
   }
 }

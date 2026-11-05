@@ -1,11 +1,9 @@
 package io.github.aktawind.recettes
 
 import android.Manifest
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.speech.RecognizerIntent
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -17,8 +15,8 @@ class MainActivity : FlutterActivity() {
     private var shareChannel: MethodChannel? = null
     private val pageScanner = PageScanner(this)
 
-    /** La dictée en cours (une seule à la fois). */
-    private var speechResult: MethodChannel.Result? = null
+    /** La dictée continue des courses (SpeechListener). */
+    private var speech: SpeechListener? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -65,9 +63,24 @@ class MainActivity : FlutterActivity() {
         }
 
         // Dictée des courses : l'écran de reconnaissance vocale d'Android.
-        MethodChannel(messenger, "recettes/speech").setMethodCallHandler { call, result ->
+        val speechChannel = MethodChannel(messenger, "recettes/speech")
+        val listener = SpeechListener(this, speechChannel).also { speech = it }
+        speechChannel.setMethodCallHandler { call, result ->
             when (call.method) {
-                "listen" -> listen(call.argument<String>("prompt") ?: "", result)
+                "start" -> {
+                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
+                        PackageManager.PERMISSION_GRANTED
+                    ) {
+                        listener.start()
+                    } else {
+                        requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), SPEECH_PERMISSION)
+                    }
+                    result.success(null)
+                }
+                "stop" -> {
+                    listener.stop()
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -107,28 +120,26 @@ class MainActivity : FlutterActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == PageScanner.REQUEST_CODE) pageScanner.onActivityResult(resultCode, data)
-        if (requestCode == SPEECH_REQUEST) {
-            val texts = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            speechResult?.success(if (resultCode == RESULT_OK) texts?.firstOrNull() else null)
-            speechResult = null
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != SPEECH_PERMISSION) return
+        if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+            speech?.start()
+        } else {
+            speech?.stop("permission")
         }
     }
 
-    /** Ouvre la reconnaissance vocale ; renvoie le texte compris, `null` si on annule. */
-    private fun listen(prompt: String, result: MethodChannel.Result) {
-        speechResult?.success(null)
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR")
-            if (prompt.isNotEmpty()) putExtra(RecognizerIntent.EXTRA_PROMPT, prompt)
-        }
-        try {
-            speechResult = result
-            startActivityForResult(intent, SPEECH_REQUEST)
-        } catch (e: ActivityNotFoundException) {
-            speechResult = null
-            result.error("unavailable", e.message, null)
-        }
+    override fun onPause() {
+        // Le micro ne reste jamais ouvert quand l'app n'est plus à l'écran.
+        speech?.stop("user")
+        super.onPause()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -143,7 +154,7 @@ class MainActivity : FlutterActivity() {
     }
 
     companion object {
-        private const val SPEECH_REQUEST = 43
+        private const val SPEECH_PERMISSION = 43
     }
 
     private fun sharedTextOf(intent: Intent?): String? {

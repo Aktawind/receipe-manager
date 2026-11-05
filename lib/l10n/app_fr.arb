@@ -921,14 +921,51 @@
   "addProduct": "Ajouter un produit",
   "addProductHint": "2 kg de pommes de terre",
   "dictateProducts": "Dicter des produits",
-  "dictatePrompt": "Dites les produits : « deux kilos de pommes de terre et du beurre »",
+  "dictationListening": "J'écoute…",
+  "dictationHint": "Dites un produit, attendez qu'il s'ajoute, puis le suivant",
+  "dictationAdded": "Ajouté : {text}",
+  "@dictationAdded": {
+    "placeholders": {
+      "text": {"type": "String"}
+    }
+  },
+  "dictationStop": "Arrêter",
+  "speechPermission": "Le micro est refusé : autorise-le dans les réglages d'Android pour dicter",
+  "speechError": "La dictée s'est interrompue, réessaie",
   "speechUnavailable": "La dictée n'est pas disponible sur cet appareil",
-  "productsAdded": "{count, plural, =1{1 produit ajouté} other{{count} produits ajoutés}}",
-  "@productsAdded": {
+  "addToShopping": "Ajouter aux courses",
+  "addRecipesToShopping": "Ajouter des recettes",
+  "chooseRecipes": "Choisir les recettes",
+  "searchRecipes": "Rechercher une recette",
+  "shoppingListChoice": "Liste",
+  "newShoppingListNamed": "Nouvelle liste « {name} »",
+  "@newShoppingListNamed": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "addProductsCount": "{count, plural, =0{Aucun produit coché} =1{Ajouter 1 produit} other{Ajouter {count} produits}}",
+  "@addProductsCount": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
+  "addedToShoppingList": "{count, plural, =1{1 produit ajouté} other{{count} produits ajoutés}} à « {name} »",
+  "@addedToShoppingList": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "name": {"type": "String"}
+    }
+  },
+  "openShoppingList": "Voir",
+  "fromLinkedRecipe": "pour la recette « {title} »",
+  "@fromLinkedRecipe": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "fewerServings": "Moins de personnes",
+  "moreServings": "Plus de personnes",
   "shoppingListEmpty": "La liste est vide",
   "shoppingListEmptyHint": "Ajoute un produit ci-dessous, ou dicte-le avec le micro.",
   "inCartSection": "Dans le panier ({count})",

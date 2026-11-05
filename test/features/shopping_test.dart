@@ -5,13 +5,36 @@ import 'package:recettes/domain/shopping.dart';
 
 import '../helpers/test_app.dart';
 
+/// Un micro qui « entend » les phrases données, une par une, puis attend
+/// qu'on l'arrête.
 class _FakeSpeech implements SpeechInput {
-  _FakeSpeech(this.text);
+  _FakeSpeech(this.phrases);
 
-  final String? text;
+  final List<String> phrases;
+  void Function(SpeechStop)? _onStop;
+  var stopped = false;
 
   @override
-  Future<String?> listen({String prompt = ''}) async => text;
+  Future<void> start({
+    required void Function(String text) onResult,
+    void Function(String text)? onPartial,
+    void Function()? onListening,
+    required void Function(SpeechStop reason) onStop,
+  }) async {
+    _onStop = onStop;
+    onListening?.call();
+    for (final phrase in phrases) {
+      onPartial?.call(phrase);
+      onResult(phrase);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+  }
+
+  @override
+  Future<void> stop() async {
+    stopped = true;
+    _onStop?.call(SpeechStop.user);
+  }
 }
 
 Future<void> _openNewList(WidgetTester tester, String name) async {
@@ -84,29 +107,40 @@ void main() {
     expect(list.inCart.single.name, 'Beurre');
   });
 
-  testWidgets('dicter plusieurs produits d’un coup', (tester) async {
+  testWidgets('dictée continue : une phrase, un produit, jusqu’à l’arrêt', (
+    tester,
+  ) async {
     usePhoneSize(tester);
+    final speech = _FakeSpeech([
+      '5 jambons',
+      'du beurre',
+      'deux kilos de pommes de terre',
+    ]);
     final app = (await tester.runAsync(
       () => TestApp.create(
-        overrides: [
-          speechInputProvider.overrideWithValue(
-            _FakeSpeech(
-              'deux kilos de pommes de terre, du beurre et trois yaourts',
-            ),
-          ),
-        ],
+        overrides: [speechInputProvider.overrideWithValue(speech)],
       ),
     ))!;
     await app.pump(tester);
     await _openNewList(tester, 'Semaine');
     await tester.tap(find.byKey(const ValueKey('shopping-dictate')));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 400)),
+    );
     await settle(tester);
+    // Le micro reste ouvert.
+    expect(find.byKey(const ValueKey('shopping-listening')), findsOneWidget);
+    expect(find.text('Ajouté : deux kilos de pommes de terre'), findsOneWidget);
     final list = await _onlyList(app, tester);
     expect(
       [for (final i in list.items) '${i.amount} ${i.name}'.trim()],
-      ['2 kg Pommes de terre', 'Beurre', '3 Yaourts'],
+      ['5 Jambons', 'Beurre', '2 kg Pommes de terre'],
     );
-    expect(find.text('3 produits ajoutés'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('shopping-dictation-stop')));
+    await settle(tester);
+    expect(speech.stopped, isTrue);
+    expect(find.byKey(const ValueKey('shopping-listening')), findsNothing);
   });
 
   testWidgets('modifier un produit : ce que j’achète, format, commentaire', (
