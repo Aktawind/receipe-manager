@@ -889,5 +889,89 @@
         "type": "int"
       }
     }
-  }
+  },
+  "newShoppingList": "Nouvelle liste",
+  "shoppingListName": "Nom de la liste",
+  "shoppingListDefaultName": "Courses",
+  "shoppingListsEmpty": "Aucune liste de courses",
+  "shoppingListsEmptyHint": "Une liste pour la semaine, un repas, un anniversaire… Les ingrédients des recettes pourront y être ajoutés.",
+  "shoppingListSummary": "{toBuy, plural, =0{Rien à acheter} =1{1 produit à acheter} other{{toBuy} produits à acheter}}{inCart, plural, =0{} other{ · {inCart} dans le panier}}",
+  "@shoppingListSummary": {
+    "placeholders": {
+      "toBuy": {"type": "int"},
+      "inCart": {"type": "int"}
+    }
+  },
+  "renameShoppingList": "Renommer la liste",
+  "reuseShoppingList": "Réutiliser la liste",
+  "reuseShoppingListHint": "Une nouvelle liste avec les mêmes produits, tous à acheter",
+  "reusedListName": "{name} (nouvelle)",
+  "@reusedListName": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "deleteShoppingList": "Supprimer la liste",
+  "shoppingListDeleted": "Liste « {name} » supprimée",
+  "@shoppingListDeleted": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "addProduct": "Ajouter un produit",
+  "addProductHint": "2 kg de pommes de terre",
+  "dictateProducts": "Dicter des produits",
+  "dictatePrompt": "Dites les produits : « deux kilos de pommes de terre et du beurre »",
+  "speechUnavailable": "La dictée n'est pas disponible sur cet appareil",
+  "productsAdded": "{count, plural, =1{1 produit ajouté} other{{count} produits ajoutés}}",
+  "@productsAdded": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "shoppingListEmpty": "La liste est vide",
+  "shoppingListEmptyHint": "Ajoute un produit ci-dessous, ou dicte-le avec le micro.",
+  "inCartSection": "Dans le panier ({count})",
+  "@inCartSection": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "removeChecked": "Retirer les cochés",
+  "productRemoved": "« {name} » retiré de la liste",
+  "@productRemoved": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "checkedRemoved": "{count, plural, =1{1 produit retiré} other{{count} produits retirés}}",
+  "@checkedRemoved": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "productForRecipes": "pour : {titles}",
+  "@productForRecipes": {
+    "placeholders": {
+      "titles": {"type": "String"}
+    }
+  },
+  "productToBuyLine": "j'achète : {text}",
+  "@productToBuyLine": {
+    "placeholders": {
+      "text": {"type": "String"}
+    }
+  },
+  "editProduct": "Modifier le produit",
+  "productName": "Produit",
+  "productAmount": "Quantité nécessaire",
+  "productAmountHint": "250 g, 2, 1 L…",
+  "productToBuy": "Ce que j'achète",
+  "productToBuyHint": "1 plaquette de 500 g",
+  "productFormat": "Format",
+  "productFormatHint": "bouteille de 1 L, bio…",
+  "productNote": "Commentaire",
+  "removeProduct": "Retirer de la liste",
+  "save": "Enregistrer",
+  "moveProduct": "Déplacer"
 }

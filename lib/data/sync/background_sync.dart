@@ -119,6 +119,7 @@ Future<bool> runBackgroundSync() async {
       recipes: services.recipes,
       labels: services.labels,
       equipment: services.equipment,
+      shopping: services.shopping,
       photos: services.photos,
       clock: services.clock,
       remote: folder,

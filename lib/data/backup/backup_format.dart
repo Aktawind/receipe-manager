@@ -3,6 +3,7 @@ import '../../domain/label.dart';
 import '../../domain/legacy_classification.dart';
 import '../../domain/recipe.dart';
 import '../../domain/recipe_links.dart';
+import '../../domain/shopping.dart';
 import '../photo_store.dart';
 
 /// Format d'échange des sauvegardes, documenté dans docs/FORMAT_EXPORT.md.
@@ -23,9 +24,11 @@ import '../photo_store.dart';
 /// - v8 : le statut « à retester » (`toRetest`) ; rien d'autre ne change.
 /// - v7 : classement commun (`labels` du document, `labels` des recettes =
 ///   identifiants) à la place de `course`, `category` et `collections`.
+/// - v9 : listes de courses (`shoppingLists`), rayons (`aisles`) et rayon
+///   retenu pour chaque produit (`productAisles`).
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 8;
+  static const currentVersion = 9;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 
@@ -33,6 +36,9 @@ abstract final class BackupFormat {
     List<Recipe> recipes, {
     List<EquipmentItem> equipment = const [],
     List<Label> labels = const [],
+    List<ShoppingList> shoppingLists = const [],
+    List<Aisle> aisles = const [],
+    List<ProductAisle> productAisles = const [],
     required DateTime exportedAt,
     required String appVersion,
   }) {
@@ -67,8 +73,62 @@ abstract final class BackupFormat {
           },
       ],
       'recipes': [for (final recipe in recipes) _encodeRecipe(recipe)],
+      if (aisles.isNotEmpty)
+        'aisles': [
+          for (final a in aisles)
+            {
+              'id': a.id,
+              'name': a.name,
+              'position': a.position,
+              'createdAt': a.createdAt.toUtc().toIso8601String(),
+              'updatedAt': a.updatedAt.toUtc().toIso8601String(),
+              'deletedAt': a.deletedAt?.toUtc().toIso8601String(),
+            },
+        ],
+      if (productAisles.isNotEmpty)
+        'productAisles': [
+          for (final p in productAisles)
+            {
+              'key': p.key,
+              'aisle': p.aisleId,
+              'updatedAt': p.updatedAt.toUtc().toIso8601String(),
+            },
+        ],
+      if (shoppingLists.isNotEmpty)
+        'shoppingLists': [for (final l in shoppingLists) _encodeList(l)],
     };
   }
+
+  static Map<String, Object?> _encodeList(ShoppingList l) => {
+    'id': l.id,
+    'name': l.name,
+    'createdAt': l.createdAt.toUtc().toIso8601String(),
+    'updatedAt': l.updatedAt.toUtc().toIso8601String(),
+    'deletedAt': l.deletedAt?.toUtc().toIso8601String(),
+    'items': [
+      for (final i in l.items)
+        {
+          'id': i.id,
+          'name': i.name,
+          'quantity': i.quantity,
+          'unit': i.unit,
+          'toBuy': i.toBuy,
+          'format': i.format,
+          'note': i.note,
+          'aisle': i.aisleId,
+          'checked': i.checked,
+          'sources': [
+            for (final s in i.sources)
+              {
+                'recipe': s.recipeId,
+                'title': s.recipeTitle,
+                'quantity': s.quantity,
+                'unit': s.unit,
+              },
+          ],
+        },
+    ],
+  };
 
   static Map<String, Object?> _encodeRecipe(Recipe r) => {
     'id': r.id,
@@ -273,8 +333,105 @@ abstract final class BackupFormat {
           recipe.copyWith(labelIds: plan.byRecipe[recipe.id] ?? const []),
       ];
     }
-    return BackupData(recipes, equipment, labels);
+    return BackupData(
+      recipes,
+      equipment,
+      labels,
+      shoppingLists: version >= 9 ? _decodeLists(root) : const [],
+      aisles: version >= 9 ? _decodeAisles(root) : const [],
+      productAisles: version >= 9 ? _decodeProductAisles(root) : const [],
+    );
   }
+
+  static List<ShoppingList> _decodeLists(Map<String, Object?> root) {
+    final lists = <ShoppingList>[];
+    for (final item in _list(root, 'shoppingLists')) {
+      final m = _map(item, 'shoppingList');
+      final id = _string(m, 'id', required: true);
+      if (id.isEmpty) {
+        throw const BackupFormatException(BackupError.invalid, 'shoppingList');
+      }
+      lists.add(
+        ShoppingList(
+          id: id,
+          name: _string(m, 'name'),
+          createdAt: _date(m, 'createdAt')!,
+          updatedAt: _date(m, 'updatedAt')!,
+          deletedAt: _date(m, 'deletedAt', required: false),
+          items: [
+            for (final raw in _list(m, 'items'))
+              () {
+                final i = _map(raw, 'shoppingItem');
+                return ShoppingItem(
+                  id: _string(i, 'id', required: true),
+                  name: _string(i, 'name'),
+                  quantity: _double(i, 'quantity'),
+                  unit: _string(i, 'unit'),
+                  toBuy: _string(i, 'toBuy'),
+                  format: _string(i, 'format'),
+                  note: _string(i, 'note'),
+                  aisleId: i['aisle'] is String ? i['aisle'] as String : null,
+                  checked: i['checked'] == true,
+                  sources: [
+                    for (final rawSource in _list(i, 'sources'))
+                      () {
+                        final s = _map(rawSource, 'source');
+                        return ShoppingSource(
+                          recipeId: _string(s, 'recipe', required: true),
+                          recipeTitle: _string(s, 'title'),
+                          quantity: _double(s, 'quantity'),
+                          unit: _string(s, 'unit'),
+                        );
+                      }(),
+                  ],
+                );
+              }(),
+          ],
+        ),
+      );
+    }
+    return lists;
+  }
+
+  static List<Aisle> _decodeAisles(Map<String, Object?> root) => [
+    for (final item in _list(root, 'aisles'))
+      () {
+        final m = _map(item, 'aisle');
+        final id = _string(m, 'id', required: true);
+        final name = _string(m, 'name', required: true).trim();
+        if (id.isEmpty || name.isEmpty) {
+          throw const BackupFormatException(BackupError.invalid, 'aisles');
+        }
+        return Aisle(
+          id: id,
+          name: name,
+          position: _int(m, 'position') ?? 0,
+          createdAt: _date(m, 'createdAt')!,
+          updatedAt: _date(m, 'updatedAt')!,
+          deletedAt: _date(m, 'deletedAt', required: false),
+        );
+      }(),
+  ];
+
+  static List<ProductAisle> _decodeProductAisles(Map<String, Object?> root) => [
+    for (final item in _list(root, 'productAisles'))
+      () {
+        final m = _map(item, 'productAisle');
+        final key = _string(m, 'key', required: true);
+        final aisle = _string(m, 'aisle', required: true);
+        if (key.isEmpty || aisle.isEmpty) {
+          throw const BackupFormatException(
+            BackupError.invalid,
+            'productAisles',
+          );
+        }
+        return ProductAisle(
+          key: key,
+          aisleId: aisle,
+          updatedAt: _date(m, 'updatedAt')!,
+        );
+      }(),
+  ];
 
   static Recipe _decodeRecipe(Object? json, int version) {
     final m = _map(json, 'recipe');
@@ -418,13 +575,24 @@ abstract final class BackupFormat {
   }
 }
 
-/// Ce que contient une sauvegarde lue : les recettes et la liste du matériel.
+/// Ce que contient une sauvegarde lue : les recettes, le matériel, le
+/// classement et les courses.
 class BackupData {
-  const BackupData(this.recipes, this.equipment, this.labels);
+  const BackupData(
+    this.recipes,
+    this.equipment,
+    this.labels, {
+    this.shoppingLists = const [],
+    this.aisles = const [],
+    this.productAisles = const [],
+  });
 
   final List<Recipe> recipes;
   final List<EquipmentItem> equipment;
   final List<Label> labels;
+  final List<ShoppingList> shoppingLists;
+  final List<Aisle> aisles;
+  final List<ProductAisle> productAisles;
 }
 
 enum BackupError { notABackup, newerVersion, invalid, missingPhoto }

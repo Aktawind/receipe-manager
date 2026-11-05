@@ -12,6 +12,7 @@ import 'equipment_repository.dart';
 import 'label_repository.dart';
 import 'photo_store.dart';
 import 'recipe_repository.dart';
+import 'shopping_repository.dart';
 import 'sync/hybrid_clock.dart';
 import 'sync/sync_engine.dart';
 
@@ -22,6 +23,7 @@ class AppServices {
     required this.recipes,
     required this.equipment,
     required this.labels,
+    required this.shopping,
     required this.photos,
     required this.backups,
     required this.clock,
@@ -32,6 +34,7 @@ class AppServices {
   final RecipeRepository recipes;
   final EquipmentRepository equipment;
   final LabelRepository labels;
+  final ShoppingRepository shopping;
   final PhotoStore photos;
   final BackupService backups;
 
@@ -93,12 +96,14 @@ class AppServices {
     final recipes = RecipeRepository(database, clock: clock.now);
     final equipment = EquipmentRepository(database, clock: clock.now);
     final labels = LabelRepository(database, clock: clock.now);
+    final shopping = ShoppingRepository(database, clock: clock.now);
     final photos = PhotoStore(Directory(p.join(root.path, 'photos')));
     final services = AppServices(
       database: database,
       recipes: recipes,
       equipment: equipment,
       labels: labels,
+      shopping: shopping,
       photos: photos,
       clock: clock,
       root: root,
@@ -106,6 +111,7 @@ class AppServices {
         repository: recipes,
         equipment: equipment,
         labels: labels,
+        shopping: shopping,
         photos: photos,
         backupsDirectory: backupsDir,
         appVersion: appVersion,
@@ -143,6 +149,10 @@ final equipmentRepositoryProvider = Provider<EquipmentRepository>(
 
 final labelRepositoryProvider = Provider<LabelRepository>(
   (ref) => ref.watch(appServicesProvider).labels,
+);
+
+final shoppingRepositoryProvider = Provider<ShoppingRepository>(
+  (ref) => ref.watch(appServicesProvider).shopping,
 );
 
 final photoStoreProvider = Provider<PhotoStore>(
