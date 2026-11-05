@@ -6,6 +6,8 @@ import '../../core/platform/speech_input.dart';
 import '../../data/app_services.dart';
 import '../../domain/shopping.dart';
 import '../../l10n/app_localizations.dart';
+import 'add_to_shopping_sheet.dart';
+import 'recipe_picker.dart';
 import 'shopping_item_sheet.dart';
 import 'shopping_page.dart';
 import 'shopping_providers.dart';
@@ -29,6 +31,12 @@ class ShoppingListPage extends ConsumerWidget {
       appBar: AppBar(
         title: Text(list.name),
         actions: [
+          IconButton(
+            key: const ValueKey('shopping-add-recipes'),
+            tooltip: l10n.addRecipesToShopping,
+            icon: const Icon(Icons.menu_book_outlined),
+            onPressed: () => _addRecipes(context, ref, list),
+          ),
           PopupMenuButton<String>(
             key: const ValueKey('shopping-list-menu'),
             onSelected: (action) async {
@@ -60,6 +68,20 @@ class ShoppingListPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Choisir des recettes, puis leurs ingrédients à ajouter à [list].
+Future<void> _addRecipes(
+  BuildContext context,
+  WidgetRef ref,
+  ShoppingList list,
+) async {
+  final ids = await pickRecipes(context);
+  if (ids == null || ids.isEmpty || !context.mounted) return;
+  final repository = ref.read(recipeRepositoryProvider);
+  final recipes = [for (final id in ids) ?await repository.getRecipe(id)];
+  if (!context.mounted || recipes.isEmpty) return;
+  await showAddToShoppingSheet(context, recipes: recipes, listId: list.id);
 }
 
 /// Enregistre les produits de [list].

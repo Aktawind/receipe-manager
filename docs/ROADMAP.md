@@ -341,13 +341,17 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
 - la liste générée depuis le planning viendra avec la 0.11.
 
 *Avancement* : quatre étapes.
-- **Étape 1 (à tester)** : listes (créer, renommer, supprimer, réutiliser), produits ajoutés en une
+- **Étape 1 (validée le 2026-11-05)** : listes (créer, renommer, supprimer, réutiliser), produits ajoutés en une
   ligne (« 2 kg de pommes de terre », « Beurre 50 g ») ou dictés, avec les produits déjà achetés en
   suggestion ; fusion du même produit (quantités additionnées) ; cocher → « Dans le panier »,
   « Retirer les cochés » ; modifier (quantité, ce que j'achète, format, commentaire), déplacer,
   glisser pour retirer. Base v10, sauvegarde v9, synchro Drive des listes et des rayons.
-- **Étape 2** : « Ajouter aux courses » depuis une recette (et plusieurs recettes d'un coup), recettes
-  liées, recettes d'origine.
+  Retour du 2026-11-05 : la dictée en une phrase sépare mal les produits → **dictée continue** (le
+  micro reste ouvert, une phrase = un produit, jusqu'à « Arrêter »).
+- **Étape 2 (à tester)** : 🛒 « Ajouter aux courses » sur la fiche d'une recette (avec les portions
+  affichées) et « Ajouter des recettes » depuis une liste (plusieurs d'un coup) : personnes par
+  recette, ingrédients à cocher (sel, poivre, eau et facultatifs décochés), recettes liées
+  dépliées en proportion, fusion avec la liste, recettes d'origine.
 - **Étape 3** : rayons (rangement automatique, réglages, mémoire par produit).
 - **Étape 4** : partage en texte, PDF et impression sur une page A4.
 

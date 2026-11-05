@@ -5,10 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../data/app_services.dart';
 import '../../domain/recipe.dart';
 import '../../l10n/app_localizations.dart';
+import '../shopping/add_to_shopping_sheet.dart';
 import 'detail/detail_header.dart';
 import 'detail/detail_sections.dart';
 import 'recipe_photo.dart';
 import 'recipe_providers.dart';
+import 'recipe_scale.dart';
 
 /// Largeur à partir de laquelle la fiche passe sur deux colonnes (tablette).
 const _wideBreakpoint = 840.0;
@@ -124,6 +126,17 @@ class _RecipeDetail extends ConsumerWidget {
           onPressed: () => ref
               .read(recipeRepositoryProvider)
               .setFavorite(recipe.id, !recipe.isFavorite),
+        ),
+        const SizedBox(width: 8),
+        DetailCircleButton(
+          key: const ValueKey('recipe-add-to-shopping'),
+          icon: Icons.add_shopping_cart,
+          tooltip: l10n.addToShopping,
+          onPressed: () => showAddToShoppingSheet(
+            context,
+            recipes: [recipe],
+            factors: {recipe.id: ref.read(recipeScaleProvider(recipe.id))},
+          ),
         ),
         const SizedBox(width: 8),
         DetailCircleButton(
