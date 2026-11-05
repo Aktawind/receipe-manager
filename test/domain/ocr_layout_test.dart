@@ -295,4 +295,39 @@ void main() {
     expect(text, contains('- 2 entrecôtes\n- 3 échalotes'));
     expect(text, contains('1. Faites griller'));
   });
+
+  test('une page à une colonne, avec rubriques (tarte aux pommes)', () {
+    final text = read([
+      l('TARTE AUX POMMES', 60, 40, height: 46, block: 0),
+      l('Pour 6 personnes', 60, 120, block: 1),
+      l('Préparation : 20 min', 60, 145, block: 1),
+      l('Cuisson : 35 min', 60, 170, block: 1),
+      l('Ingrédients', 60, 230, block: 2),
+      l('1 pâte brisée', 60, 260, block: 3),
+      l('6 pommes', 60, 285, block: 3),
+      l('5O g de sucre', 60, 310, block: 3),
+      l('30 g de beurre', 60, 335, block: 3),
+      l('Préparation', 60, 395, block: 4),
+      l('Préchauffez le four à 180 °C. Étalez la pâte', 60, 425, block: 5),
+      l('dans un moule à tarte et piquez-la avec une', 60, 450, block: 5),
+      l('fourchette.', 60, 475, block: 5),
+      l('Épluchez les pommes, coupez-les en fines', 60, 515, block: 6),
+      l('lamelles et disposez-les sur la pâte.', 60, 540, block: 6),
+      l('Saupoudrez de sucre, parsemez de beurre et', 60, 580, block: 7),
+      l('enfournez pour 35 minutes.', 60, 605, block: 7),
+    ]);
+    final recipe = TextRecipeParser.parse(text);
+    expect(recipe.title, 'Tarte aux pommes');
+    expect(recipe.servings, 6);
+    expect(recipe.prepMinutes, 20);
+    expect(recipe.cookMinutes, 35);
+    expect(recipe.ingredients, [
+      '- 1 pâte brisée',
+      '- 6 pommes',
+      '- 50 g de sucre',
+      '- 30 g de beurre',
+    ]);
+    expect(recipe.steps, hasLength(3));
+    expect(recipe.steps.first, endsWith('avec une fourchette.'));
+  });
 }
