@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import '../core/format/text_search.dart';
 import 'ingredient_text.dart';
 import 'ocr_text.dart';
+import 'recipe_words.dart';
 import 'step_durations.dart';
 
 /// Une ligne lue sur une page, avec sa place (page remise droite).
@@ -459,7 +460,9 @@ class _Page {
             ? block.lines[i + 1].text
             : null;
         // « Préparation » puis « 10 MIN » : une information.
-        if (_isTimeLabel(text) && next != null && _isDurations(next)) {
+        if (RecipeWords.isInfoLabel(text) &&
+            next != null &&
+            _isDurations(next)) {
           recipe.info.add('$text : $next');
           labeledTimes = true;
           i++;
@@ -751,10 +754,6 @@ class _Page {
     return rest.length <= 3;
   }
 
-  static bool _isTimeLabel(String text) => RegExp(
-    r'^(preparation|cuisson|repos|refrigeration|temps total|total)\s*:?$',
-  ).hasMatch(normalizeForSearch(text).trim());
-
   /// Personnes, temps : « POUR 4 PERSONNES », « PRÉPARATION : 15 MIN »,
   /// « prêt en 10 minutes », « 10 minutes de cuisson », « 4 pers. ».
   static bool _isInfo(String text) {
@@ -777,17 +776,19 @@ class _Page {
       // « Ingrédients pour 1,5 litre de bouillon » reste une rubrique.
       if (!n.startsWith('ingredients')) return null;
     }
-    if (RegExp(r'^(les )?ingredients\b').hasMatch(n)) {
-      return (_Kind.ingredient, null);
-    }
     if (RegExp(r'^et aussi$').hasMatch(n)) return (_Kind.ingredient, null);
-    if (RegExp(r'^(preparation|realisation|etapes|recette|deroulement)$')
-        .hasMatch(n)) {
-      return (_Kind.step, null);
-    }
-    if (RegExp(r'^(astuces?|conseils?|variantes?|le petit plus|bon a savoir)\b')
-        .hasMatch(n)) {
-      return (_Kind.note, null);
+    // Sur une page, une rubrique tient en quelques mots : « Préparation des
+    // légumes : » ouvre une étape, pas la préparation.
+    final words = n.split(' ').length;
+    switch (RecipeWords.sectionOf(text)) {
+      case RecipeSection.ingredients:
+        return (_Kind.ingredient, null);
+      case RecipeSection.steps when words <= 2:
+        return (_Kind.step, null);
+      case RecipeSection.notes when words <= 5:
+        return (_Kind.note, null);
+      case _:
+        break;
     }
     // « POUR LA MARINADE », « Pour la pâte : » : un groupe d'ingrédients.
     final group = RegExp(r"^pour (la|le|les|l |un|une) .{2,30}$").firstMatch(n);
