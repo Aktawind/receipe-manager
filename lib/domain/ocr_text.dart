@@ -9,7 +9,7 @@ abstract final class OcrText {
   static String clean(String text) {
     final lines = <String>[];
     for (final raw in text.split(RegExp(r'\r?\n'))) {
-      final line = _fixCommonErrors(raw.trim());
+      final line = fixLine(raw.trim());
       if (line.isEmpty) {
         // Un blanc sépare deux paragraphes : on le garde.
         if (lines.isNotEmpty && lines.last.isNotEmpty) lines.add('');
@@ -54,7 +54,7 @@ abstract final class OcrText {
 
   /// Confusions fréquentes de la lecture : « l00 g » pour « 100 g »,
   /// « 2O cl » pour « 20 cl », « 1/2 » collé à l'unité.
-  static String _fixCommonErrors(String line) {
+  static String fixLine(String line) {
     var text = line;
     // Un « l » ou un « O » au milieu de chiffres, ou juste avant une unité.
     text = text.replaceAllMapped(

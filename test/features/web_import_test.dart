@@ -230,15 +230,18 @@ Ajoutez un zeste de citron.''',
     tester,
   ) async {
     usePhoneSize(tester);
-    final scanner = FakeScanner('''GÂTEAU AU CHOCOLAT
+    // Ce que rend la lecture : la page remise en forme par `OcrLayout`.
+    final scanner = FakeScanner('''# Gâteau au chocolat
+
 Pour 8 personnes
-Ingrédients
-2OO g de chocolat noir
-4 œufs
-Préparation
-Faire fondre le chocolat avec le beurre au
-bain-marie, puis ajouter les œufs.
-Cuire 25 minutes à 180 °C.''');
+
+## Ingrédients
+- 200 g de chocolat noir
+- 4 œufs
+
+## Préparation
+1. Faire fondre le chocolat avec le beurre au bain-marie, puis ajouter les œufs.
+2. Cuire 25 minutes à 180 °C.''');
     final app = (await tester.runAsync(
       () => TestApp.create(
         overrides: [pageScannerProvider.overrideWithValue(scanner)],
@@ -255,7 +258,7 @@ Cuire 25 minutes à 180 °C.''');
     );
     await settle(tester);
 
-    // Le texte lu est dans l'onglet « Texte », nettoyé (« 2OO » → « 200 »).
+    // Le texte lu est dans l'onglet « Texte », corrigeable.
     final field = tester.widget<TextField>(
       find.byKey(const ValueKey('text-import-field')),
     );
