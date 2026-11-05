@@ -13,6 +13,7 @@ class MainActivity : FlutterActivity() {
     /** Texte partagé depuis une autre app (adresse d'une recette), pas encore lu. */
     private var sharedText: String? = null
     private var shareChannel: MethodChannel? = null
+    private val pageScanner = PageScanner(this)
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -48,6 +49,16 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        // Scanner de pages de Google Play (PageScanner).
+        val scannerChannel = MethodChannel(messenger, "recettes/scanner")
+        pageScanner.onStatus = { status -> scannerChannel.invokeMethod("status", status) }
+        scannerChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "scan" -> pageScanner.scan(call.argument<Int>("pageLimit") ?: 5, result)
+                else -> result.notImplemented()
+            }
+        }
+
         // Minuteurs : alarmes et notifications (TimerAlarms).
         MethodChannel(messenger, "recettes/timers").setMethodCallHandler { call, result ->
             when (call.method) {
@@ -78,6 +89,11 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == PageScanner.REQUEST_CODE) pageScanner.onActivityResult(resultCode, data)
     }
 
     override fun onNewIntent(intent: Intent) {

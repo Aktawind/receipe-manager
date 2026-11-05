@@ -16,7 +16,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.6](#06--portions-quantités-et-conversions) | Portions, quantités et conversions | ✅ |
 | [0.7](#07--mode-cuisine) | Mode cuisine | ✅ |
 | [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ✅ |
-| [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ⬜ |
+| [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ✅ |
 | [0.10](#010--listes-de-courses) | Listes de courses | ⬜ |
 | [0.11](#011--planning-des-repas) | Planning des repas | ⬜ |
 | [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ⬜ |
@@ -287,14 +287,31 @@ des doublons.
 ## 0.9 — Import depuis photos et documents
 
 - Photographier une recette dans un livre, scanner une fiche papier (recadrage, redressement)
-- Capture d'écran, PDF, document texte
+- Capture d'écran (image de la galerie)
 - Plusieurs pages pour une même recette
 - Reconnaissance du texte (OCR) **sur l'appareil, hors ligne et gratuite** (Google ML Kit)
-- Reconnaissance des ingrédients et des étapes, extraction de la photo principale par recadrage
+- Reconnaissance des ingrédients et des étapes, photo de la recette recadrée sur la page ou prise
+  à part
 - Correction des erreurs avant import
 
 > ✅ Validé le 2026-10-21 : l'OCR sur l'appareil (ML Kit, hors ligne) est accepté
 > ([décision 0004](decisions/0004-sans-ia.md)).
+
+*Décisions du 2026-11-04* : pas de PDF ni de documents (Word…) pour l'instant ; la photo du plat
+se recadre sur la page scannée **ou** se prend à part ; le scanner de pages de Google Play
+(services Google Play du téléphone) est accepté.
+
+*Livré en 0.9.0 (2026-11-05)* : onglet « Photo » de l'import : scanner de pages de Google Play
+(cadrage et redressement automatiques, jusqu'à 5 pages, image de la galerie) ou « Prendre une
+photo » / « Choisir une image », lecture du texte sur l'appareil (ML Kit, modèle latin inclus),
+puis **lecture de la mise en page** (`OcrLayout`) : page tournée remise droite, titre, colonnes,
+légendes des photos d'ingrédients et leurs quantités, gros numéros d'étapes, listes « + », temps
+en pictogrammes, astuces ; le texte obtenu arrive dans l'onglet « Texte » pour être corrigé.
+Retour du 2026-11-04 (Galaxy Tab S9) : le scanner est appelé directement (`PageScanner.kt`,
+téléchargement du module à la demande, erreur détaillée).
+
+*Décision du 2026-11-05* : pas de photo du plat prise sur le livre ni à part à l'import (les
+photos des livres rendent mal) ; l'étape 2 est abandonnée.
 
 ## 0.10 — Listes de courses
 

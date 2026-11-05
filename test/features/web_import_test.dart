@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:recettes/data/import/page_scanner.dart';
 import 'package:recettes/data/import/web_import.dart';
 import 'package:recettes/data/photo_store.dart';
 import 'package:recettes/features/recipes/web_import_page.dart';
@@ -41,6 +42,34 @@ MockClient _client() => MockClient((request) async {
   }
   return http.Response('not found', 404);
 });
+
+class FakeScanner implements PageScanner {
+  FakeScanner(this.text, {this.error});
+
+  final String text;
+  final PageScanError? error;
+  var scans = 0;
+
+  @override
+  Future<List<String>?> scan({void Function(int? percent)? onDownload}) async {
+    scans++;
+    return ['page1.jpg'];
+  }
+
+  var picks = <bool>[];
+
+  @override
+  Future<List<String>?> pick({required bool camera}) async {
+    picks.add(camera);
+    return ['photo.jpg'];
+  }
+
+  @override
+  Future<String> read(List<String> images) async {
+    if (error != null) throw PageScanException(error!);
+    return text;
+  }
+}
 
 void main() {
   testWidgets('importer une page : aperçu, puis la recette est créée', (
@@ -197,6 +226,111 @@ Ajoutez un zeste de citron.''',
     expect(find.textContaining('ni ingrédients ni étapes'), findsOneWidget);
   });
 
+  testWidgets('photo d’une page : texte lu, corrigeable, puis analysé', (
+    tester,
+  ) async {
+    usePhoneSize(tester);
+    // Ce que rend la lecture : la page remise en forme par `OcrLayout`.
+    final scanner = FakeScanner('''# Gâteau au chocolat
+
+Pour 8 personnes
+
+## Ingrédients
+- 200 g de chocolat noir
+- 4 œufs
+
+## Préparation
+1. Faire fondre le chocolat avec le beurre au bain-marie, puis ajouter les œufs.
+2. Cuire 25 minutes à 180 °C.''');
+    final app = (await tester.runAsync(
+      () => TestApp.create(
+        overrides: [pageScannerProvider.overrideWithValue(scanner)],
+      ),
+    ))!;
+    await app.pump(tester);
+    await tester.tap(find.byKey(const ValueKey('web-import-open')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('import-mode-photo')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('photo-import-scan')));
+    await tester.runAsync(
+      () => Future.delayed(const Duration(milliseconds: 50)),
+    );
+    await settle(tester);
+
+    // Le texte lu est dans l'onglet « Texte », corrigeable.
+    final field = tester.widget<TextField>(
+      find.byKey(const ValueKey('text-import-field')),
+    );
+    expect(field.controller!.text, contains('200 g de chocolat noir'));
+    expect(
+      field.controller!.text,
+      contains('au bain-marie, puis ajouter les œufs.'),
+    );
+    await tester.ensureVisible(find.text('2 étapes', skipOffstage: false));
+    await settle(tester);
+    expect(find.text('Gâteau au chocolat'), findsOneWidget);
+    expect(find.text('2 ingrédients'), findsOneWidget);
+  });
+
+  testWidgets('photo sans texte lisible : message', (tester) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(
+      () => TestApp.create(
+        overrides: [
+          pageScannerProvider.overrideWithValue(
+            FakeScanner('', error: PageScanError.noText),
+          ),
+        ],
+      ),
+    ))!;
+    await app.pump(tester);
+    await tester.tap(find.byKey(const ValueKey('web-import-open')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('import-mode-photo')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('photo-import-scan')));
+    await tester.runAsync(
+      () => Future.delayed(const Duration(milliseconds: 50)),
+    );
+    await settle(tester);
+    expect(find.byKey(const ValueKey('photo-import-error')), findsOneWidget);
+    expect(find.textContaining('Aucun texte lisible'), findsOneWidget);
+  });
+
+  testWidgets('scanner indisponible : une image de la galerie, lue pareil', (
+    tester,
+  ) async {
+    usePhoneSize(tester);
+    final scanner = _UnavailableScanner();
+    final app = (await tester.runAsync(
+      () => TestApp.create(
+        overrides: [pageScannerProvider.overrideWithValue(scanner)],
+      ),
+    ))!;
+    await app.pump(tester);
+    await tester.tap(find.byKey(const ValueKey('web-import-open')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('import-mode-photo')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('photo-import-scan')));
+    await tester.runAsync(
+      () => Future.delayed(const Duration(milliseconds: 50)),
+    );
+    await settle(tester);
+    expect(find.textContaining('MlKitException code 13'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('photo-import-gallery')));
+    await tester.runAsync(
+      () => Future.delayed(const Duration(milliseconds: 50)),
+    );
+    await settle(tester);
+    final field = tester.widget<TextField>(
+      find.byKey(const ValueKey('text-import-field')),
+    );
+    expect(field.controller!.text, contains('200 g de farine'));
+  });
+
   test('texte partagé : recette ou adresse', () {
     expect(looksLikeRecipeText('https://www.marmiton.org/x'), isFalse);
     expect(
@@ -259,4 +393,16 @@ Ajoutez un zeste de citron.''',
       ),
     );
   });
+}
+
+class _UnavailableScanner extends FakeScanner {
+  _UnavailableScanner()
+    : super('Crêpes\nIngrédients\n200 g de farine\nPréparation\nMélanger.');
+
+  @override
+  Future<List<String>?> scan({void Function(int? percent)? onDownload}) async =>
+      throw const PageScanException(
+        PageScanError.unavailable,
+        'unavailable : MlKitException code 13 : Erreur',
+      );
 }

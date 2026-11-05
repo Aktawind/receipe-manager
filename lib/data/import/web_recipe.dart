@@ -19,6 +19,7 @@ class WebRecipe {
     this.prepMinutes,
     this.cookMinutes,
     this.totalMinutes,
+    this.rest,
     this.notes = '',
   });
 
@@ -43,6 +44,9 @@ class WebRecipe {
   /// préparation + cuisson.
   final int? totalMinutes;
 
+  /// Repos, réfrigération… annoncés tels quels (livre, texte collé).
+  final int? rest;
+
   /// Commentaires ou astuces du site, quand il y en a.
   final String notes;
 
@@ -50,6 +54,7 @@ class WebRecipe {
 
   /// Le temps qui n'est ni préparation ni cuisson (repos, réfrigération).
   int? get restMinutes {
+    if (this.rest != null) return this.rest;
     final total = totalMinutes;
     if (total == null) return null;
     final rest = total - (prepMinutes ?? 0) - (cookMinutes ?? 0);
