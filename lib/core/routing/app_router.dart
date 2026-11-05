@@ -14,6 +14,7 @@ import '../../features/recipes/recipes_page.dart';
 import '../../features/recipes/web_import_page.dart';
 import '../../features/settings/settings_page.dart';
 import '../../features/settings/trash_page.dart';
+import '../../features/shopping/shopping_list_page.dart';
 import '../../features/shopping/shopping_page.dart';
 import '../../features/sync/sync_page.dart';
 
@@ -72,7 +73,21 @@ GoRouter buildRouter() => GoRouter(
           ],
         ),
         _branch('/planning', const PlanningPage()),
-        _branch('/courses', const ShoppingPage()),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/courses',
+              builder: (context, state) => const ShoppingPage(),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) =>
+                      ShoppingListPage(listId: state.pathParameters['id']!),
+                ),
+              ],
+            ),
+          ],
+        ),
         StatefulShellBranch(
           routes: [
             GoRoute(

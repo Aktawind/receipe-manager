@@ -1,0 +1,207 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:recettes/core/platform/speech_input.dart';
+import 'package:recettes/domain/shopping.dart';
+
+import '../helpers/test_app.dart';
+
+class _FakeSpeech implements SpeechInput {
+  _FakeSpeech(this.text);
+
+  final String? text;
+
+  @override
+  Future<String?> listen({String prompt = ''}) async => text;
+}
+
+Future<void> _openNewList(WidgetTester tester, String name) async {
+  await tester.tap(find.text('Courses').last);
+  await settle(tester);
+  await tester.tap(find.byKey(const ValueKey('shopping-new-list')));
+  await settle(tester);
+  await tester.enterText(find.byType(TextField).last, name);
+  await tester.tap(find.text('Valider'));
+  await settle(tester);
+}
+
+Future<void> _type(WidgetTester tester, String line) async {
+  await tester.enterText(
+    find.byKey(const ValueKey('shopping-add-field')),
+    line,
+  );
+  await tester.testTextInput.receiveAction(TextInputAction.done);
+  await settle(tester);
+}
+
+Future<ShoppingList> _onlyList(TestApp app, WidgetTester tester) async =>
+    (await tester.runAsync(() => app.services.shopping.getAllLists()))!.single;
+
+void main() {
+  testWidgets('une liste : ajouter, fusionner, cocher, retirer les cochés', (
+    tester,
+  ) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(TestApp.create))!;
+    await app.pump(tester);
+    expect(find.text('Courses'), findsWidgets);
+
+    await _openNewList(tester, 'Semaine');
+    expect(find.text('Semaine'), findsOneWidget);
+    expect(find.text('La liste est vide'), findsOneWidget);
+
+    await _type(tester, '2 kg de pommes de terre');
+    await _type(tester, '200 g de beurre');
+    await _type(tester, 'Beurre 50 g');
+    await _type(tester, 'jambons');
+    await _type(tester, '4 Jambon');
+    var list = await _onlyList(app, tester);
+    expect(
+      [for (final i in list.items) '${i.amount} ${i.name}'.trim()],
+      ['2 kg Pommes de terre', '250 g Beurre', '4 Jambons'],
+    );
+
+    // Cocher : le produit passe dans le panier.
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(ValueKey('shopping-item-${list.items[1].id}')),
+        matching: find.byType(Checkbox),
+      ),
+    );
+    await settle(tester);
+    expect(find.text('Dans le panier (1)'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('shopping-remove-checked')));
+    await settle(tester);
+    list = await _onlyList(app, tester);
+    expect(list.items, hasLength(2));
+    expect(find.text('1 produit retiré'), findsOneWidget);
+
+    // Annuler remet le beurre, toujours dans le panier.
+    await tester.tap(find.text('Annuler'));
+    await settle(tester);
+    list = await _onlyList(app, tester);
+    expect(list.items, hasLength(3));
+    expect(list.inCart.single.name, 'Beurre');
+  });
+
+  testWidgets('dicter plusieurs produits d’un coup', (tester) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(
+      () => TestApp.create(
+        overrides: [
+          speechInputProvider.overrideWithValue(
+            _FakeSpeech(
+              'deux kilos de pommes de terre, du beurre et trois yaourts',
+            ),
+          ),
+        ],
+      ),
+    ))!;
+    await app.pump(tester);
+    await _openNewList(tester, 'Semaine');
+    await tester.tap(find.byKey(const ValueKey('shopping-dictate')));
+    await settle(tester);
+    final list = await _onlyList(app, tester);
+    expect(
+      [for (final i in list.items) '${i.amount} ${i.name}'.trim()],
+      ['2 kg Pommes de terre', 'Beurre', '3 Yaourts'],
+    );
+    expect(find.text('3 produits ajoutés'), findsOneWidget);
+  });
+
+  testWidgets('modifier un produit : ce que j’achète, format, commentaire', (
+    tester,
+  ) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(TestApp.create))!;
+    await app.pump(tester);
+    await _openNewList(tester, 'Semaine');
+    await _type(tester, '250 g de beurre');
+
+    await tester.tap(find.textContaining('Beurre', findRichText: true));
+    await settle(tester);
+    await tester.enterText(
+      find.byKey(const ValueKey('shopping-item-to-buy')),
+      '1 plaquette',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('shopping-item-format')),
+      'doux',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('shopping-item-amount')),
+      '300 g',
+    );
+    await tester.tap(find.byKey(const ValueKey('shopping-item-save')));
+    await settle(tester);
+
+    final item = (await _onlyList(app, tester)).items.single;
+    expect(
+      (item.amount, item.toBuy, item.format),
+      ('300 g', '1 plaquette', 'doux'),
+    );
+    expect(find.text('j\'achète : 1 plaquette · doux'), findsOneWidget);
+  });
+
+  testWidgets('les recettes d’origine apparaissent sous le produit', (
+    tester,
+  ) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(TestApp.create))!;
+    final shopping = app.services.shopping;
+    await tester.runAsync(() async {
+      final list = await shopping.createList('Semaine');
+      await shopping.save(
+        list.copyWith(
+          items: const [
+            ShoppingItem(
+              id: 'b',
+              name: 'Beurre',
+              quantity: 250,
+              unit: 'g',
+              sources: [
+                ShoppingSource(recipeId: 'q', recipeTitle: 'Quiche'),
+                ShoppingSource(recipeId: 'c', recipeTitle: 'Crêpes'),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
+    await app.pump(tester);
+    await tester.tap(find.text('Courses').last);
+    await settle(tester);
+    expect(find.text('1 produit à acheter'), findsOneWidget);
+    await tester.tap(find.text('Semaine'));
+    await settle(tester);
+    expect(find.text('pour : Quiche, Crêpes'), findsOneWidget);
+  });
+
+  testWidgets('réutiliser une liste : mêmes produits, tous à acheter', (
+    tester,
+  ) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(TestApp.create))!;
+    await app.pump(tester);
+    await _openNewList(tester, 'Semaine');
+    await _type(tester, 'lait');
+    final list = await _onlyList(app, tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(ValueKey('shopping-item-${list.items.single.id}')),
+        matching: find.byType(Checkbox),
+      ),
+    );
+    await settle(tester);
+
+    await tester.tap(find.byKey(const ValueKey('shopping-list-menu')));
+    await settle(tester);
+    await tester.tap(find.text('Réutiliser la liste'));
+    await settle(tester);
+    expect(find.text('Semaine (nouvelle)'), findsOneWidget);
+    final lists = (await tester.runAsync(app.services.shopping.getAllLists))!;
+    final copy = lists.firstWhere((l) => l.name == 'Semaine (nouvelle)');
+    expect(copy.items.single.name, 'Lait');
+    expect(copy.items.single.checked, isFalse);
+  });
+}

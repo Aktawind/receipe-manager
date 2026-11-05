@@ -37,6 +37,12 @@ void main() {
     expect((a.name, a.quantity, a.unit), ('Pommes de terre', 2, 'kg'));
     final b = ShoppingProducts.parse('beurre');
     expect((b.name, b.quantity, b.unit), ('Beurre', null, ''));
+    final d = ShoppingProducts.parse('Beurre 50 g');
+    expect((d.name, d.quantity, d.unit), ('Beurre', 50, 'g'));
+    final e = ShoppingProducts.parse('Jambon x 4');
+    expect((e.name, e.quantity), ('Jambon', 4));
+    expect(ShoppingProducts.parse('du beurre').name, 'Beurre');
+    expect(ShoppingProducts.parse('Vitamine B12').name, 'Vitamine B12');
     final c = ShoppingProducts.parse('6 œufs (bio)');
     expect((c.name, c.quantity, c.note), ('Œufs', 6, 'bio'));
   });

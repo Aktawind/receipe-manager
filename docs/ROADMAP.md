@@ -17,7 +17,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.7](#07--mode-cuisine) | Mode cuisine | ✅ |
 | [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ✅ |
 | [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ✅ |
-| [0.10](#010--listes-de-courses) | Listes de courses | ⬜ |
+| [0.10](#010--listes-de-courses) | Listes de courses | 🟨 |
 | [0.11](#011--planning-des-repas) | Planning des repas | ⬜ |
 | [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ⬜ |
 | [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ⬜ |
@@ -324,9 +324,32 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
 - Quantité à acheter différente de la quantité théorique, format, commentaire
 - Cocher, supprimer, déplacer
 - Regroupement par rayon (Fruits et légumes, Produits frais, Épicerie, Surgelés…)
-- Organisation par magasin, magasins favoris (réglages)
 - Exporter, imprimer, partager (texte, PDF)
 - Liste partagée entre tes appareils (via la synchro Drive)
+
+*Décisions du 2026-11-05* :
+- **dictée** des produits au micro (reconnaissance vocale d'Android) ;
+- singulier et pluriel fusionnés (« jambon » / « jambons ») ;
+- les recettes d'origine s'affichent en petit sous chaque produit ;
+- sel, poivre, eau… proposés mais décochés à l'ajout d'une recette ;
+- produits cochés dans « Dans le panier », barrés, avec « Retirer les cochés » ;
+- **rayons modifiables dans les réglages** ; un produit rangé à la main retourne dans le même rayon
+  ensuite (ex. « sauce soja » → Épicerie salée) ;
+- **pas de magasins** ;
+- partage en texte groupé par rayon, et **PDF / impression tenant sur une feuille A4** ;
+- pas de partage avec d'autres personnes (le partage et la synchro suffisent), pas de placard ;
+- la liste générée depuis le planning viendra avec la 0.11.
+
+*Avancement* : quatre étapes.
+- **Étape 1 (à tester)** : listes (créer, renommer, supprimer, réutiliser), produits ajoutés en une
+  ligne (« 2 kg de pommes de terre », « Beurre 50 g ») ou dictés, avec les produits déjà achetés en
+  suggestion ; fusion du même produit (quantités additionnées) ; cocher → « Dans le panier »,
+  « Retirer les cochés » ; modifier (quantité, ce que j'achète, format, commentaire), déplacer,
+  glisser pour retirer. Base v10, sauvegarde v9, synchro Drive des listes et des rayons.
+- **Étape 2** : « Ajouter aux courses » depuis une recette (et plusieurs recettes d'un coup), recettes
+  liées, recettes d'origine.
+- **Étape 3** : rayons (rangement automatique, réglages, mémoire par produit).
+- **Étape 4** : partage en texte, PDF et impression sur une page A4.
 
 ## 0.11 — Planning des repas
 

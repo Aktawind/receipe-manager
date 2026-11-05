@@ -1,9 +1,11 @@
 package io.github.aktawind.recettes
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.speech.RecognizerIntent
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -14,6 +16,9 @@ class MainActivity : FlutterActivity() {
     private var sharedText: String? = null
     private var shareChannel: MethodChannel? = null
     private val pageScanner = PageScanner(this)
+
+    /** La dictée en cours (une seule à la fois). */
+    private var speechResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -59,6 +64,14 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        // Dictée des courses : l'écran de reconnaissance vocale d'Android.
+        MethodChannel(messenger, "recettes/speech").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "listen" -> listen(call.argument<String>("prompt") ?: "", result)
+                else -> result.notImplemented()
+            }
+        }
+
         // Minuteurs : alarmes et notifications (TimerAlarms).
         MethodChannel(messenger, "recettes/timers").setMethodCallHandler { call, result ->
             when (call.method) {
@@ -94,6 +107,28 @@ class MainActivity : FlutterActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == PageScanner.REQUEST_CODE) pageScanner.onActivityResult(resultCode, data)
+        if (requestCode == SPEECH_REQUEST) {
+            val texts = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            speechResult?.success(if (resultCode == RESULT_OK) texts?.firstOrNull() else null)
+            speechResult = null
+        }
+    }
+
+    /** Ouvre la reconnaissance vocale ; renvoie le texte compris, `null` si on annule. */
+    private fun listen(prompt: String, result: MethodChannel.Result) {
+        speechResult?.success(null)
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR")
+            if (prompt.isNotEmpty()) putExtra(RecognizerIntent.EXTRA_PROMPT, prompt)
+        }
+        try {
+            speechResult = result
+            startActivityForResult(intent, SPEECH_REQUEST)
+        } catch (e: ActivityNotFoundException) {
+            speechResult = null
+            result.error("unavailable", e.message, null)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -105,6 +140,10 @@ class MainActivity : FlutterActivity() {
         } else {
             channel.invokeMethod("shared", text)
         }
+    }
+
+    companion object {
+        private const val SPEECH_REQUEST = 43
     }
 
     private fun sharedTextOf(intent: Intent?): String? {

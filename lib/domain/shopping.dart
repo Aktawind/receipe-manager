@@ -343,10 +343,35 @@ abstract final class ShoppingProducts {
   /// Un produit saisi en une ligne : « 2 kg de pommes de terre », « beurre »,
   /// « 6 œufs (bio) ».
   static ShoppingItem parse(String line, {String? id}) {
-    final parsed = IngredientText.parse(line.trim(), id: '');
+    var text = line.trim().replaceAll(RegExp(r'\s+'), ' ');
+    // « Beurre 50 g », « Jambon x 4 » : la quantité après le nom.
+    final trailing = RegExp(
+      r'^(\D*?\p{L}\D*?)\s+[x×]?\s*(\d+(?:[.,]\d+)?)\s*([\p{L}.]*)$',
+      unicode: true,
+    ).firstMatch(text);
+    if (trailing != null) {
+      final unit = trailing.group(3)!;
+      final known =
+          unit.isEmpty ||
+          IngredientText.units.values.any(
+            (variants) => variants.contains(unit.toLowerCase()),
+          );
+      if (known) {
+        text = '${trailing.group(2)} $unit ${trailing.group(1)}'.replaceAll(
+          RegExp(r'\s+'),
+          ' ',
+        );
+      }
+    }
+    final parsed = IngredientText.parse(text, id: '');
+    // « du beurre », « des yaourts » (dictée) : le produit, sans article.
+    final name = parsed.name.trim().replaceFirst(
+      RegExp(r"^(du|de la|de l'|de l’|des|d'|d’)\s*", caseSensitive: false),
+      '',
+    );
     return ShoppingItem(
       id: id ?? _uuid.v4(),
-      name: capitalizeFirst(parsed.name.trim()),
+      name: capitalizeFirst(name),
       quantity: parsed.quantity,
       unit: parsed.unit,
       note: parsed.note,
