@@ -76,19 +76,19 @@ void main() {
         ingredient('q2', 'quiche', 1, 'lardons'),
       ]);
       batch.insertAll(oldDb.recipeLinks, [
-        v5.RecipeLinksData(
+        const v5.RecipeLinksData(
           recipeId: 'quiche',
           position: 0,
           linkedRecipeId: 'pate',
         ),
         // Pas dans la liste : une ligne est ajoutée à la fin.
-        v5.RecipeLinksData(
+        const v5.RecipeLinksData(
           recipeId: 'quiche',
           position: 1,
           linkedRecipeId: 'sauce',
         ),
         // Recette liée disparue : ignorée sans erreur.
-        v5.RecipeLinksData(
+        const v5.RecipeLinksData(
           recipeId: 'quiche',
           position: 2,
           linkedRecipeId: 'fantome',

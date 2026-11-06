@@ -17,7 +17,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.7](#07--mode-cuisine) | Mode cuisine | ✅ |
 | [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ✅ |
 | [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ✅ |
-| [0.10](#010--listes-de-courses) | Listes de courses | ⬜ |
+| [0.10](#010--listes-de-courses) | Listes de courses | ✅ |
 | [0.11](#011--planning-des-repas) | Planning des repas | ⬜ |
 | [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ⬜ |
 | [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ⬜ |
@@ -321,12 +321,49 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   recette ajoute les ingrédients de cette recette, proportionnellement à la quantité demandée
   (demande du 2026-10-29)
 - Fusion des ingrédients identiques, addition des quantités, unités incompatibles séparées
-- Quantité à acheter différente de la quantité théorique, format, commentaire
+- Commentaire sur un produit (« quantité à acheter » et « format » retirés le 2026-11-05 : inutiles)
 - Cocher, supprimer, déplacer
 - Regroupement par rayon (Fruits et légumes, Produits frais, Épicerie, Surgelés…)
-- Organisation par magasin, magasins favoris (réglages)
 - Exporter, imprimer, partager (texte, PDF)
 - Liste partagée entre tes appareils (via la synchro Drive)
+
+*Décisions du 2026-11-05* :
+- **dictée** des produits au micro (reconnaissance vocale d'Android) ;
+- singulier et pluriel fusionnés (« jambon » / « jambons ») ;
+- les recettes d'origine s'affichent en petit sous chaque produit ;
+- sel, poivre, eau… proposés mais décochés à l'ajout d'une recette ;
+- produits cochés dans « Dans le panier », barrés, avec « Retirer les cochés » ;
+- **rayons modifiables dans les réglages** ; un produit rangé à la main retourne dans le même rayon
+  ensuite (ex. « sauce soja » → Épicerie salée) ;
+- **pas de magasins** ;
+- partage en texte groupé par rayon, et **PDF / impression tenant sur une feuille A4** ;
+- pas de partage avec d'autres personnes (le partage et la synchro suffisent), pas de placard ;
+- la liste générée depuis le planning viendra avec la 0.11.
+
+*Livré en 0.10.0 (2026-11-06)*, en quatre étapes :
+- **Étape 1 (validée le 2026-11-05)** : listes (créer, renommer, supprimer, réutiliser), produits ajoutés en une
+  ligne (« 2 kg de pommes de terre », « Beurre 50 g ») ou dictés, avec les produits déjà achetés en
+  suggestion ; fusion du même produit (quantités additionnées) ; cocher → « Dans le panier »,
+  « Retirer les cochés » ; modifier (quantité, rayon, commentaire), déplacer,
+  glisser pour retirer. Base v10, sauvegarde v9, synchro Drive des listes et des rayons.
+  Retour du 2026-11-05 : la dictée en une phrase sépare mal les produits → **dictée continue** (le
+  micro reste ouvert, une phrase = un produit, jusqu'à « Arrêter »).
+- **Étape 2 (validée le 2026-11-05)** : 🛒 « Ajouter aux courses » sur la fiche d'une recette (avec les portions
+  affichées) et « Ajouter des recettes » depuis une liste (plusieurs d'un coup) : personnes par
+  recette, ingrédients à cocher (sel, poivre, eau et facultatifs décochés), recettes liées
+  dépliées en proportion, fusion avec la liste, recettes d'origine.
+- **Étape 3 (validée le 2026-11-05)** : la liste est rangée **par rayon**, dans l'ordre choisi dans Réglages →
+  Rayons (ajouter, renommer, réordonner, supprimer) ; chaque produit va dans le rayon choisi à la
+  main pour lui (retenu, pluriel compris), sinon celui d'un dictionnaire de produits courants,
+  sinon « Autres ». Retour du 2026-11-05 : lignes plus compactes, recette d'origine sans « pour : ».
+  Retour suivant : fiche du produit sans « Ce que j'achète » ni « Format », rayon sous la quantité ;
+  **la synchro des listes ne marchait pas** (dossiers Drive `aisles/`, `products/`, `shopping/`
+  jamais créés) et la restauration d'une sauvegarde Drive oubliait les listes : corrigé.
+- **Étape 4 (validée le 2026-11-06)** : ⋮ → « Partager la liste » (texte rangé par rayon, vers une messagerie ou
+  un mail) et « Imprimer ou enregistrer en PDF » : PDF sur **une seule page A4**, rayons en
+  colonnes (2 ou 3) et taille du texte ajustée pour tout faire tenir, une case par produit ;
+  impression par le gestionnaire d'Android (qui propose « Enregistrer au format PDF »). Les
+  produits du panier n'y figurent pas.
 
 ## 0.11 — Planning des repas
 

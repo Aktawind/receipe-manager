@@ -1,4 +1,5 @@
 import '../../core/format/text_search.dart';
+import '../../domain/recipe_words.dart';
 import '../../domain/step_durations.dart';
 import 'web_recipe.dart';
 
@@ -55,13 +56,13 @@ abstract final class TextRecipeParser {
                 r'^(pour|portions?|personnes?|parts?|temps|preparation|cuisson|repos)\b',
               ).hasMatch(normalizeForSearch(line)));
       final yield = canBeInfo ? _servings(line) : null;
-      final times = canBeInfo ? _times(line) : const <_Time, int>{};
+      final times = canBeInfo ? _times(line) : const <RecipeTime, int>{};
       void keepInfo() {
         if (yield != null) (servings, servingsUnit) = yield;
-        prep ??= times[_Time.prep];
-        cook ??= times[_Time.cook];
-        total ??= times[_Time.total];
-        if (times[_Time.rest] case final r?) rest = (rest ?? 0) + r;
+        prep ??= times[RecipeTime.prep];
+        cook ??= times[RecipeTime.cook];
+        total ??= times[RecipeTime.total];
+        if (times[RecipeTime.rest] case final r?) rest = (rest ?? 0) + r;
       }
 
       // Les phrases de conclusion d'une IA (« Bon appétit ! Veux-tu… ? »).
@@ -209,13 +210,10 @@ abstract final class TextRecipeParser {
   static List<({String text, bool heading})> _joinLabels(
     List<({String text, bool heading})> lines,
   ) {
-    final label = RegExp(
-      r'^(preparation|cuisson|repos|temps( de \w+)?|temps total|total|quantite|portions?|personnes?|parts?|rendement|difficulte)\s*:?$',
-    );
     final result = <({String text, bool heading})>[];
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i];
-      if (!line.heading && label.hasMatch(normalizeForSearch(line.text))) {
+      if (!line.heading && RecipeWords.isInfoLabel(line.text)) {
         var next = i + 1;
         while (next < lines.length && lines[next].text.isEmpty) {
           next++;
@@ -237,26 +235,13 @@ abstract final class TextRecipeParser {
     return result;
   }
 
-  static _Section? _sectionOf(String line) {
-    final key = normalizeForSearch(line)
-        .replaceAll(RegExp(r'\(.*?\)'), '')
-        .replaceAll(RegExp(r'[:.!]'), '')
-        .trim();
-    if (RegExp(r'^(les )?ingredients\b').hasMatch(key)) {
-      return _Section.ingredients;
-    }
-    if (RegExp(
-      r'^(la )?(preparation|instructions?|etapes|deroulement|realisation|methode|recette)\b',
-    ).hasMatch(key)) {
-      return _Section.steps;
-    }
-    if (RegExp(
-      r'^((mes|mon|ma|nos|notre|les|quelques) )?((petite?s?|bonne?s?) )?(astuces?|conseils?|notes?|variantes?|suggestions?|le petit plus|petit plus|a savoir|conservation)\b',
-    ).hasMatch(key)) {
-      return _Section.notes;
-    }
-    return null;
-  }
+  static _Section? _sectionOf(String line) =>
+      switch (RecipeWords.sectionOf(line)) {
+        RecipeSection.ingredients => _Section.ingredients,
+        RecipeSection.steps => _Section.steps,
+        RecipeSection.notes => _Section.notes,
+        null => null,
+      };
 
   static bool _isChatter(String line) {
     final text = normalizeForSearch(line);
@@ -274,7 +259,7 @@ abstract final class TextRecipeParser {
   }
 
   static bool _isClosing(String line) => RegExp(
-    r"^(bon appetit|bonne degustation|n.hesite|n.hesitez|veux-tu|voulez-vous|souhaites-tu|souhaitez-vous|dis-moi|dites-moi|j.espere|si tu veux|si vous voulez)\b",
+    r'^(bon appetit|bonne degustation|n.hesite|n.hesitez|veux-tu|voulez-vous|souhaites-tu|souhaitez-vous|dis-moi|dites-moi|j.espere|si tu veux|si vous voulez)\b',
   ).hasMatch(normalizeForSearch(line));
 
   /// « Voici une délicieuse recette de biscuits (ou petits gâteaux) moelleux
@@ -285,7 +270,7 @@ abstract final class TextRecipeParser {
       caseSensitive: false,
     ).firstMatch(line);
     if (match == null) return null;
-    var dish = match
+    final dish = match
         .group(1)!
         .replaceAll(RegExp(r'\s*\(.*?\)'), '')
         .split(RegExp(r'[,.!:;]| qui | que | idéale| parfaite| pour '))
@@ -357,23 +342,20 @@ abstract final class TextRecipeParser {
   }
 
   /// « Préparation : 20 min », « Temps de cuisson : 1 h 10 », « Repos 2 h ».
-  static Map<_Time, int> _times(String line) {
-    final result = <_Time, int>{};
+  static Map<RecipeTime, int> _times(String line) {
+    final result = <RecipeTime, int>{};
     final text = normalizeForSearch(line);
     for (final part in text.split(RegExp(r'[|•·–—,;/@©®◎⊙○●]|\s-\s'))) {
       final durations = StepDurations.find(part);
       if (durations.isEmpty) continue;
       final minutes = durations.first.inMinutes;
-      if (RegExp(r'\b(preparation|prep)\b').hasMatch(part)) {
-        result[_Time.prep] = minutes;
-      } else if (RegExp(r'\bcuisson\b').hasMatch(part)) {
-        result[_Time.cook] = minutes;
-      } else if (RegExp(r'\b(total|temps total|pret en)\b').hasMatch(part)) {
-        result[_Time.total] = minutes;
-      } else if (RegExp(
-        r'\b(repos|refrigeration|attente|marinade|levee|pousse|congelation)\b',
-      ).hasMatch(part)) {
-        result[_Time.rest] = (result[_Time.rest] ?? 0) + minutes;
+      switch (RecipeWords.timeOf(part)) {
+        case RecipeTime.rest:
+          result[RecipeTime.rest] = (result[RecipeTime.rest] ?? 0) + minutes;
+        case final kind?:
+          result[kind] = minutes;
+        case null:
+          break;
       }
     }
     return result;
@@ -392,5 +374,3 @@ abstract final class TextRecipeParser {
 }
 
 enum _Section { intro, ingredients, steps, notes }
-
-enum _Time { prep, cook, total, rest }

@@ -5,7 +5,6 @@ import '../../domain/label.dart';
 import '../../features/classification/collection_order_page.dart';
 import '../../features/classification/labels_page.dart';
 import '../../features/equipment/equipment_page.dart';
-import '../../features/sync/sync_page.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/planning/planning_page.dart';
 import '../../features/recipes/cooking_mode_page.dart';
@@ -15,7 +14,10 @@ import '../../features/recipes/recipes_page.dart';
 import '../../features/recipes/web_import_page.dart';
 import '../../features/settings/settings_page.dart';
 import '../../features/settings/trash_page.dart';
+import '../../features/shopping/aisles_page.dart';
+import '../../features/shopping/shopping_list_page.dart';
 import '../../features/shopping/shopping_page.dart';
+import '../../features/sync/sync_page.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
 
@@ -72,7 +74,21 @@ GoRouter buildRouter() => GoRouter(
           ],
         ),
         _branch('/planning', const PlanningPage()),
-        _branch('/courses', const ShoppingPage()),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/courses',
+              builder: (context, state) => const ShoppingPage(),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) =>
+                      ShoppingListPage(listId: state.pathParameters['id']!),
+                ),
+              ],
+            ),
+          ],
+        ),
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -106,6 +122,11 @@ GoRouter buildRouter() => GoRouter(
                   path: 'synchronisation',
                   parentNavigatorKey: _rootKey,
                   builder: (context, state) => const SyncPage(),
+                ),
+                GoRoute(
+                  path: 'rayons',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const AislesPage(),
                 ),
                 GoRoute(
                   path: 'materiel',

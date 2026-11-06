@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/settings/theme_mode_controller.dart';
 import '../../core/widgets/name_dialog.dart';
 import '../../domain/recipe.dart';
+import '../../domain/recipe_filter.dart';
 import '../../l10n/app_localizations.dart';
 import 'recipe_providers.dart';
 

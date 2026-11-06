@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/format/text_search.dart';
+import '../domain/default_aisles.dart';
 import '../domain/default_labels.dart';
 import '../domain/equipment.dart';
 import '../domain/label.dart';
@@ -198,6 +199,67 @@ class SyncSettings extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
+/// Une liste de courses ; v10. Suppression douce.
+@DataClassName('ShoppingListRow')
+class ShoppingLists extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Un produit d'une liste, dans l'ordre de [position] ; v10. [sources] : les
+/// recettes qui l'ont demandé, en JSON.
+@DataClassName('ShoppingItemRow')
+class ShoppingItems extends Table {
+  TextColumn get id => text()();
+  TextColumn get listId =>
+      text().references(ShoppingLists, #id, onDelete: KeyAction.cascade)();
+  IntColumn get position => integer()();
+  TextColumn get name => text()();
+  RealColumn get quantity => real().nullable()();
+  TextColumn get unit => text().withDefault(const Constant(''))();
+  TextColumn get toBuy => text().withDefault(const Constant(''))();
+  TextColumn get format => text().withDefault(const Constant(''))();
+  TextColumn get note => text().withDefault(const Constant(''))();
+  TextColumn get aisleId => text().nullable()();
+  BoolColumn get checked => boolean().withDefault(const Constant(false))();
+  TextColumn get sources => text().withDefault(const Constant('[]'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Les rayons, dans l'ordre choisi ; v10. Suppression douce, identifiants
+/// déterministes pour les rayons fournis.
+@DataClassName('AisleRow')
+class Aisles extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  IntColumn get position => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Le rayon choisi pour un produit ([key] : nom normalisé) ; v10.
+@DataClassName('ProductAisleRow')
+class ProductAisles extends Table {
+  TextColumn get key => text()();
+  TextColumn get aisleId => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
 @DriftDatabase(
   tables: [
     Recipes,
@@ -210,6 +272,10 @@ class SyncSettings extends Table {
     RecipeLabels,
     SyncEntries,
     SyncSettings,
+    ShoppingLists,
+    ShoppingItems,
+    Aisles,
+    ProductAisles,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -217,7 +283,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 9;
+  static const latestSchemaVersion = 10;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -227,6 +293,7 @@ class AppDatabase extends _$AppDatabase {
     onCreate: (m) async {
       await m.createAll();
       await _seedDefaultLabels(DateTime.now());
+      await _seedDefaultAisles(DateTime.now());
     },
     onUpgrade: stepByStep(
       // v2 : titres d'étapes, et « Astuces » fusionnées dans « Notes ».
@@ -322,6 +389,14 @@ UPDATE recipes SET
         await m.createTable(schema.syncEntries);
         await m.createTable(schema.syncSettings);
       },
+      // v10 : listes de courses et rayons (0.10).
+      from9To10: (m, schema) async {
+        await m.createTable(schema.shoppingLists);
+        await m.createTable(schema.shoppingItems);
+        await m.createTable(schema.aisles);
+        await m.createTable(schema.productAisles);
+        await _seedDefaultAisles(DateTime.now());
+      },
     ),
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -409,7 +484,7 @@ UPDATE recipes SET
         ).getSingle();
         await customStatement(
           'INSERT INTO ingredients (id, recipe_id, position, is_section, name, '
-          "quantity, unit, note, optional, substitutes, linked_recipe_id) "
+          'quantity, unit, note, optional, substitutes, linked_recipe_id) '
           "VALUES (?, ?, ?, 0, ?, NULL, '', '', 0, '', ?)",
           [
             const Uuid().v4(),
@@ -424,6 +499,17 @@ UPDATE recipes SET
   }
 
   /// Les catégories, étiquettes et saisons fournies au départ.
+  Future<void> _seedDefaultAisles(DateTime now) async {
+    final stamp = now.toUtc().toIso8601String();
+    for (final aisle in DefaultAisles.build(now)) {
+      await customStatement(
+        'INSERT OR IGNORE INTO aisles (id, name, position, created_at, '
+        'updated_at) VALUES (?, ?, ?, ?, ?)',
+        [aisle.id, aisle.name, aisle.position, stamp, stamp],
+      );
+    }
+  }
+
   Future<void> _seedDefaultLabels(DateTime now) async {
     for (final label in DefaultLabels.build(now)) {
       await _insertLabel(label);

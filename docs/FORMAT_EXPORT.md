@@ -31,6 +31,10 @@ recettes-2026-10-27-1430.zip
 | 6 | 0.2.0 | Liste commune du matériel (`equipment` du document, `equipment` des recettes = identifiants) ; recettes liées dans les ingrédients (`ingredients[].linkedRecipe`), `linkedRecipes` disparaît |
 | 7 | 0.3.0 | Classement commun : `labels` (document) et `labels` (recettes = identifiants) remplacent `course`, `category` et `collections`. Quatre familles ; les étiquettes (`tag`) et occasions (`occasion`) des versions de test sont lues comme des collections, le type de repas (`meal`) est ignoré |
 | 8 | 0.4.0 | Nouveau statut `toRetest` (« à retester »). Le nombre de réalisations (`timesCooked`) n'est plus affiché mais reste écrit et lu |
+| 9 | 0.10.0 | Listes de courses (`shoppingLists`), rayons (`aisles`) et rayon retenu pour chaque produit (`productAisles`), au niveau du document ; absents quand ils sont vides. Rien ne change pour les recettes |
+
+Lecture d'une version 8 (et avant) : pas de listes de courses ni de rayons ; une restauration qui
+« remplace tout » garde alors les listes de l'appareil.
 
 Lecture d'une version 6 (et 3 à 5) : `course`, `category` et `collections` en texte libre deviennent
 le classement commun. Le type de plat devient la catégorie (« Plat » → « Plats »), la catégorie la
@@ -53,12 +57,12 @@ Lecture d'une version 2 : les champs ajoutés par la version 3 prennent leur val
 Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une ligne vide) ; les
 étapes n'ont pas de titre.
 
-## `recettes.json` — version 8
+## `recettes.json` — version 9
 
 ```json
 {
   "format": "recettes-backup",
-  "version": 8,
+  "version": 9,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
   "equipment": [
@@ -137,6 +141,38 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
 
 L'ordre des listes `ingredients` et `steps` est l'ordre d'affichage.
 
+### Courses (version 9)
+
+```json
+{
+  "aisles": [
+    { "id": "…", "name": "Épicerie salée", "position": 7,
+      "createdAt": "…", "updatedAt": "…", "deletedAt": null }
+  ],
+  "productAisles": [
+    { "key": "sauce soja", "aisle": "<id de « Épicerie salée »>", "updatedAt": "…" }
+  ],
+  "shoppingLists": [
+    {
+      "id": "…", "name": "Semaine", "createdAt": "…", "updatedAt": "…", "deletedAt": null,
+      "items": [
+        { "id": "…", "name": "Beurre", "quantity": 250, "unit": "g",
+          "toBuy": "1 plaquette", "format": "doux", "note": "", "aisle": "<id>",
+          "checked": false,
+          "sources": [ { "recipe": "<id>", "title": "Quiche lorraine", "quantity": 125, "unit": "g" } ] }
+      ]
+    }
+  ]
+}
+```
+
+| Champ | Type | Remarque |
+|---|---|---|
+| `aisles` | liste d'objets | les rayons, dans l'ordre de `position` ; ceux fournis au départ ont un identifiant calculé à partir de leur nom |
+| `productAisles[].key` | texte | nom du produit normalisé (minuscules, sans accents ni article, au singulier) |
+| `shoppingLists[].items` | liste d'objets | les produits dans l'ordre affiché ; `quantity` = quantité nécessaire, `toBuy` = ce qu'on achète vraiment (texte libre), `checked` = dans le panier, `aisle` = `id` d'un rayon ou `null` |
+| `items[].sources` | liste d'objets | les recettes qui ont demandé le produit (titre gardé tel qu'au moment de l'ajout) |
+
 ## Import
 
 - **Fusionner** : les recettes absentes sont ajoutées ; une recette déjà présente n'est remplacée
@@ -171,8 +207,8 @@ Réglages → Importer depuis Recipe Keeper, avec le ZIP produit par Recipe Keep
 
 ## Synchronisation (0.4)
 
-Le dossier Drive utilise le même format : chaque fichier de `recipes/`, `labels/` et `equipment/`
-est un document `recettes-backup` de la version courante qui ne contient **qu'un seul élément**,
+Le dossier Drive utilise le même format : chaque fichier de `recipes/`, `labels/`, `equipment/`, `aisles/`, `products/` et
+`shopping/` (une liste de courses avec ses produits) est un document `recettes-backup` de la version courante qui ne contient **qu'un seul élément**,
 et `media/` contient les photos sous leur nom. Les versions écartées d'un conflit sont dans
 `history/`. Les sauvegardes automatiques sont dans `backups/` : un seul fichier
 `sauvegarde-AAAA-MM-JJ-HHMM.json` par sauvegarde, au format `recettes-backup` **sans les photos**

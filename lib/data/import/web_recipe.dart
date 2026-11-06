@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html;
 
+import 'schema_org.dart';
+
 /// Une recette lue sur une page web, avant import : tout en texte, comme on
 /// le saisirait (les ingrédients et la préparation sont ensuite analysés par
 /// `IngredientText` et `StepText`).
@@ -188,33 +190,14 @@ abstract final class WebRecipeParser {
   /// « 4 », « 4 personnes », « 12 blinis », ["4", "4 servings"].
   static (int?, String) _yield(Object? value) {
     for (final item in _list(value)) {
-      final text = _text(item);
-      final match = RegExp(r'(\d+)\s*(.*)').firstMatch(text);
-      if (match == null) continue;
-      final count = int.tryParse(match.group(1)!);
-      var unit = match.group(2)!.trim().toLowerCase();
-      if (RegExp(
-        r'^(pers(onnes?|\.)?|portions?|parts?|servings?|people|couverts?)?$',
-      ).hasMatch(unit)) {
-        unit = '';
+      if (SchemaOrg.servings(_text(item)) case (final count, final unit)) {
+        return (count, unit.toLowerCase());
       }
-      return (count, unit);
     }
     return (null, '');
   }
 
-  /// Durée ISO 8601 (« PT1H30M », « P0DT20M », « PT90M ») en minutes.
-  static int? _minutes(Object? value) {
-    final text = _text(value).toUpperCase();
-    final match = RegExp(
-      r'^P(?:(\d+)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+)S)?)?$',
-    ).firstMatch(text);
-    if (match == null) return null;
-    double part(int group) => double.tryParse(match.group(group) ?? '') ?? 0;
-    final minutes = (part(1) * 1440 + part(2) * 60 + part(3) + part(4) / 60)
-        .round();
-    return minutes > 0 ? minutes : null;
-  }
+  static int? _minutes(Object? value) => SchemaOrg.minutes(_text(value));
 
   static String _text(Object? value) {
     if (value is List) value = value.isEmpty ? null : value.first;

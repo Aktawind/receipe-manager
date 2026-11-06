@@ -1,21 +1,23 @@
-import 'dart:typed_data';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/data/backup/backup_service.dart';
 import 'package:recettes/data/database.dart';
-import 'package:recettes/data/sync/drive_backup.dart';
 import 'package:recettes/data/equipment_repository.dart';
 import 'package:recettes/data/label_repository.dart';
 import 'package:recettes/data/photo_store.dart';
 import 'package:recettes/data/recipe_repository.dart';
+import 'package:recettes/data/shopping_repository.dart';
+import 'package:recettes/data/sync/drive_backup.dart';
 import 'package:recettes/data/sync/hybrid_clock.dart';
 import 'package:recettes/data/sync/sync_codec.dart';
 import 'package:recettes/data/sync/sync_engine.dart';
 import 'package:recettes/domain/label.dart';
 import 'package:recettes/domain/recipe.dart';
+import 'package:recettes/domain/shopping.dart';
 
 import '../helpers/memory_remote.dart';
 
@@ -57,11 +59,13 @@ class Device {
     final photos = PhotoStore(
       photoDir ?? Directory.systemTemp.createTempSync('recettes-sync'),
     );
+    final shopping = ShoppingRepository(db, clock: clock.now);
     final engine = SyncEngine(
       database: db,
       recipes: recipes,
       labels: labels,
       equipment: equipment,
+      shopping: shopping,
       photos: photos,
       remote: remote,
       clock: clock,
@@ -71,12 +75,13 @@ class Device {
       repository: recipes,
       equipment: equipment,
       labels: labels,
+      shopping: shopping,
       photos: photos,
       backupsDirectory: Directory.systemTemp.createTempSync('recettes-bak'),
       appVersion: 'test',
       clock: () => time.value,
     );
-    return Device._(
+    final device = Device._(
       db,
       recipes,
       labels,
@@ -87,7 +92,11 @@ class Device {
       backups,
       time,
     );
+    device.shopping = shopping;
+    return device;
   }
+
+  late final ShoppingRepository shopping;
 
   /// Avance l'horloge de cet appareil.
   void at(DateTime moment) => _time.value = moment;
@@ -178,6 +187,45 @@ void main() {
       expect(second.conflicts, isEmpty);
     },
   );
+
+  test('une liste de courses et le rayon d’un produit passent d’un appareil à l’autre', () async {
+    final list = await a.shopping.createList('Semaine');
+    await a.shopping.save(
+      list.copyWith(
+        items: [
+          ShoppingProducts.parse('250 g de beurre', id: 'beurre'),
+          ShoppingProducts.parse('Sauce soja', id: 'soja'),
+        ],
+      ),
+    );
+    final aisle = (await a.shopping.getAllAisles()).first;
+    await a.shopping.putProductAisle(
+      ProductAisle(key: 'sauce soja', aisleId: aisle.id, updatedAt: t(1)),
+    );
+    final first = await a.engine.sync();
+    expect(first.ok, isTrue, reason: '${first.errors}');
+    expect(remote.files.keys, contains('shopping/${list.id}.json'));
+
+    final second = await b.engine.sync();
+    expect(second.ok, isTrue, reason: '${second.errors}');
+    expect(second.conflicts, isEmpty);
+    final copy = (await b.shopping.getList(list.id))!;
+    expect(copy.name, 'Semaine');
+    expect([for (final i in copy.items) i.name], ['Beurre', 'Sauce soja']);
+    expect(copy.items.first.amount, '250 g');
+    expect((await b.shopping.getAllProductAisles()).single.aisleId, aisle.id);
+
+    // Cochée sur B, la liste revient cochée sur A.
+    b.at(t(5));
+    await b.shopping.save(
+      copy.copyWith(
+        items: [copy.items.first.copyWith(checked: true), copy.items.last],
+      ),
+    );
+    await b.engine.sync();
+    await a.engine.sync();
+    expect((await a.shopping.getList(list.id))!.items.first.checked, isTrue);
+  });
 
   test(
     'les éléments par défaut créés des deux côtés ne font pas de conflit',
@@ -465,6 +513,10 @@ void main() {
       final tarte = await a.addRecipe('Tarte');
       await a.recipes.save(tarte.copyWith(mainPhoto: () => 'tarte.jpg'));
       final soupe = await a.addRecipe('Soupe');
+      final courses = await a.shopping.createList('Courses');
+      await a.shopping.save(
+        courses.copyWith(items: [ShoppingProducts.parse('2 kg de farine')]),
+      );
       a.at(t(1));
       await a.engine.sync();
       await b.engine.sync();
@@ -475,6 +527,7 @@ void main() {
       a.at(t(10));
       await a.recipes.deletePermanently([soupe.id]);
       await a.edit(tarte.id, 'Tarte ratée');
+      await a.shopping.delete((await a.shopping.getList(courses.id))!);
       await a.engine.sync();
       await b.engine.sync();
       expect(await b.titleOf(tarte.id), 'Tarte ratée');
@@ -487,6 +540,10 @@ void main() {
       expect(await a.titleOf(tarte.id), 'Tarte');
       expect(await a.titleOf(soupe.id), 'Soupe');
       expect(await a.photos.file('tarte.jpg').readAsBytes(), [1, 2]);
+      // Les listes de courses font partie de la sauvegarde.
+      final list = (await a.shopping.getList(courses.id))!;
+      expect(list.isDeleted, isFalse);
+      expect(list.items.single.name, 'Farine');
 
       // La version restaurée l'emporte sur celle de Drive, et gagne l'autre appareil.
       final sent = await a.engine.sync();
@@ -495,6 +552,7 @@ void main() {
       expect(received.ok, isTrue, reason: '${received.errors}');
       expect(await b.titleOf(tarte.id), 'Tarte');
       expect(await b.titleOf(soupe.id), 'Soupe');
+      expect((await b.shopping.getList(courses.id))!.isDeleted, isFalse);
     },
   );
 
@@ -511,7 +569,7 @@ void main() {
       BackupFrequency.weekly.isDue(DateTime.utc(2035, 1, 2), now),
       isFalse,
     );
-    expect(BackupFrequency.weekly.isDue(DateTime.utc(2035, 1, 1), now), isTrue);
+    expect(BackupFrequency.weekly.isDue(DateTime.utc(2035), now), isTrue);
     expect(
       BackupFrequency.monthly.isDue(DateTime.utc(2034, 12, 20), now),
       isFalse,
@@ -536,7 +594,8 @@ void main() {
 
   test('un chemin distant inconnu est ignoré', () async {
     await remote.write('history/x.json', Uint8List(0));
-    await remote.write('autre/chose', Uint8List(0));
+    // Un fichier posé à la main dans un autre dossier.
+    remote.files['autre/chose'] = Uint8List(0);
     final report = await a.engine.sync();
     expect(report.ok, isTrue, reason: '${report.errors}');
     expect(SyncKind.parse('recipes/abc.json'), (SyncKind.recipe, 'abc'));

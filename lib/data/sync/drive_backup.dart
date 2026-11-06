@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import '../../domain/shopping.dart';
 import '../backup/backup_service.dart';
 import '../photo_store.dart';
 import 'hybrid_clock.dart';
@@ -114,6 +115,14 @@ class DriveBackupService {
           for (final e in contents.equipment) e.copyWith(updatedAt: stamp),
         ],
         labels: [for (final l in contents.labels) l.copyWith(updatedAt: stamp)],
+        shoppingLists: [
+          for (final l in contents.shoppingLists) l.copyWith(updatedAt: stamp),
+        ],
+        aisles: [for (final a in contents.aisles) a.copyWith(updatedAt: stamp)],
+        productAisles: [
+          for (final p in contents.productAisles)
+            ProductAisle(key: p.key, aisleId: p.aisleId, updatedAt: stamp),
+        ],
       ),
       ImportMode.replace,
     );

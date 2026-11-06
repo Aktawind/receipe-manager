@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:recettes/data/sync/drive_remote.dart';
 import 'package:recettes/data/sync/sync_remote.dart';
 
 /// Un dossier distant en mémoire, qui se comporte comme Drive : chaque écriture
@@ -45,6 +46,11 @@ class MemoryRemote implements DriveFolder {
   @override
   Future<String> write(String path, Uint8List bytes) async {
     calls.add('write $path');
+    // Comme Drive : on n'écrit que dans les dossiers que l'app crée.
+    final folder = path.split('/').first;
+    if (!DriveRemote.subfolders.contains(folder)) {
+      throw StateError('dossier inconnu sur Drive : $folder');
+    }
     files[path] = bytes;
     final version = '${++_counter}';
     _log.add((_counter, RemoteChange(path, version: version)));
@@ -89,7 +95,7 @@ class MemoryRemote implements DriveFolder {
     backupFiles['b${++_backupCounter}'] = (
       name,
       bytes,
-      DateTime.utc(2030, 1, 1).add(Duration(minutes: _backupCounter)),
+      DateTime.utc(2030).add(Duration(minutes: _backupCounter)),
     );
   }
 

@@ -13,6 +13,7 @@ import '../../domain/recipe.dart';
 import '../../domain/recipe_links.dart';
 import '../../domain/step_text.dart';
 import '../photo_store.dart';
+import 'schema_org.dart';
 
 /// Un point d'attention remonté dans le rapport d'import.
 class ImportIssue {
@@ -56,9 +57,6 @@ abstract final class RecipeKeeperImporter {
   static const toTestCategory = '_A tester';
 
   static const _dataFile = 'recipes.html';
-
-  /// Vrai si [archive] ressemble à un export Recipe Keeper.
-  static bool looksLikeExport(Archive archive) => _find(archive) != null;
 
   static ArchiveFile? _find(Archive archive) {
     for (final file in archive.files) {
@@ -219,8 +217,8 @@ abstract final class RecipeKeeperImporter {
       notes: notes,
       servings: servings,
       servingsUnit: servingsUnit,
-      prepMinutes: _minutes(_meta(node, 'prepTime').firstOrNull),
-      cookMinutes: _minutes(_meta(node, 'cookTime').firstOrNull),
+      prepMinutes: SchemaOrg.minutes(_meta(node, 'prepTime').firstOrNull),
+      cookMinutes: SchemaOrg.minutes(_meta(node, 'cookTime').firstOrNull),
       mainPhoto: kept.firstOrNull,
       extraPhotos: kept.skip(1).toList(),
       isFavorite: _meta(node, 'recipeIsFavourite').firstOrNull == 'True',
@@ -289,27 +287,11 @@ abstract final class RecipeKeeperImporter {
   /// sans nombre (« Une dizaine ») est gardé dans les notes.
   static (int?, String, String?) _yield(String text) {
     if (text.isEmpty) return (null, '', null);
-    final match = RegExp(r'^(\d+)\s*(.*)$').firstMatch(text);
-    if (match == null) return (null, '', 'Quantité : $text');
-    final count = int.parse(match.group(1)!);
-    final unit = match.group(2)!.trim();
-    final people = RegExp(
-      r'^(personne|portion|part|pers)',
-      caseSensitive: false,
-    );
-    return (count, people.hasMatch(unit) ? '' : unit, null);
-  }
-
-  /// « PT1H15M » → 75 ; « PT0S » → `null`.
-  static int? _minutes(String? iso) {
-    if (iso == null) return null;
-    final match = RegExp(r'^PT(?:(\d+)H)?(?:(\d+)M)?(?:\d+S)?$')
-        .firstMatch(iso);
-    if (match == null) return null;
-    final total =
-        int.parse(match.group(1) ?? '0') * 60 +
-        int.parse(match.group(2) ?? '0');
-    return total == 0 ? null : total;
+    final parsed = RegExp(r'^\d').hasMatch(text)
+        ? SchemaOrg.servings(text)
+        : null;
+    if (parsed == null) return (null, '', 'Quantité : $text');
+    return (parsed.$1, parsed.$2, null);
   }
 
   static const _nutritionLabels = {

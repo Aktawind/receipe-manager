@@ -12,8 +12,10 @@ import 'package:recettes/data/equipment_repository.dart';
 import 'package:recettes/data/label_repository.dart';
 import 'package:recettes/data/photo_store.dart';
 import 'package:recettes/data/recipe_repository.dart';
+import 'package:recettes/data/shopping_repository.dart';
 import 'package:recettes/domain/label.dart';
 import 'package:recettes/domain/recipe.dart';
+import 'package:recettes/domain/shopping.dart';
 
 class _Env {
   _Env(Directory root)
@@ -26,6 +28,7 @@ class _Env {
       repository: repo,
       equipment: equipment,
       labels: labels,
+      shopping: ShoppingRepository(db),
       photos: photos,
       backupsDirectory: Directory('${root.path}/backups'),
       appVersion: '0.1.0',
@@ -216,15 +219,65 @@ void main() {
     expect((await target.repo.getRecipe('old-1'))!.notes, contains('Précuire'));
   });
 
-  test('l’export est en version 8, sans champ « tips »', () async {
+  test('l’export est en version 9, sans champ « tips »', () async {
     await addRecipe(source, 'Tarte');
     final archive = ZipDecoder().decodeBytes(await source.service.exportZip());
     final json = jsonDecode(
       utf8.decode(archive.findFile(BackupFormat.dataFile)!.content),
     ) as Map<String, Object?>;
-    expect(json['version'], 8);
+    expect(json['version'], 9);
     final recipe = (json['recipes'] as List).single as Map<String, Object?>;
     expect(recipe.containsKey('tips'), isFalse);
+  });
+
+  test('les listes de courses et les rayons font l’aller-retour', () async {
+    final shopping = source.service.shopping;
+    final list = await shopping.createList('Semaine');
+    await shopping.save(
+      list.copyWith(
+        items: [
+          ShoppingProducts.parse('250 g de beurre', id: 'b').copyWith(
+            toBuy: '1 plaquette',
+            checked: true,
+            sources: const [
+              ShoppingSource(
+                recipeId: 'q',
+                recipeTitle: 'Quiche',
+                quantity: 125,
+                unit: 'g',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    final aisle = (await shopping.getAllAisles()).last;
+    await shopping.putAisle(
+      aisle.copyWith(name: 'Divers', updatedAt: DateTime(2030)),
+    );
+    await shopping.putProductAisle(
+      ProductAisle(key: 'beurre', aisleId: aisle.id, updatedAt: DateTime(2030)),
+    );
+
+    final contents = target.service.readZip(await source.service.exportZip());
+    await target.service.import(contents, ImportMode.merge);
+    final copy = (await target.service.shopping.getList(list.id))!;
+    final item = copy.items.single;
+    expect(
+      (item.name, item.amount, item.toBuy, item.checked),
+      ('Beurre', '250 g', '1 plaquette', true),
+    );
+    expect(item.sources.single.recipeTitle, 'Quiche');
+    expect(
+      (await target.service.shopping.getAllAisles())
+          .firstWhere((a) => a.id == aisle.id)
+          .name,
+      'Divers',
+    );
+    expect(
+      (await target.service.shopping.getAllProductAisles()).single.key,
+      'beurre',
+    );
   });
 
   test(

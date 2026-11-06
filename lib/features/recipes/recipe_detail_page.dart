@@ -2,16 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/format/durations.dart';
-import '../../core/widgets/formatted_text.dart';
-import '../../core/widgets/linked_text.dart';
 import '../../data/app_services.dart';
-import '../../domain/ingredient_scaling.dart';
-import '../../domain/ingredient_text.dart';
 import '../../domain/recipe.dart';
 import '../../l10n/app_localizations.dart';
-import '../classification/label_chips.dart';
-import '../equipment/equipment_providers.dart';
+import '../shopping/add_to_shopping_sheet.dart';
+import 'detail/detail_header.dart';
+import 'detail/detail_sections.dart';
 import 'recipe_photo.dart';
 import 'recipe_providers.dart';
 import 'recipe_scale.dart';
@@ -69,9 +65,6 @@ const _bottomSpace = 104.0;
 double _bottomInset(BuildContext context) =>
     MediaQuery.paddingOf(context).bottom;
 
-String _capitalize(String text) =>
-    text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
-
 class _RecipeDetail extends ConsumerWidget {
   const _RecipeDetail({required this.recipe});
 
@@ -125,7 +118,7 @@ class _RecipeDetail extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _CircleButton(
+        DetailCircleButton(
           icon: recipe.isFavorite ? Icons.favorite : Icons.favorite_border,
           tooltip: recipe.isFavorite
               ? l10n.removeFromFavorites
@@ -135,7 +128,18 @@ class _RecipeDetail extends ConsumerWidget {
               .setFavorite(recipe.id, !recipe.isFavorite),
         ),
         const SizedBox(width: 8),
-        _CircleButton(
+        DetailCircleButton(
+          key: const ValueKey('recipe-add-to-shopping'),
+          icon: Icons.add_shopping_cart,
+          tooltip: l10n.addToShopping,
+          onPressed: () => showAddToShoppingSheet(
+            context,
+            recipes: [recipe],
+            factors: {recipe.id: ref.read(recipeScaleProvider(recipe.id))},
+          ),
+        ),
+        const SizedBox(width: 8),
+        DetailCircleButton(
           icon: Icons.edit_outlined,
           tooltip: l10n.edit,
           onPressed: () => _edit(context),
@@ -160,7 +164,7 @@ class _RecipeDetail extends ConsumerWidget {
               ),
             ),
           ],
-          child: const _CircleIcon(icon: Icons.more_vert),
+          child: const DetailCircleIcon(icon: Icons.more_vert),
         ),
       ],
     );
@@ -174,7 +178,7 @@ class _RecipeDetail extends ConsumerWidget {
     label: Text(AppLocalizations.of(context).cookingMode),
   );
 
-  Widget _backButton(BuildContext context) => _CircleButton(
+  Widget _backButton(BuildContext context) => DetailCircleButton(
     icon: Icons.arrow_back,
     tooltip: MaterialLocalizations.of(context).backButtonTooltip,
     onPressed: () => context.pop(),
@@ -216,8 +220,8 @@ class _RecipeDetail extends ConsumerWidget {
               ),
             ),
             bottom: const PreferredSize(
-              preferredSize: Size.fromHeight(_sheetRadius),
-              child: _SheetTop(),
+              preferredSize: Size.fromHeight(detailSheetRadius),
+              child: DetailSheetTop(),
             ),
           ),
           SliverToBoxAdapter(
@@ -231,7 +235,7 @@ class _RecipeDetail extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Header(
+                  DetailHeader(
                     recipe: recipe,
                     onStatus: (status) => ref
                         .read(recipeRepositoryProvider)
@@ -240,9 +244,9 @@ class _RecipeDetail extends ConsumerWidget {
                         .read(recipeRepositoryProvider)
                         .setRating(recipe.id, rating),
                   ),
-                  _IngredientsSection(recipe: recipe),
-                  _EquipmentSection(recipe: recipe),
-                  _StepsSection(recipe: recipe),
+                  DetailIngredientsSection(recipe: recipe),
+                  DetailEquipmentSection(recipe: recipe),
+                  DetailStepsSection(recipe: recipe),
                   ..._secondarySections(context, ref),
                 ],
               ),
@@ -295,7 +299,7 @@ class _RecipeDetail extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _Header(
+                      DetailHeader(
                         recipe: recipe,
                         onStatus: (status) => ref
                             .read(recipeRepositoryProvider)
@@ -304,8 +308,8 @@ class _RecipeDetail extends ConsumerWidget {
                             .read(recipeRepositoryProvider)
                             .setRating(recipe.id, rating),
                       ),
-                      _IngredientsSection(recipe: recipe),
-                      _EquipmentSection(recipe: recipe),
+                      DetailIngredientsSection(recipe: recipe),
+                      DetailEquipmentSection(recipe: recipe),
                     ],
                   ),
                 ),
@@ -326,7 +330,7 @@ class _RecipeDetail extends ConsumerWidget {
                   alignment: Alignment.centerRight,
                   child: SafeArea(child: _topButtons(context, ref)),
                 ),
-                _StepsSection(recipe: recipe),
+                DetailStepsSection(recipe: recipe),
                 ..._secondarySections(context, ref),
               ],
             ),
@@ -338,908 +342,8 @@ class _RecipeDetail extends ConsumerWidget {
 
   List<Widget> _secondarySections(BuildContext context, WidgetRef ref) {
     return [
-      _NotesSection(recipe: recipe, onEdit: () => _edit(context)),
-      _AboutSection(recipe: recipe),
+      DetailNotesSection(recipe: recipe, onEdit: () => _edit(context)),
+      DetailAboutSection(recipe: recipe),
     ];
-  }
-}
-
-const _sheetRadius = 28.0;
-
-/// Le haut arrondi de la fiche blanche, qui recouvre le bas de la photo.
-class _SheetTop extends StatelessWidget {
-  const _SheetTop();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      height: _sheetRadius,
-      alignment: Alignment.topCenter,
-      padding: const EdgeInsets.only(top: 10),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(_sheetRadius),
-        ),
-      ),
-      child: Container(
-        width: 40,
-        height: 4,
-        decoration: BoxDecoration(
-          color: scheme.outlineVariant,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
-}
-
-/// Un bouton rond posé sur la photo.
-class _CircleIcon extends StatelessWidget {
-  const _CircleIcon({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: scheme.surface.withValues(alpha: 0.92),
-      ),
-      child: Icon(icon, color: scheme.onSurface),
-    );
-  }
-}
-
-class _CircleButton extends StatelessWidget {
-  const _CircleButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return IconButton.filled(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      icon: Icon(icon),
-      style: IconButton.styleFrom(
-        backgroundColor: scheme.surface.withValues(alpha: 0.92),
-        foregroundColor: scheme.onSurface,
-      ),
-    );
-  }
-}
-
-Color _tint(BuildContext context) =>
-    Theme.of(context).colorScheme.primary.withValues(alpha: 0.08);
-
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.recipe,
-    required this.onStatus,
-    required this.onRating,
-  });
-
-  final Recipe recipe;
-  final ValueChanged<RecipeStatus?> onStatus;
-  final ValueChanged<int?> onRating;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final title = recipe.title.trim().isEmpty
-        ? l10n.untitledRecipe
-        : recipe.title;
-    final times = [
-      (Icons.timer_outlined, l10n.prepTime, recipe.prepMinutes),
-      (Icons.local_fire_department_outlined, l10n.cookTime, recipe.cookMinutes),
-      (Icons.bedtime_outlined, l10n.restTime, recipe.restMinutes),
-    ].where((t) => t.$3 != null).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-            height: 1.15,
-          ),
-        ),
-        if (recipe.description.trim().isNotEmpty) ...[
-          const SizedBox(height: 10),
-          Text(
-            recipe.description.trim(),
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontStyle: FontStyle.italic,
-              height: 1.4,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-        const SizedBox(height: 14),
-        _StatusRow(recipe: recipe, onStatus: onStatus),
-        const SizedBox(height: 8),
-        _StarRating(rating: recipe.rating, onChanged: onRating),
-        if (times.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              for (final (index, time) in times.indexed) ...[
-                if (index > 0) const SizedBox(width: 8),
-                Expanded(
-                  child: _TimeCard(
-                    icon: time.$1,
-                    label: time.$2,
-                    value: formatMinutes(l10n, time.$3!),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
-        if (recipe.servings case final servings? when servings > 0) ...[
-          const SizedBox(height: 16),
-          _ServingsRow(recipe: recipe),
-        ],
-      ],
-    );
-  }
-}
-
-/// Le nombre de portions, qu'on change d'un appui : les quantités des
-/// ingrédients suivent.
-class _ServingsRow extends ConsumerWidget {
-  const _ServingsRow({required this.recipe});
-
-  final Recipe recipe;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final servings = recipe.servings!;
-    final factor = ref.watch(recipeScaleProvider(recipe.id));
-    final scale = ref.read(recipeScaleProvider(recipe.id).notifier);
-    final wanted = scaledServings(recipe, factor) ?? servings;
-    final changed = wanted != servings;
-    final row = Row(
-      children: [
-        Expanded(
-          child: Text(
-            recipe.servingsUnit.isEmpty
-                ? l10n.servingsLabel
-                : l10n.quantityLabel,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-        IconButton(
-          key: const ValueKey('servings-less'),
-          tooltip: l10n.scaleLess,
-          icon: const Icon(Icons.remove),
-          onPressed: wanted > 1
-              ? () => scale.set((wanted - 1) / servings)
-              : null,
-        ),
-        Material(
-          color: _tint(context),
-          borderRadius: BorderRadius.circular(24),
-          child: InkWell(
-            key: const ValueKey('servings-pill'),
-            borderRadius: BorderRadius.circular(24),
-            onTap: () async {
-              final chosen = await showScaleDialog(context, recipe, factor);
-              if (chosen != null) scale.set(chosen);
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Text(
-                servingsText(l10n, recipe, wanted),
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: changed ? theme.colorScheme.primary : null,
-                  fontWeight: changed ? FontWeight.w800 : null,
-                ),
-              ),
-            ),
-          ),
-        ),
-        IconButton(
-          key: const ValueKey('servings-more'),
-          tooltip: l10n.scaleMore,
-          icon: const Icon(Icons.add),
-          onPressed: () => scale.set((wanted + 1) / servings),
-        ),
-      ],
-    );
-    return row;
-  }
-}
-
-class _TimeCard extends StatelessWidget {
-  const _TimeCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: _tint(context),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Icon(icon, size: 18, color: theme.colorScheme.primary),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  value,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(top: 32, bottom: 12),
-      child: Text(
-        text,
-        style: theme.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-class _IngredientsSection extends ConsumerWidget {
-  const _IngredientsSection({required this.recipe});
-
-  final Recipe recipe;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final lines = recipe.ingredients.where((l) => !l.isBlank).toList();
-    if (lines.isEmpty) return const SizedBox.shrink();
-    final factor = ref.watch(recipeScaleProvider(recipe.id));
-    final scaled = factor == 1 ? null : IngredientScaling.scale(lines, factor);
-
-    final children = <Widget>[];
-    for (final (index, line) in lines.indexed) {
-      if (line.isSection) {
-        children.add(
-          Padding(
-            padding: EdgeInsets.only(top: index == 0 ? 0 : 20, bottom: 4),
-            child: Row(
-              children: [
-                Text(
-                  _capitalize(line.name),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(child: Divider(height: 1)),
-              ],
-            ),
-          ),
-        );
-        continue;
-      }
-      children.add(
-        _IngredientRow(
-          line: line,
-          scaled: scaled?[index],
-          optionalLabel: l10n.optionalIngredient,
-          substitutesPrefix: l10n.substitutesPrefix,
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [_SectionTitle(l10n.ingredients), ...children],
-    );
-  }
-}
-
-class _IngredientRow extends StatelessWidget {
-  const _IngredientRow({
-    required this.line,
-    this.scaled,
-    required this.optionalLabel,
-    required this.substitutesPrefix,
-  });
-
-  final IngredientLine line;
-
-  /// La ligne recalculée pour d'autres portions ; `null` telle qu'enregistrée.
-  final ScaledIngredient? scaled;
-
-  final String optionalLabel;
-  final String substitutesPrefix;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
-    final muted = TextStyle(color: theme.colorScheme.onSurfaceVariant);
-    final scaled = this.scaled;
-    final amount = IngredientText.formatAmount(scaled?.scaledLine ?? line);
-    final extras = <TextSpan>[];
-    if (scaled != null) {
-      final exact = scaled.exact;
-      if (scaled.notice == ScaleNotice.rounded && exact != null) {
-        extras.add(
-          TextSpan(
-            text: ' · ${l10n.scaleExact(IngredientText.formatQuantity(exact))}',
-            style: muted,
-          ),
-        );
-      }
-      final hint = switch (scaled.notice) {
-        ScaleNotice.leavening => l10n.scaleNoticeLeavening,
-        ScaleNotice.seasoning => l10n.scaleNoticeSeasoning,
-        ScaleNotice.manual => l10n.scaleNoticeManual,
-        _ => null,
-      };
-      if (hint != null) {
-        extras.add(
-          TextSpan(
-            text: ' · $hint',
-            style: TextStyle(
-              color: theme.colorScheme.primary,
-              fontStyle: FontStyle.italic,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        );
-      }
-    }
-    final name = line.name.trim();
-    // « 200 g de farine », « 1 yaourt nature », « Sel, selon le goût » : une
-    // seule phrase, la quantité juste avant l'ingrédient.
-    final connector = line.unit.isNotEmpty && name.isNotEmpty
-        ? IngredientText.partitive(name)
-        : '';
-
-    final linkedId = line.linkedRecipeId;
-    final linkStyle = TextStyle(
-      color: theme.colorScheme.primary,
-      decoration: TextDecoration.underline,
-      decorationColor: theme.colorScheme.primary,
-    );
-
-    final sentence = Text.rich(
-      TextSpan(
-        children: [
-          if (amount.isNotEmpty)
-            TextSpan(
-              text: '$amount ',
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-          if (amount.isNotEmpty && connector.isNotEmpty)
-            TextSpan(text: connector),
-          TextSpan(
-            text: amount.isEmpty ? _capitalize(name) : name,
-            style: linkedId == null ? null : linkStyle,
-          ),
-          if (linkedId != null)
-            WidgetSpan(
-              alignment: PlaceholderAlignment.middle,
-              child: Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          if (line.note.isNotEmpty)
-            TextSpan(text: ', ${line.note}', style: muted),
-          if (line.optional)
-            TextSpan(
-              text: ' · $optionalLabel',
-              style: muted.copyWith(fontStyle: FontStyle.italic),
-            ),
-          ...extras,
-        ],
-      ),
-      style: theme.textTheme.bodyLarge?.copyWith(height: 1.25),
-    );
-
-    return Padding(
-      // Des lignes serrées : une liste d'ingrédients se lit d'un coup d'œil.
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (linkedId == null)
-            sentence
-          else
-            InkWell(
-              onTap: () => context.push('/recettes/$linkedId'),
-              child: sentence,
-            ),
-          if (line.substitutes.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                '$substitutesPrefix\u00a0: ${line.substitutes}',
-                style: theme.textTheme.bodySmall?.merge(muted),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StepsSection extends StatelessWidget {
-  const _StepsSection({required this.recipe});
-
-  final Recipe recipe;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final steps = recipe.steps.where((s) => s.text.trim().isNotEmpty).toList();
-    if (steps.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(l10n.fieldSteps),
-        for (final (index, step) in steps.indexed)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  child: Text(
-                    '${index + 1}',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onPrimary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (step.title.trim().isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: Text(
-                            step.title.trim().toUpperCase(),
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ),
-                      FormattedText(
-                        step.text,
-                        style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _NotesSection extends StatelessWidget {
-  const _NotesSection({required this.recipe, required this.onEdit});
-
-  final Recipe recipe;
-  final VoidCallback onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final hasNotes = recipe.notes.trim().isNotEmpty;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(l10n.notes),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _tint(context),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.edit_outlined,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    l10n.notes,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-              if (hasNotes) ...[
-                const SizedBox(height: 8),
-                Text(
-                  recipe.notes,
-                  style: theme.textTheme.bodyLarge?.copyWith(height: 1.4),
-                ),
-              ],
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: onEdit,
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  alignment: Alignment.centerLeft,
-                ),
-                child: Text(hasNotes ? l10n.editNotes : l10n.addNote),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AboutSection extends StatelessWidget {
-  const _AboutSection({required this.recipe});
-
-  final Recipe recipe;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final source = recipe.source.trim();
-    final links = findLinks(source);
-    final host = links.isEmpty ? '' : links.first.host.toLowerCase();
-    final isVideo =
-        host.contains('youtube') ||
-        host.contains('youtu.be') ||
-        host.contains('vimeo') ||
-        host.contains('dailymotion');
-    final (icon, label) = links.isEmpty
-        ? (Icons.menu_book_outlined, l10n.sourceLabel)
-        : isVideo
-        ? (Icons.play_circle_outline, l10n.sourceVideo)
-        : (Icons.language, l10n.sourceWebsite);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(l10n.sectionAbout),
-        if (source.isNotEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 48,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: _tint(context),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, color: theme.colorScheme.primary),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      LinkedText(source, style: theme.textTheme.bodyLarge),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        if (recipe.labelIds.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          RecipeLabelChips(labelIds: recipe.labelIds),
-        ],
-        if (recipe.videoLinks.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Text(l10n.videosLabel, style: theme.textTheme.titleSmall),
-          const SizedBox(height: 4),
-          for (final link in recipe.videoLinks)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.play_circle_outline,
-                    size: 20,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: LinkedText(link, style: theme.textTheme.bodyMedium),
-                  ),
-                ],
-              ),
-            ),
-        ],
-        if (recipe.extraPhotos.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Text(l10n.morePhotos, style: theme.textTheme.titleSmall),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 110,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                for (final name in recipe.extraPhotos)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: SizedBox.square(
-                        dimension: 110,
-                        child: InkWell(
-                          onTap: () => _showPhoto(context, name),
-                          child: RecipePhoto(photo: name, decodeWidth: 330),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-        const SizedBox(height: 12),
-        Text(
-          l10n.addedOn(
-            MaterialLocalizations.of(context)
-                .formatMediumDate(recipe.createdAt),
-          ),
-          style: theme.textTheme.bodySmall,
-        ),
-      ],
-    );
-  }
-}
-
-void _showPhoto(BuildContext context, String name) {
-  showDialog<void>(
-    context: context,
-    builder: (context) => Dialog(
-      insetPadding: const EdgeInsets.all(16),
-      clipBehavior: Clip.antiAlias,
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: InteractiveViewer(child: RecipePhoto(photo: name)),
-      ),
-    ),
-  );
-}
-
-/// Où en est la recette : son statut, qu'on change d'un geste.
-class _StatusRow extends StatelessWidget {
-  const _StatusRow({required this.recipe, required this.onStatus});
-
-  final Recipe recipe;
-  final ValueChanged<RecipeStatus?> onStatus;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    String statusLabel(RecipeStatus status) => switch (status) {
-      RecipeStatus.toTest => l10n.statusToTest,
-      RecipeStatus.toRetest => l10n.statusToRetest,
-      RecipeStatus.toImprove => l10n.statusToImprove,
-      RecipeStatus.validated => l10n.statusValidated,
-    };
-    final status = recipe.status;
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        PopupMenuButton<int>(
-          tooltip: l10n.statusLabel,
-          onSelected: (index) => onStatus(
-            index < RecipeStatus.values.length
-                ? RecipeStatus.values[index]
-                : null,
-          ),
-          itemBuilder: (context) => [
-            for (final (index, value) in RecipeStatus.values.indexed)
-              CheckedPopupMenuItem(
-                value: index,
-                checked: value == status,
-                child: Text(statusLabel(value)),
-              ),
-            PopupMenuItem(
-              value: RecipeStatus.values.length,
-              child: Text(l10n.statusNone),
-            ),
-          ],
-          child: Chip(
-            avatar: Icon(
-              status == null ? Icons.flag_outlined : Icons.flag,
-              size: 18,
-              color: theme.colorScheme.primary,
-            ),
-            label: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(status == null ? l10n.statusLabel : statusLabel(status)),
-                const Icon(Icons.arrow_drop_down, size: 20),
-              ],
-            ),
-            visualDensity: VisualDensity.compact,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _EquipmentSection extends ConsumerWidget {
-  const _EquipmentSection({required this.recipe});
-
-  final Recipe recipe;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (recipe.equipmentIds.isEmpty) return const SizedBox.shrink();
-    final names = {
-      for (final item in ref.watch(equipmentProvider).value ?? const [])
-        item.id: item.name,
-    };
-    final items = [for (final id in recipe.equipmentIds) ?names[id]];
-    if (items.isEmpty) return const SizedBox.shrink();
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(l10n.equipment),
-        for (final item in items)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.kitchen_outlined,
-                  size: 18,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 10),
-                Expanded(child: Text(item, style: theme.textTheme.bodyLarge)),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-/// Cinq étoiles : un appui note de 1 à 5, un appui sur l'étoile déjà choisie
-/// retire la note.
-class _StarRating extends StatelessWidget {
-  const _StarRating({required this.rating, required this.onChanged});
-
-  final int? rating;
-  final ValueChanged<int?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var star = 1; star <= 5; star++)
-          InkResponse(
-            radius: 20,
-            onTap: () => onChanged(rating == star ? null : star),
-            child: Tooltip(
-              message: rating == star ? l10n.clearRating : l10n.rateStars(star),
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: Icon(
-                  star <= (rating ?? 0) ? Icons.star : Icons.star_border,
-                  size: 26,
-                  color: scheme.tertiary,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
   }
 }

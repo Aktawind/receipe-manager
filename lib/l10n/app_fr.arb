@@ -889,5 +889,126 @@
         "type": "int"
       }
     }
-  }
+  },
+  "newShoppingList": "Nouvelle liste",
+  "shoppingListName": "Nom de la liste",
+  "shoppingListDefaultName": "Courses",
+  "shoppingListsEmpty": "Aucune liste de courses",
+  "shoppingListsEmptyHint": "Une liste pour la semaine, un repas, un anniversaire… Les ingrédients des recettes pourront y être ajoutés.",
+  "shoppingListSummary": "{toBuy, plural, =0{Rien à acheter} =1{1 produit à acheter} other{{toBuy} produits à acheter}}{inCart, plural, =0{} other{ · {inCart} dans le panier}}",
+  "@shoppingListSummary": {
+    "placeholders": {
+      "toBuy": {"type": "int"},
+      "inCart": {"type": "int"}
+    }
+  },
+  "renameShoppingList": "Renommer la liste",
+  "shareShoppingList": "Partager la liste",
+  "printShoppingList": "Imprimer ou enregistrer en PDF",
+  "reuseShoppingList": "Réutiliser la liste",
+  "reuseShoppingListHint": "Une nouvelle liste avec les mêmes produits, tous à acheter",
+  "reusedListName": "{name} (nouvelle)",
+  "@reusedListName": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "deleteShoppingList": "Supprimer la liste",
+  "shoppingListDeleted": "Liste « {name} » supprimée",
+  "@shoppingListDeleted": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "addProduct": "Ajouter un produit",
+  "addProductHint": "2 kg de pommes de terre",
+  "dictateProducts": "Dicter des produits",
+  "dictationListening": "J'écoute…",
+  "dictationHint": "Dites un produit, attendez qu'il s'ajoute, puis le suivant",
+  "dictationAdded": "Ajouté : {text}",
+  "@dictationAdded": {
+    "placeholders": {
+      "text": {"type": "String"}
+    }
+  },
+  "dictationStop": "Arrêter",
+  "speechPermission": "Le micro est refusé : autorise-le dans les réglages d'Android pour dicter",
+  "speechError": "La dictée s'est interrompue, réessaie",
+  "speechUnavailable": "La dictée n'est pas disponible sur cet appareil",
+  "addToShopping": "Ajouter aux courses",
+  "addRecipesToShopping": "Ajouter des recettes",
+  "chooseRecipes": "Choisir les recettes",
+  "searchRecipes": "Rechercher une recette",
+  "shoppingListChoice": "Liste",
+  "newShoppingListNamed": "Nouvelle liste « {name} »",
+  "@newShoppingListNamed": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "addProductsCount": "{count, plural, =0{Aucun produit coché} =1{Ajouter 1 produit} other{Ajouter {count} produits}}",
+  "@addProductsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "addedToShoppingList": "{count, plural, =1{1 produit ajouté} other{{count} produits ajoutés}} à « {name} »",
+  "@addedToShoppingList": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "name": {"type": "String"}
+    }
+  },
+  "openShoppingList": "Voir",
+  "fromLinkedRecipe": "pour la recette « {title} »",
+  "@fromLinkedRecipe": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "fewerServings": "Moins de personnes",
+  "moreServings": "Plus de personnes",
+  "shoppingListEmpty": "La liste est vide",
+  "shoppingListEmptyHint": "Ajoute un produit ci-dessous, ou dicte-le avec le micro.",
+  "inCartSection": "Dans le panier ({count})",
+  "@inCartSection": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "removeChecked": "Retirer les cochés",
+  "productRemoved": "« {name} » retiré de la liste",
+  "@productRemoved": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "checkedRemoved": "{count, plural, =1{1 produit retiré} other{{count} produits retirés}}",
+  "@checkedRemoved": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "editProduct": "Modifier le produit",
+  "productName": "Produit",
+  "productAmount": "Quantité nécessaire",
+  "productAmountHint": "250 g, 2, 1 L…",
+  "productNote": "Commentaire",
+  "productAisle": "Rayon",
+  "noAisle": "Sans rayon",
+  "aislesTitle": "Rayons",
+  "aislesSubtitle": "Les rayons des listes de courses, dans l'ordre de ton parcours",
+  "addAisle": "Ajouter un rayon",
+  "aisleName": "Nom du rayon",
+  "renameAisle": "Renommer le rayon",
+  "deleteAisleConfirm": "Supprimer le rayon « {name} » ? Ses produits iront dans un autre rayon ou dans « Sans rayon ».",
+  "@deleteAisleConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "aislesHint": "Glisse ☰ pour changer l'ordre. Un produit rangé à la main dans un rayon y retourne ensuite.",
+  "removeProduct": "Retirer de la liste",
+  "save": "Enregistrer",
+  "moveProduct": "Déplacer"
 }

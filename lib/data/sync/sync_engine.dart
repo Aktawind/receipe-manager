@@ -3,11 +3,13 @@ import 'package:drift/drift.dart';
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
 import '../../domain/recipe.dart';
+import '../../domain/shopping.dart';
 import '../database.dart';
 import '../equipment_repository.dart';
 import '../label_repository.dart';
 import '../photo_store.dart';
 import '../recipe_repository.dart';
+import '../shopping_repository.dart';
 import 'hybrid_clock.dart';
 import 'sync_codec.dart';
 import 'sync_remote.dart';
@@ -70,6 +72,7 @@ class SyncEngine {
     required RecipeRepository recipes,
     required LabelRepository labels,
     required EquipmentRepository equipment,
+    required ShoppingRepository shopping,
     required this._photos,
     required this._remote,
     required this._clock,
@@ -109,6 +112,55 @@ class SyncEngine {
         decode: SyncCodec.decodeEquipment,
         put: equipment.put,
         titleOf: (e) => e.name,
+      ),
+      _Adapter.of<Aisle>(
+        kind: SyncKind.aisle,
+        stamps: () => _stamps(_db.aisles, _db.aisles.id, _db.aisles.updatedAt),
+        load: (id) async =>
+            {for (final a in await shopping.getAllAisles()) a.id: a}[id],
+        loadAll: () async => {
+          for (final a in await shopping.getAllAisles()) a.id: a,
+        },
+        idOf: (a) => a.id,
+        updatedAt: (a) => a.updatedAt,
+        encode: SyncCodec.aisle,
+        decode: SyncCodec.decodeAisle,
+        put: shopping.putAisle,
+        titleOf: (a) => a.name,
+      ),
+      _Adapter.of<ProductAisle>(
+        kind: SyncKind.product,
+        stamps: () async => {
+          for (final p in await shopping.getAllProductAisles())
+            p.id: p.updatedAt,
+        },
+        load: (id) async =>
+            {for (final p in await shopping.getAllProductAisles()) p.id: p}[id],
+        loadAll: () async => {
+          for (final p in await shopping.getAllProductAisles()) p.id: p,
+        },
+        idOf: (p) => p.id,
+        updatedAt: (p) => p.updatedAt,
+        encode: SyncCodec.product,
+        decode: SyncCodec.decodeProduct,
+        put: shopping.putProductAisle,
+        titleOf: (p) => p.key,
+      ),
+      _Adapter.of<ShoppingList>(
+        kind: SyncKind.shoppingList,
+        stamps: () => _stamps(
+          _db.shoppingLists,
+          _db.shoppingLists.id,
+          _db.shoppingLists.updatedAt,
+        ),
+        load: shopping.getList,
+        loadAll: null,
+        idOf: (l) => l.id,
+        updatedAt: (l) => l.updatedAt,
+        encode: SyncCodec.shoppingList,
+        decode: SyncCodec.decodeShoppingList,
+        put: shopping.putList,
+        titleOf: (l) => l.name,
       ),
       _Adapter.of<Recipe>(
         kind: SyncKind.recipe,

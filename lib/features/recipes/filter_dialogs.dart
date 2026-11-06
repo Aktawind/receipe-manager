@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format/durations.dart';
+import '../../domain/recipe_filter.dart';
 import '../../l10n/app_localizations.dart';
 import '../equipment/equipment_providers.dart';
-import 'recipe_providers.dart';
 
 /// Les durées proposées pour limiter une recette, en minutes.
 const _durationChoices = [15, 30, 45, 60, 90, 120];
@@ -45,7 +45,7 @@ class _TimeLimitsDialogState extends State<_TimeLimitsDialog> {
         isExpanded: true,
         decoration: InputDecoration(labelText: label),
         items: [
-          DropdownMenuItem(value: null, child: Text(l10n.durationAny)),
+          DropdownMenuItem(child: Text(l10n.durationAny)),
           for (final minutes in _durationChoices)
             DropdownMenuItem(
               value: minutes,

@@ -15,6 +15,9 @@ class MainActivity : FlutterActivity() {
     private var shareChannel: MethodChannel? = null
     private val pageScanner = PageScanner(this)
 
+    /** La dictée continue des courses (SpeechListener). */
+    private var speech: SpeechListener? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         val messenger = flutterEngine.dartExecutor.binaryMessenger
@@ -59,6 +62,56 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        // Dictée des courses : l'écran de reconnaissance vocale d'Android.
+        val speechChannel = MethodChannel(messenger, "recettes/speech")
+        val listener = SpeechListener(this, speechChannel).also { speech = it }
+        speechChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "start" -> {
+                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
+                        PackageManager.PERMISSION_GRANTED
+                    ) {
+                        listener.start()
+                    } else {
+                        requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), SPEECH_PERMISSION)
+                    }
+                    result.success(null)
+                }
+                "stop" -> {
+                    listener.stop()
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // Partager un texte, imprimer un PDF (listes de courses).
+        MethodChannel(messenger, "recettes/export").setMethodCallHandler { call, result ->
+            try {
+                when (call.method) {
+                    "shareText" -> {
+                        ExportActions.shareText(
+                            this,
+                            call.argument<String>("text") ?: "",
+                            call.argument<String>("subject") ?: "",
+                        )
+                        result.success(null)
+                    }
+                    "printPdf" -> {
+                        ExportActions.printPdf(
+                            this,
+                            call.argument<String>("path")!!,
+                            call.argument<String>("name") ?: "Liste",
+                        )
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            } catch (e: Exception) {
+                result.error("export", e.message, null)
+            }
+        }
+
         // Minuteurs : alarmes et notifications (TimerAlarms).
         MethodChannel(messenger, "recettes/timers").setMethodCallHandler { call, result ->
             when (call.method) {
@@ -96,6 +149,26 @@ class MainActivity : FlutterActivity() {
         if (requestCode == PageScanner.REQUEST_CODE) pageScanner.onActivityResult(resultCode, data)
     }
 
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != SPEECH_PERMISSION) return
+        if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+            speech?.start()
+        } else {
+            speech?.stop("permission")
+        }
+    }
+
+    override fun onPause() {
+        // Le micro ne reste jamais ouvert quand l'app n'est plus à l'écran.
+        speech?.stop("user")
+        super.onPause()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         val text = sharedTextOf(intent) ?: return
@@ -105,6 +178,10 @@ class MainActivity : FlutterActivity() {
         } else {
             channel.invokeMethod("shared", text)
         }
+    }
+
+    companion object {
+        private const val SPEECH_PERMISSION = 43
     }
 
     private fun sharedTextOf(intent: Intent?): String? {

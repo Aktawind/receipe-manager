@@ -5,6 +5,7 @@ import 'package:recettes/data/database.dart';
 import 'package:recettes/data/label_repository.dart';
 import 'package:recettes/data/recipe_repository.dart';
 import 'package:recettes/domain/label.dart';
+import 'package:recettes/domain/recipe.dart';
 
 import 'generated_migrations/app/generated/schema.dart';
 import 'generated_migrations/app/generated/schema_v7.dart' as v7;
@@ -67,17 +68,41 @@ void main() {
         ]);
         batch.insertAll(oldDb.recipes, [recipe('a'), recipe('b')]);
         batch.insertAll(oldDb.recipeLabels, [
-          v7.RecipeLabelsData(recipeId: 'a', labelId: 'plats', sortIndex: 0),
-          v7.RecipeLabelsData(recipeId: 'a', labelId: 'rapide', sortIndex: 0),
-          v7.RecipeLabelsData(recipeId: 'a', labelId: 'vege', sortIndex: 0),
-          v7.RecipeLabelsData(
+          const v7.RecipeLabelsData(
+            recipeId: 'a',
+            labelId: 'plats',
+            sortIndex: 0,
+          ),
+          const v7.RecipeLabelsData(
+            recipeId: 'a',
+            labelId: 'rapide',
+            sortIndex: 0,
+          ),
+          const v7.RecipeLabelsData(
+            recipeId: 'a',
+            labelId: 'vege',
+            sortIndex: 0,
+          ),
+          const v7.RecipeLabelsData(
             recipeId: 'a',
             labelId: 'coll-vege',
             sortIndex: 0,
           ),
-          v7.RecipeLabelsData(recipeId: 'b', labelId: 'paques', sortIndex: 0),
-          v7.RecipeLabelsData(recipeId: 'b', labelId: 'diner', sortIndex: 0),
-          v7.RecipeLabelsData(recipeId: 'b', labelId: 'hiver', sortIndex: 0),
+          const v7.RecipeLabelsData(
+            recipeId: 'b',
+            labelId: 'paques',
+            sortIndex: 0,
+          ),
+          const v7.RecipeLabelsData(
+            recipeId: 'b',
+            labelId: 'diner',
+            sortIndex: 0,
+          ),
+          const v7.RecipeLabelsData(
+            recipeId: 'b',
+            labelId: 'hiver',
+            sortIndex: 0,
+          ),
         ]);
       });
       await oldDb.close();
@@ -103,7 +128,7 @@ void main() {
             ..sort();
       expect(collections, ['Pâques', 'Rapide', 'Végétarien']);
 
-      List<String> namesOf(String recipeId, dynamic r) =>
+      List<String> namesOf(String recipeId, Recipe r) =>
           [for (final id in r.labelIds) labels[id]!.name]..sort();
       final a = (await repo.getRecipe('a'))!;
       final b = (await repo.getRecipe('b'))!;

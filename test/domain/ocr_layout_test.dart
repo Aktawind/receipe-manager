@@ -29,7 +29,7 @@ void main() {
   test('titre, temps en pictogrammes, ingrédients et étapes sans rubrique '
       '(tartelettes)', () {
     final text = read([
-      l('DESSERTS', 60, 20, block: 0),
+      l('DESSERTS', 60, 20),
       l('Tartelettes au', 60, 90, height: 48, block: 1),
       l('chocolat blanc', 60, 145, height: 48, block: 1),
       l('POUR 6 TARTELETTES', 60, 230, block: 2),
@@ -71,7 +71,7 @@ void main() {
 
   test('ingrédients à gauche, préparation à droite (poulet impérial)', () {
     final text = read([
-      l('POULET IMPÉRIAL', 60, 40, height: 50, block: 0),
+      l('POULET IMPÉRIAL', 60, 40, height: 50),
       l('Pour 4 personnes', 60, 130, block: 1),
       l('Préparation : 20 min', 60, 155, block: 1),
       l('Cuisson : 35 min', 60, 180, block: 1),
@@ -106,7 +106,7 @@ void main() {
 
   test('légendes sous les photos : nom puis quantité (dinde)', () {
     final text = read([
-      l('Dinde & tomates aux herbes', 60, 40, height: 46, block: 0),
+      l('Dinde & tomates aux herbes', 60, 40, height: 46),
       l('escalope de dinde', 60, 300, block: 1),
       l('800 g', 60, 325, block: 2),
       l('tomates cerises', 360, 300, block: 3),
@@ -134,7 +134,7 @@ void main() {
 
   test('quantité au-dessus du nom (boudin aux pommes)', () {
     final text = read([
-      l('Boudin aux pommes', 60, 40, height: 46, block: 0),
+      l('Boudin aux pommes', 60, 40, height: 46),
       l('4', 100, 300, block: 1, width: 12),
       l('Boudins noirs', 60, 325, block: 2),
       l('3', 400, 300, block: 3, width: 12),
@@ -155,7 +155,7 @@ void main() {
 
   test('ingrédients à la suite, séparés par des « + » (gâteau)', () {
     final text = read([
-      l('Gâteau sans farine aux marrons', 60, 40, height: 46, block: 0),
+      l('Gâteau sans farine aux marrons', 60, 40, height: 46),
       l('500 g de crème de marrons + 3 œufs + 100 g de', 60, 140, block: 1),
       l('beurre + 1 pincée de sel', 60, 165, block: 1),
       l(
@@ -178,7 +178,7 @@ void main() {
 
   test('gros numéros d’étapes sur deux colonnes (entrecôte)', () {
     final text = read([
-      l('Entrecôte grillée bordelaise', 60, 40, height: 46, block: 0),
+      l('Entrecôte grillée bordelaise', 60, 40, height: 46),
       l('2 entrecôtes', 60, 130, block: 1),
       l('3 échalotes', 60, 155, block: 1),
       l('1', 60, 300, block: 2, height: 40, width: 20),
@@ -229,7 +229,7 @@ void main() {
 
   test('légende sur deux lignes, quantité avec précision (saltimboccas)', () {
     final text = read([
-      l('Saltimboccas de Pinocchio', 60, 40, height: 46, block: 0),
+      l('Saltimboccas de Pinocchio', 60, 40, height: 46),
       l('Escalopes de veau', 60, 300, block: 1),
       l('fines', 60, 322, block: 1),
       l('x 4 (petites et aplaties)', 60, 350, block: 2),
@@ -243,7 +243,7 @@ void main() {
 
   test('groupes d’ingrédients et astuce (bouillon)', () {
     final text = read([
-      l('Bouillon de poulet', 60, 40, height: 46, block: 0),
+      l('Bouillon de poulet', 60, 40, height: 46),
       l('Ingrédients pour 1,5 litre de bouillon', 60, 130, block: 1),
       l('POUR LE BOUILLON', 60, 170, block: 2),
       l('1 carcasse de poulet', 60, 195, block: 2),
@@ -294,5 +294,40 @@ void main() {
     expect(text, startsWith('# Entrecôte grillée'));
     expect(text, contains('- 2 entrecôtes\n- 3 échalotes'));
     expect(text, contains('1. Faites griller'));
+  });
+
+  test('une page à une colonne, avec rubriques (tarte aux pommes)', () {
+    final text = read([
+      l('TARTE AUX POMMES', 60, 40, height: 46),
+      l('Pour 6 personnes', 60, 120, block: 1),
+      l('Préparation : 20 min', 60, 145, block: 1),
+      l('Cuisson : 35 min', 60, 170, block: 1),
+      l('Ingrédients', 60, 230, block: 2),
+      l('1 pâte brisée', 60, 260, block: 3),
+      l('6 pommes', 60, 285, block: 3),
+      l('5O g de sucre', 60, 310, block: 3),
+      l('30 g de beurre', 60, 335, block: 3),
+      l('Préparation', 60, 395, block: 4),
+      l('Préchauffez le four à 180 °C. Étalez la pâte', 60, 425, block: 5),
+      l('dans un moule à tarte et piquez-la avec une', 60, 450, block: 5),
+      l('fourchette.', 60, 475, block: 5),
+      l('Épluchez les pommes, coupez-les en fines', 60, 515, block: 6),
+      l('lamelles et disposez-les sur la pâte.', 60, 540, block: 6),
+      l('Saupoudrez de sucre, parsemez de beurre et', 60, 580, block: 7),
+      l('enfournez pour 35 minutes.', 60, 605, block: 7),
+    ]);
+    final recipe = TextRecipeParser.parse(text);
+    expect(recipe.title, 'Tarte aux pommes');
+    expect(recipe.servings, 6);
+    expect(recipe.prepMinutes, 20);
+    expect(recipe.cookMinutes, 35);
+    expect(recipe.ingredients, [
+      '- 1 pâte brisée',
+      '- 6 pommes',
+      '- 50 g de sucre',
+      '- 30 g de beurre',
+    ]);
+    expect(recipe.steps, hasLength(3));
+    expect(recipe.steps.first, endsWith('avec une fourchette.'));
   });
 }

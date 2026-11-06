@@ -25,7 +25,7 @@ void main() {
   test('en toutes lettres', () {
     expect(minutes('Laisser reposer une demi-heure.'), [30]);
     expect(minutes('Cuire un quart d’heure.'), [15]);
-    expect(minutes("Cuire une heure et demie."), [90]);
+    expect(minutes('Cuire une heure et demie.'), [90]);
     expect(minutes('Laisser mariner une heure au frais.'), [60]);
   });
 

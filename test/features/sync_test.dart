@@ -224,7 +224,7 @@ void main() {
       expect(app.prefs.getBool('sync_enabled'), isFalse);
       // Les recettes de l'appareil, elles, sont toujours là.
       final left = await tester.runAsync(
-        () => app.services.recipes.getAllWithDetails(),
+        app.services.recipes.getAllWithDetails,
       );
       expect(left!.map((r) => r.title), ['Quiche']);
       await tester.pump(const Duration(seconds: 10));
