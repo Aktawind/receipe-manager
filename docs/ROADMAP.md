@@ -17,7 +17,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.7](#07--mode-cuisine) | Mode cuisine | ✅ |
 | [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ✅ |
 | [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ✅ |
-| [0.10](#010--listes-de-courses) | Listes de courses | 🟨 |
+| [0.10](#010--listes-de-courses) | Listes de courses | ✅ |
 | [0.11](#011--planning-des-repas) | Planning des repas | ⬜ |
 | [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ⬜ |
 | [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ⬜ |
@@ -340,7 +340,7 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
 - pas de partage avec d'autres personnes (le partage et la synchro suffisent), pas de placard ;
 - la liste générée depuis le planning viendra avec la 0.11.
 
-*Avancement* : quatre étapes.
+*Livré en 0.10.0 (2026-11-06)*, en quatre étapes :
 - **Étape 1 (validée le 2026-11-05)** : listes (créer, renommer, supprimer, réutiliser), produits ajoutés en une
   ligne (« 2 kg de pommes de terre », « Beurre 50 g ») ou dictés, avec les produits déjà achetés en
   suggestion ; fusion du même produit (quantités additionnées) ; cocher → « Dans le panier »,
@@ -359,7 +359,7 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   Retour suivant : fiche du produit sans « Ce que j'achète » ni « Format », rayon sous la quantité ;
   **la synchro des listes ne marchait pas** (dossiers Drive `aisles/`, `products/`, `shopping/`
   jamais créés) et la restauration d'une sauvegarde Drive oubliait les listes : corrigé.
-- **Étape 4 (à tester)** : ⋮ → « Partager la liste » (texte rangé par rayon, vers une messagerie ou
+- **Étape 4 (validée le 2026-11-06)** : ⋮ → « Partager la liste » (texte rangé par rayon, vers une messagerie ou
   un mail) et « Imprimer ou enregistrer en PDF » : PDF sur **une seule page A4**, rayons en
   colonnes (2 ou 3) et taille du texte ajustée pour tout faire tenir, une case par produit ;
   impression par le gestionnaire d'Android (qui propose « Enregistrer au format PDF »). Les
