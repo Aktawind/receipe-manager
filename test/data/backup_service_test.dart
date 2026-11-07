@@ -11,6 +11,7 @@ import 'package:recettes/data/database.dart';
 import 'package:recettes/data/equipment_repository.dart';
 import 'package:recettes/data/label_repository.dart';
 import 'package:recettes/data/photo_store.dart';
+import 'package:recettes/data/planning_repository.dart';
 import 'package:recettes/data/recipe_repository.dart';
 import 'package:recettes/data/shopping_repository.dart';
 import 'package:recettes/domain/label.dart';
@@ -29,6 +30,7 @@ class _Env {
       equipment: equipment,
       labels: labels,
       shopping: ShoppingRepository(db),
+      planning: PlanningRepository(db),
       photos: photos,
       backupsDirectory: Directory('${root.path}/backups'),
       appVersion: '0.1.0',
@@ -219,13 +221,13 @@ void main() {
     expect((await target.repo.getRecipe('old-1'))!.notes, contains('Précuire'));
   });
 
-  test('l’export est en version 9, sans champ « tips »', () async {
+  test('l’export est en version 10, sans champ « tips »', () async {
     await addRecipe(source, 'Tarte');
     final archive = ZipDecoder().decodeBytes(await source.service.exportZip());
     final json = jsonDecode(
       utf8.decode(archive.findFile(BackupFormat.dataFile)!.content),
     ) as Map<String, Object?>;
-    expect(json['version'], 9);
+    expect(json['version'], 10);
     final recipe = (json['recipes'] as List).single as Map<String, Object?>;
     expect(recipe.containsKey('tips'), isFalse);
   });

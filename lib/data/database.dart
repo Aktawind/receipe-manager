@@ -7,6 +7,7 @@ import '../domain/default_labels.dart';
 import '../domain/equipment.dart';
 import '../domain/label.dart';
 import '../domain/legacy_classification.dart';
+import '../domain/planning.dart';
 
 import 'database.steps.dart';
 
@@ -260,6 +261,41 @@ class ProductAisles extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
+/// Les créneaux de repas du planning, dans l'ordre choisi ; v11.
+@DataClassName('MealSlotRow')
+class MealSlots extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  IntColumn get position => integer().withDefault(const Constant(0))();
+  BoolColumn get hidden => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Un repas du planning ([day] : « 2026-11-07 ») ; v11. Suppression douce.
+@DataClassName('PlannedMealRow')
+class PlannedMeals extends Table {
+  TextColumn get id => text()();
+  TextColumn get day => text()();
+  TextColumn get slotId => text()();
+  TextColumn get recipeId => text().nullable()();
+  TextColumn get recipeTitle => text().withDefault(const Constant(''))();
+  IntColumn get servings => integer().nullable()();
+  TextColumn get note => text().withDefault(const Constant(''))();
+  TextColumn get leftoverOf => text().nullable()();
+  IntColumn get position => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     Recipes,
@@ -276,6 +312,8 @@ class ProductAisles extends Table {
     ShoppingItems,
     Aisles,
     ProductAisles,
+    MealSlots,
+    PlannedMeals,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -283,7 +321,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 10;
+  static const latestSchemaVersion = 11;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -294,6 +332,7 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
       await _seedDefaultLabels(DateTime.now());
       await _seedDefaultAisles(DateTime.now());
+      await _seedDefaultMealSlots(DateTime.now());
     },
     onUpgrade: stepByStep(
       // v2 : titres d'étapes, et « Astuces » fusionnées dans « Notes ».
@@ -397,6 +436,12 @@ UPDATE recipes SET
         await m.createTable(schema.productAisles);
         await _seedDefaultAisles(DateTime.now());
       },
+      // v11 : planning des repas (0.11).
+      from10To11: (m, schema) async {
+        await m.createTable(schema.mealSlots);
+        await m.createTable(schema.plannedMeals);
+        await _seedDefaultMealSlots(DateTime.now());
+      },
     ),
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -499,6 +544,17 @@ UPDATE recipes SET
   }
 
   /// Les catégories, étiquettes et saisons fournies au départ.
+  Future<void> _seedDefaultMealSlots(DateTime now) async {
+    final stamp = now.toUtc().toIso8601String();
+    for (final slot in DefaultMealSlots.build(now)) {
+      await customStatement(
+        'INSERT OR IGNORE INTO meal_slots (id, name, position, created_at, '
+        'updated_at) VALUES (?, ?, ?, ?, ?)',
+        [slot.id, slot.name, slot.position, stamp, stamp],
+      );
+    }
+  }
+
   Future<void> _seedDefaultAisles(DateTime now) async {
     final stamp = now.toUtc().toIso8601String();
     for (final aisle in DefaultAisles.build(now)) {

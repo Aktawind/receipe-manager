@@ -33,6 +33,10 @@ recettes-2026-10-27-1430.zip
 | 8 | 0.4.0 | Nouveau statut `toRetest` (« à retester »). Le nombre de réalisations (`timesCooked`) n'est plus affiché mais reste écrit et lu |
 | 9 | 0.10.0 | Listes de courses (`shoppingLists`), rayons (`aisles`) et rayon retenu pour chaque produit (`productAisles`), au niveau du document ; absents quand ils sont vides. Rien ne change pour les recettes |
 
+| 10 | 0.11.0 | Planning des repas : créneaux (`mealSlots`) et repas (`plannedMeals`), au niveau du document ; absents quand ils sont vides |
+
+Lecture d'une version 9 (et avant) : pas de planning.
+
 Lecture d'une version 8 (et avant) : pas de listes de courses ni de rayons ; une restauration qui
 « remplace tout » garde alors les listes de l'appareil.
 
@@ -57,12 +61,12 @@ Lecture d'une version 2 : les champs ajoutés par la version 3 prennent leur val
 Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une ligne vide) ; les
 étapes n'ont pas de titre.
 
-## `recettes.json` — version 9
+## `recettes.json` — version 10
 
 ```json
 {
   "format": "recettes-backup",
-  "version": 9,
+  "version": 10,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
   "equipment": [
@@ -141,6 +145,30 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
 
 L'ordre des listes `ingredients` et `steps` est l'ordre d'affichage.
 
+### Planning (version 10)
+
+```json
+{
+  "mealSlots": [
+    { "id": "…", "name": "Dîner", "position": 3, "hidden": false,
+      "createdAt": "…", "updatedAt": "…", "deletedAt": null }
+  ],
+  "plannedMeals": [
+    { "id": "…", "day": "2026-11-09", "slot": "<id de « Dîner »>",
+      "recipe": "<id>", "recipeTitle": "Quiche lorraine", "servings": 4,
+      "note": "", "leftoverOf": null, "position": 0,
+      "createdAt": "…", "updatedAt": "…", "deletedAt": null }
+  ]
+}
+```
+
+| Champ | Type | Remarque |
+|---|---|---|
+| `mealSlots` | liste d'objets | les créneaux, dans l'ordre de `position` ; `hidden` = masqué dans le planning ; ceux fournis au départ ont un identifiant calculé à partir de leur nom |
+| `plannedMeals[].day` | texte `AAAA-MM-JJ` | le jour, sans heure |
+| `plannedMeals[].recipe` | `id` ou `null` | `null` = une note libre (`note`, « Restaurant ») ; `recipeTitle` garde le titre au moment de l'ajout |
+| `plannedMeals[].leftoverOf` | `id` ou `null` | les restes d'un autre repas (déjà cuisiné) |
+
 ### Courses (version 9)
 
 ```json
@@ -208,7 +236,8 @@ Réglages → Importer depuis Recipe Keeper, avec le ZIP produit par Recipe Keep
 ## Synchronisation (0.4)
 
 Le dossier Drive utilise le même format : chaque fichier de `recipes/`, `labels/`, `equipment/`, `aisles/`, `products/` et
-`shopping/` (une liste de courses avec ses produits) est un document `recettes-backup` de la version courante qui ne contient **qu'un seul élément**,
+`shopping/` (une liste de courses avec ses produits), `slots/` et `meals/` (planning) est un
+document `recettes-backup` de la version courante qui ne contient **qu'un seul élément**,
 et `media/` contient les photos sous leur nom. Les versions écartées d'un conflit sont dans
 `history/`. Les sauvegardes automatiques sont dans `backups/` : un seul fichier
 `sauvegarde-AAAA-MM-JJ-HHMM.json` par sauvegarde, au format `recettes-backup` **sans les photos**

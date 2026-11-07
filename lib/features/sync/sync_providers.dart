@@ -414,6 +414,7 @@ class SyncController extends Notifier<SyncState> {
       labels: services.labels,
       equipment: services.equipment,
       shopping: services.shopping,
+      planning: services.planning,
       photos: services.photos,
       clock: services.clock,
       remote: _folderFor(),

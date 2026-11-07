@@ -18,6 +18,60 @@
   },
   "recipesEmptyTitle": "Aucune recette pour l'instant",
   "planningEmptyTitle": "Le planning des repas",
+  "today": "Aujourd'hui",
+  "dayView": "Vue jour",
+  "weekView": "Vue semaine",
+  "previousWeek": "Semaine précédente",
+  "nextWeek": "Semaine suivante",
+  "previousDay": "Jour précédent",
+  "nextDay": "Jour suivant",
+  "addMeal": "Ajouter au planning",
+  "addMealTo": "{slot}",
+  "@addMealTo": {
+    "placeholders": {
+      "slot": {"type": "String"}
+    }
+  },
+  "editMeal": "Modifier le repas",
+  "mealRecipe": "Recette",
+  "mealNote": "Note",
+  "mealNoteHint": "Restaurant, pizza, chez mamie…",
+  "changeMealDate": "Changer la date",
+  "changeMealSlot": "Changer de créneau",
+  "copyMeal": "Copier sur d'autres jours",
+  "mealCopied": "{count, plural, =1{Copié sur 1 jour} other{Copié sur {count} jours}}",
+  "@mealCopied": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "leftoversTomorrow": "Restes pour le lendemain",
+  "leftoversAdded": "Restes ajoutés au {slot} de demain",
+  "@leftoversAdded": {
+    "placeholders": {
+      "slot": {"type": "String"}
+    }
+  },
+  "leftovers": "Restes",
+  "removeMeal": "Retirer du planning",
+  "mealRemoved": "« {title} » retiré du planning",
+  "@mealRemoved": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "mealSlotsTitle": "Créneaux de repas",
+  "mealSlotsSubtitle": "Les repas du planning : petit-déjeuner, déjeuner…",
+  "mealSlotsHint": "Glisse ☰ pour changer l'ordre ; un créneau désactivé n'est plus proposé dans le planning.",
+  "addMealSlot": "Ajouter un créneau",
+  "mealSlotName": "Nom du créneau",
+  "renameMealSlot": "Renommer le créneau",
+  "deleteMealSlotConfirm": "Supprimer le créneau « {name} » ? Ses repas resteront dans le planning tant qu'il en a.",
+  "@deleteMealSlotConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
   "shoppingEmptyTitle": "Les listes de courses",
   "settingsAppearance": "Apparence",
   "settingsTheme": "Thème",

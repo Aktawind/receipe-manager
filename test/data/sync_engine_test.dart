@@ -9,6 +9,7 @@ import 'package:recettes/data/database.dart';
 import 'package:recettes/data/equipment_repository.dart';
 import 'package:recettes/data/label_repository.dart';
 import 'package:recettes/data/photo_store.dart';
+import 'package:recettes/data/planning_repository.dart';
 import 'package:recettes/data/recipe_repository.dart';
 import 'package:recettes/data/shopping_repository.dart';
 import 'package:recettes/data/sync/drive_backup.dart';
@@ -60,12 +61,14 @@ class Device {
       photoDir ?? Directory.systemTemp.createTempSync('recettes-sync'),
     );
     final shopping = ShoppingRepository(db, clock: clock.now);
+    final planning = PlanningRepository(db, clock: clock.now);
     final engine = SyncEngine(
       database: db,
       recipes: recipes,
       labels: labels,
       equipment: equipment,
       shopping: shopping,
+      planning: planning,
       photos: photos,
       remote: remote,
       clock: clock,
@@ -76,6 +79,7 @@ class Device {
       equipment: equipment,
       labels: labels,
       shopping: shopping,
+      planning: planning,
       photos: photos,
       backupsDirectory: Directory.systemTemp.createTempSync('recettes-bak'),
       appVersion: 'test',
@@ -93,10 +97,12 @@ class Device {
       time,
     );
     device.shopping = shopping;
+    device.planning = planning;
     return device;
   }
 
   late final ShoppingRepository shopping;
+  late final PlanningRepository planning;
 
   /// Avance l'horloge de cet appareil.
   void at(DateTime moment) => _time.value = moment;
@@ -226,6 +232,43 @@ void main() {
     await a.engine.sync();
     expect((await a.shopping.getList(list.id))!.items.first.checked, isTrue);
   });
+
+  test(
+    'le planning (créneaux et repas) passe d’un appareil à l’autre',
+    () async {
+      final slots = await a.planning.watchSlots().first;
+      final brunch = await a.planning.createSlot('Brunch');
+      final meal = await a.planning.add(
+        day: DateTime(2035, 1, 8),
+        slotId: slots.last.id,
+        recipeId: 'q',
+        recipeTitle: 'Quiche',
+        servings: 6,
+      );
+      await a.planning.add(
+        day: DateTime(2035, 1, 9),
+        slotId: brunch.id,
+        note: 'Restaurant',
+      );
+      final first = await a.engine.sync();
+      expect(first.ok, isTrue, reason: '${first.errors}');
+      expect(remote.files.keys, contains('meals/${meal.id}.json'));
+      expect(remote.files.keys, contains('slots/${brunch.id}.json'));
+
+      final second = await b.engine.sync();
+      expect(second.ok, isTrue, reason: '${second.errors}');
+      expect(second.conflicts, isEmpty);
+      final copy = (await b.planning.getMeal(meal.id))!;
+      expect(
+        (copy.recipeTitle, copy.servings, copy.day),
+        ('Quiche', 6, DateTime(2035, 1, 8)),
+      );
+      expect(
+        (await b.planning.watchSlots().first).map((s) => s.name),
+        contains('Brunch'),
+      );
+    },
+  );
 
   test(
     'les éléments par défaut créés des deux côtés ne font pas de conflit',

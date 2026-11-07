@@ -1,6 +1,7 @@
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
 import '../../domain/legacy_classification.dart';
+import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
 import '../../domain/recipe_links.dart';
 import '../../domain/shopping.dart';
@@ -26,9 +27,11 @@ import '../photo_store.dart';
 ///   identifiants) à la place de `course`, `category` et `collections`.
 /// - v9 : listes de courses (`shoppingLists`), rayons (`aisles`) et rayon
 ///   retenu pour chaque produit (`productAisles`).
+/// - v10 : planning des repas : créneaux (`mealSlots`) et repas
+///   (`plannedMeals`).
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 9;
+  static const currentVersion = 10;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 
@@ -39,6 +42,8 @@ abstract final class BackupFormat {
     List<ShoppingList> shoppingLists = const [],
     List<Aisle> aisles = const [],
     List<ProductAisle> productAisles = const [],
+    List<MealSlot> mealSlots = const [],
+    List<PlannedMeal> plannedMeals = const [],
     required DateTime exportedAt,
     required String appVersion,
   }) {
@@ -96,6 +101,37 @@ abstract final class BackupFormat {
         ],
       if (shoppingLists.isNotEmpty)
         'shoppingLists': [for (final l in shoppingLists) _encodeList(l)],
+      if (mealSlots.isNotEmpty)
+        'mealSlots': [
+          for (final s in mealSlots)
+            {
+              'id': s.id,
+              'name': s.name,
+              'position': s.position,
+              'hidden': s.hidden,
+              'createdAt': s.createdAt.toUtc().toIso8601String(),
+              'updatedAt': s.updatedAt.toUtc().toIso8601String(),
+              'deletedAt': s.deletedAt?.toUtc().toIso8601String(),
+            },
+        ],
+      if (plannedMeals.isNotEmpty)
+        'plannedMeals': [
+          for (final m in plannedMeals)
+            {
+              'id': m.id,
+              'day': PlannedMeal.dayKey(m.day),
+              'slot': m.slotId,
+              'recipe': m.recipeId,
+              'recipeTitle': m.recipeTitle,
+              'servings': m.servings,
+              'note': m.note,
+              'leftoverOf': m.leftoverOf,
+              'position': m.position,
+              'createdAt': m.createdAt.toUtc().toIso8601String(),
+              'updatedAt': m.updatedAt.toUtc().toIso8601String(),
+              'deletedAt': m.deletedAt?.toUtc().toIso8601String(),
+            },
+        ],
     };
   }
 
@@ -340,8 +376,63 @@ abstract final class BackupFormat {
       shoppingLists: version >= 9 ? _decodeLists(root) : const [],
       aisles: version >= 9 ? _decodeAisles(root) : const [],
       productAisles: version >= 9 ? _decodeProductAisles(root) : const [],
+      mealSlots: version >= 10 ? _decodeSlots(root) : const [],
+      plannedMeals: version >= 10 ? _decodeMeals(root) : const [],
     );
   }
+
+  static List<MealSlot> _decodeSlots(Map<String, Object?> root) => [
+    for (final item in _list(root, 'mealSlots'))
+      () {
+        final m = _map(item, 'mealSlot');
+        final id = _string(m, 'id', required: true);
+        final name = _string(m, 'name', required: true).trim();
+        if (id.isEmpty || name.isEmpty) {
+          throw const BackupFormatException(BackupError.invalid, 'mealSlots');
+        }
+        return MealSlot(
+          id: id,
+          name: name,
+          position: _int(m, 'position') ?? 0,
+          hidden: m['hidden'] == true,
+          createdAt: _date(m, 'createdAt')!,
+          updatedAt: _date(m, 'updatedAt')!,
+          deletedAt: _date(m, 'deletedAt', required: false),
+        );
+      }(),
+  ];
+
+  static List<PlannedMeal> _decodeMeals(Map<String, Object?> root) => [
+    for (final item in _list(root, 'plannedMeals'))
+      () {
+        final m = _map(item, 'plannedMeal');
+        final id = _string(m, 'id', required: true);
+        final day = PlannedMeal.parseDay(_string(m, 'day', required: true));
+        final slot = _string(m, 'slot', required: true);
+        if (id.isEmpty || day == null || slot.isEmpty) {
+          throw const BackupFormatException(
+            BackupError.invalid,
+            'plannedMeals',
+          );
+        }
+        return PlannedMeal(
+          id: id,
+          day: day,
+          slotId: slot,
+          recipeId: m['recipe'] is String ? m['recipe'] as String : null,
+          recipeTitle: _string(m, 'recipeTitle'),
+          servings: _int(m, 'servings'),
+          note: _string(m, 'note'),
+          leftoverOf: m['leftoverOf'] is String
+              ? m['leftoverOf'] as String
+              : null,
+          position: _int(m, 'position') ?? 0,
+          createdAt: _date(m, 'createdAt')!,
+          updatedAt: _date(m, 'updatedAt')!,
+          deletedAt: _date(m, 'deletedAt', required: false),
+        );
+      }(),
+  ];
 
   static List<ShoppingList> _decodeLists(Map<String, Object?> root) {
     final lists = <ShoppingList>[];
@@ -585,6 +676,8 @@ class BackupData {
     this.shoppingLists = const [],
     this.aisles = const [],
     this.productAisles = const [],
+    this.mealSlots = const [],
+    this.plannedMeals = const [],
   });
 
   final List<Recipe> recipes;
@@ -593,6 +686,8 @@ class BackupData {
   final List<ShoppingList> shoppingLists;
   final List<Aisle> aisles;
   final List<ProductAisle> productAisles;
+  final List<MealSlot> mealSlots;
+  final List<PlannedMeal> plannedMeals;
 }
 
 enum BackupError { notABackup, newerVersion, invalid, missingPhoto }

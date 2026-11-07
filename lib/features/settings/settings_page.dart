@@ -125,6 +125,13 @@ class SettingsPage extends ConsumerWidget {
             onTap: () => context.push('/reglages/classement'),
           ),
           ListTile(
+            key: const ValueKey('settings-meal-slots'),
+            leading: const Icon(Icons.schedule_outlined),
+            title: Text(l10n.mealSlotsTitle),
+            subtitle: Text(l10n.mealSlotsSubtitle),
+            onTap: () => context.push('/reglages/creneaux'),
+          ),
+          ListTile(
             key: const ValueKey('settings-aisles'),
             leading: const Icon(Icons.storefront_outlined),
             title: Text(l10n.aislesTitle),

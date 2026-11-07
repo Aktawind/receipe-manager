@@ -18,7 +18,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ✅ |
 | [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ✅ |
 | [0.10](#010--listes-de-courses) | Listes de courses | ✅ |
-| [0.11](#011--planning-des-repas) | Planning des repas | ⬜ |
+| [0.11](#011--planning-des-repas) | Planning des repas | 🟨 |
 | [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ⬜ |
 | [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ⬜ |
 | [1.1 → 1.6](#après-la-10--fonctions-différenciantes) | Fonctions différenciantes et foyer partagé | ⬜ |
@@ -379,6 +379,26 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   recettes, mise en avant des recettes non testées
 - Ingrédients à utiliser rapidement (tu les signales, le planning les propose en priorité)
 - Réglage : temps maximal habituel de cuisine
+
+*Décisions du 2026-11-06 et du 2026-11-07* :
+- vues **semaine** et **jour** ; pas de vue mois : un repas se déplace par « Changer la date » ;
+- **créneaux configurables** dans les réglages (petit-déjeuner, déjeuner, goûter, dîner au départ) ;
+- un repas = une recette avec son nombre de personnes, ou une **note libre** (« Restaurant ») ;
+  restes pour le lendemain, copier un repas sur d'autres jours ;
+- pas de « à préparer à l'avance », pas de semaine type ni de duplication, pas de « recette faite » ;
+- courses : choisir les repas à ajouter (« Tout cocher » pour la semaine) ; les notes libres vont
+  telles quelles dans la liste ;
+- **planificateur** (calcul, sans IA) : nombre de repas, saison, temps disponible par repas (30 min
+  par défaut), collection éventuelle, ingrédients à écouler ; garder ou remplacer chaque recette
+  proposée ; « + féculent », « + protéine », « + légume » complètent un repas depuis une liste
+  prédéfinie (légumes de saison), remplaçables ; pas de critère « pas faite récemment ».
+
+*Avancement* : trois étapes.
+- **Étape 1 (à tester)** : le planning (semaine, jour, créneaux configurables, recettes avec leurs
+  personnes et notes, restes, changer la date ou le créneau, copier), sauvegardé et synchronisé
+  (base v11, sauvegarde v10).
+- **Étape 2** : choisir les repas de la semaine à mettre dans une liste de courses.
+- **Étape 3** : le planificateur.
 
 ## 0.12 — Accueil, statistiques, partage et export
 
