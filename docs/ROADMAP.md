@@ -394,7 +394,7 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   prédéfinie (légumes de saison), remplaçables ; pas de critère « pas faite récemment ».
 
 *Avancement* : trois étapes.
-- **Étape 1 (à tester)** : le planning (semaine, jour, créneaux configurables, recettes avec leurs
+- **Étape 1 (validée le 2026-11-07)** : le planning (semaine, jour, créneaux configurables, recettes avec leurs
   personnes et notes, restes, changer la date ou le créneau, copier), sauvegardé et synchronisé
   (base v11, sauvegarde v10). Retour du 2026-11-07 : **glisser-déposer** pour changer de créneau
   (plus dans le menu), « Modifier les quantités » avec le nom des portions de la recette ;
@@ -403,7 +403,10 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   dernière synchro n'était pas gardée : corrigé.
   Retour suivant : aujourd'hui en clair (bordure), miniature de la photo à la place de l'icône,
   plus de portions sous les recettes.
-- **Étape 2** : choisir les repas de la semaine à mettre dans une liste de courses.
+- **Étape 2 (à tester)** : 🛒 du planning → les repas de la semaine (ou du jour) à cocher, « Tout
+  cocher » (sans les restes) → la feuille « Ajouter aux courses », une entrée par repas avec ses
+  personnes ; les notes vont telles quelles dans la liste. « Changer de créneau » est revenu dans le
+  menu d'un repas (retour du 2026-11-07), en plus du glisser-déposer.
 - **Étape 3** : le planificateur.
 
 ## 0.12 — Accueil, statistiques, partage et export
