@@ -7,8 +7,8 @@ import '../../data/app_services.dart';
 import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
 import '../../l10n/app_localizations.dart';
+import '../recipes/recipe_photo.dart';
 import '../recipes/recipe_providers.dart';
-import '../recipes/recipe_scale.dart';
 import 'meal_sheet.dart';
 import 'planning_providers.dart';
 
@@ -185,7 +185,14 @@ class _DayCard extends ConsumerWidget {
     return Card(
       key: ValueKey('planning-day-${PlannedMeal.dayKey(day)}'),
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-      color: today ? scheme.primaryContainer.withValues(alpha: 0.4) : null,
+      // Aujourd'hui : une bordure et une teinte légère, pas un fond foncé.
+      color: today ? scheme.primary.withValues(alpha: 0.05) : null,
+      shape: today
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: scheme.primary.withValues(alpha: 0.6)),
+            )
+          : null,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
         child: Column(
@@ -408,10 +415,6 @@ class _MealTile extends ConsumerWidget {
         : null;
     final details = [
       if (meal.isLeftovers) l10n.leftovers,
-      if (meal.isRecipe && meal.servings != null)
-        recipe == null
-            ? l10n.personsShort(meal.servings!)
-            : servingsText(l10n, recipe, meal.servings!),
       if (meal.isRecipe && meal.note.isNotEmpty) meal.note,
     ];
     final tile = InkWell(
@@ -421,16 +424,26 @@ class _MealTile extends ConsumerWidget {
           : () => _onAction(context, ref, _MealAction.edit),
       child: Row(
         children: [
-          Icon(
-            meal.isLeftovers
-                ? Icons.replay_outlined
-                : meal.isRecipe
-                ? Icons.restaurant_outlined
-                : Icons.sticky_note_2_outlined,
-            size: 18,
-            color: theme.colorScheme.onSurfaceVariant,
+          // Une miniature carrée de la photo de la recette ; une icône pour
+          // une note.
+          SizedBox.square(
+            dimension: 36,
+            child: meal.isRecipe
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: RecipePhoto(
+                      photo: recipe?.mainPhoto,
+                      decodeWidth: 108,
+                      iconSize: 18,
+                    ),
+                  )
+                : Icon(
+                    Icons.sticky_note_2_outlined,
+                    size: 20,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),

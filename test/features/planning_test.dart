@@ -62,7 +62,8 @@ void main() {
     expect(meals.single.servings, 5);
     expect(meals.single.day, monday);
     expect(find.text('Quiche lorraine'), findsOneWidget);
-    expect(find.text('5 pers.'), findsOneWidget);
+    // Les portions ne s'affichent pas sous la recette.
+    expect(find.text('5 pers.'), findsNothing);
 
     final tuesday = DateTime(monday.year, monday.month, monday.day + 1);
     final add = find.byKey(ValueKey('planning-add-${_key(tuesday)}-$lunch'));
@@ -238,13 +239,13 @@ void main() {
       ),
     );
     await settle(tester);
-    expect(find.text('1 cake'), findsOneWidget);
     await tester.tap(find.byKey(ValueKey('planning-meal-menu-${meal!.id}')));
     await settle(tester);
     await tester.tap(find.text('Modifier les quantités'));
     await settle(tester);
     expect(find.text('Quantité'), findsOneWidget);
     expect(find.text('Nombre de personnes'), findsNothing);
+    expect(find.text('1 cake'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('meal-servings-more')));
     await settle(tester);
     expect(find.byKey(const ValueKey('meal-servings')), findsOneWidget);

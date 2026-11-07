@@ -401,6 +401,8 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   « Synchroniser maintenant » annonçait « Tout est déjà à jour » quand une autre synchro tenait le
   verrou (arrière-plan, ou verrou laissé par l'app fermée en pleine synchro) et la date de la
   dernière synchro n'était pas gardée : corrigé.
+  Retour suivant : aujourd'hui en clair (bordure), miniature de la photo à la place de l'icône,
+  plus de portions sous les recettes.
 - **Étape 2** : choisir les repas de la semaine à mettre dans une liste de courses.
 - **Étape 3** : le planificateur.
 
