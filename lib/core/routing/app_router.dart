@@ -6,6 +6,7 @@ import '../../features/classification/collection_order_page.dart';
 import '../../features/classification/labels_page.dart';
 import '../../features/equipment/equipment_page.dart';
 import '../../features/home/home_shell.dart';
+import '../../features/planning/meal_slots_page.dart';
 import '../../features/planning/planning_page.dart';
 import '../../features/recipes/cooking_mode_page.dart';
 import '../../features/recipes/recipe_detail_page.dart';
@@ -122,6 +123,11 @@ GoRouter buildRouter() => GoRouter(
                   path: 'synchronisation',
                   parentNavigatorKey: _rootKey,
                   builder: (context, state) => const SyncPage(),
+                ),
+                GoRoute(
+                  path: 'creneaux',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const MealSlotsPage(),
                 ),
                 GoRoute(
                   path: 'rayons',

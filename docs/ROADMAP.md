@@ -394,7 +394,9 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   prédéfinie (légumes de saison), remplaçables ; pas de critère « pas faite récemment ».
 
 *Avancement* : trois étapes.
-- **Étape 1** : le planning (semaine, jour, créneaux, recettes et notes, restes, déplacer, copier).
+- **Étape 1 (à tester)** : le planning (semaine, jour, créneaux configurables, recettes avec leurs
+  personnes et notes, restes, changer la date ou le créneau, copier), sauvegardé et synchronisé
+  (base v11, sauvegarde v10).
 - **Étape 2** : choisir les repas de la semaine à mettre dans une liste de courses.
 - **Étape 3** : le planificateur.
 
