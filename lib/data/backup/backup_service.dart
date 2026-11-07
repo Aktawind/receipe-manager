@@ -7,11 +7,13 @@ import 'package:path/path.dart' as p;
 import '../../core/format/text_search.dart';
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
+import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
 import '../../domain/shopping.dart';
 import '../equipment_repository.dart';
 import '../label_repository.dart';
 import '../photo_store.dart';
+import '../planning_repository.dart';
 import '../recipe_repository.dart';
 import '../shopping_repository.dart';
 import 'backup_format.dart';
@@ -40,9 +42,15 @@ class BackupContents {
     this.shoppingLists = const [],
     this.aisles = const [],
     this.productAisles = const [],
+    this.mealSlots = const [],
+    this.plannedMeals = const [],
   });
 
   final List<Recipe> recipes;
+
+  /// Le planning : créneaux et repas.
+  final List<MealSlot> mealSlots;
+  final List<PlannedMeal> plannedMeals;
 
   /// Les listes de courses, les rayons et le rayon retenu pour les produits.
   final List<ShoppingList> shoppingLists;
@@ -100,6 +108,7 @@ class BackupService {
     required this.equipment,
     required this.labels,
     required this.shopping,
+    required this.planning,
     required this.photos,
     required this.backupsDirectory,
     required this.appVersion,
@@ -110,6 +119,7 @@ class BackupService {
   final EquipmentRepository equipment;
   final LabelRepository labels;
   final ShoppingRepository shopping;
+  final PlanningRepository planning;
   final PhotoStore photos;
   final Directory backupsDirectory;
   final String appVersion;
@@ -130,6 +140,8 @@ class BackupService {
         shoppingLists: await shopping.getAllLists(),
         aisles: await shopping.getAllAisles(),
         productAisles: await shopping.getAllProductAisles(),
+        mealSlots: await planning.getAllSlots(),
+        plannedMeals: await planning.getAllMeals(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -159,6 +171,8 @@ class BackupService {
         shoppingLists: await shopping.getAllLists(),
         aisles: await shopping.getAllAisles(),
         productAisles: await shopping.getAllProductAisles(),
+        mealSlots: await planning.getAllSlots(),
+        plannedMeals: await planning.getAllMeals(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -183,6 +197,8 @@ class BackupService {
       shoppingLists: decoded.shoppingLists,
       aisles: decoded.aisles,
       productAisles: decoded.productAisles,
+      mealSlots: decoded.mealSlots,
+      plannedMeals: decoded.plannedMeals,
     );
   }
 
@@ -234,6 +250,8 @@ class BackupService {
       shoppingLists: decoded.shoppingLists,
       aisles: decoded.aisles,
       productAisles: decoded.productAisles,
+      mealSlots: decoded.mealSlots,
+      plannedMeals: decoded.plannedMeals,
     );
   }
 
@@ -331,6 +349,22 @@ class BackupService {
           existingProducts[product.key]?.updatedAt,
         )) {
           await shopping.putProductAisle(product);
+        }
+      }
+      final existingSlots = {
+        for (final s in await planning.getAllSlots()) s.id: s,
+      };
+      final existingMeals = {
+        for (final m in await planning.getAllMeals()) m.id: m,
+      };
+      for (final slot in contents.mealSlots) {
+        if (newer(slot.updatedAt, existingSlots[slot.id]?.updatedAt)) {
+          await planning.putSlot(slot);
+        }
+      }
+      for (final meal in contents.plannedMeals) {
+        if (newer(meal.updatedAt, existingMeals[meal.id]?.updatedAt)) {
+          await planning.putMeal(meal);
         }
       }
       for (final list in contents.shoppingLists) {

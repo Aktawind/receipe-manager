@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
+import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
 import '../../domain/shopping.dart';
 import '../backup/backup_format.dart';
@@ -15,6 +16,8 @@ enum SyncKind {
   aisle('aisles'),
   product('products'),
   shoppingList('shopping'),
+  mealSlot('slots'),
+  plannedMeal('meals'),
   media('media');
 
   const SyncKind(this.folder);
@@ -101,6 +104,30 @@ abstract final class SyncCodec {
     ),
   );
 
+  static Uint8List mealSlot(MealSlot slot) => _bytes(
+    BackupFormat.encode(
+      const [],
+      mealSlots: [slot],
+      exportedAt: slot.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static Uint8List plannedMeal(PlannedMeal meal) => _bytes(
+    BackupFormat.encode(
+      const [],
+      plannedMeals: [meal],
+      exportedAt: meal.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static MealSlot decodeMealSlot(Uint8List bytes) =>
+      _single(_decode(bytes).mealSlots, 'mealSlots');
+
+  static PlannedMeal decodePlannedMeal(Uint8List bytes) =>
+      _single(_decode(bytes).plannedMeals, 'plannedMeals');
+
   static Aisle decodeAisle(Uint8List bytes) =>
       _single(_decode(bytes).aisles, 'aisles');
 
@@ -156,6 +183,8 @@ abstract final class SyncCodec {
       'aisles',
       'productAisles',
       'shoppingLists',
+      'mealSlots',
+      'plannedMeals',
     ]) {
       for (final item in (root[key] as List? ?? const [])) {
         (item as Map<String, Object?>)

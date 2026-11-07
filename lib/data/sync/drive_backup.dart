@@ -123,6 +123,12 @@ class DriveBackupService {
           for (final p in contents.productAisles)
             ProductAisle(key: p.key, aisleId: p.aisleId, updatedAt: stamp),
         ],
+        mealSlots: [
+          for (final s in contents.mealSlots) s.copyWith(updatedAt: stamp),
+        ],
+        plannedMeals: [
+          for (final m in contents.plannedMeals) m.copyWith(updatedAt: stamp),
+        ],
       ),
       ImportMode.replace,
     );

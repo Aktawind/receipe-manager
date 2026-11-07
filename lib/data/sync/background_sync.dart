@@ -120,6 +120,7 @@ Future<bool> runBackgroundSync() async {
       labels: services.labels,
       equipment: services.equipment,
       shopping: services.shopping,
+      planning: services.planning,
       photos: services.photos,
       clock: services.clock,
       remote: folder,

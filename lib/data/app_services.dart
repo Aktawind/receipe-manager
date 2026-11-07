@@ -11,6 +11,7 @@ import 'database.dart';
 import 'equipment_repository.dart';
 import 'label_repository.dart';
 import 'photo_store.dart';
+import 'planning_repository.dart';
 import 'recipe_repository.dart';
 import 'shopping_repository.dart';
 import 'sync/hybrid_clock.dart';
@@ -24,6 +25,7 @@ class AppServices {
     required this.equipment,
     required this.labels,
     required this.shopping,
+    required this.planning,
     required this.photos,
     required this.backups,
     required this.clock,
@@ -35,6 +37,7 @@ class AppServices {
   final EquipmentRepository equipment;
   final LabelRepository labels;
   final ShoppingRepository shopping;
+  final PlanningRepository planning;
   final PhotoStore photos;
   final BackupService backups;
 
@@ -97,6 +100,7 @@ class AppServices {
     final equipment = EquipmentRepository(database, clock: clock.now);
     final labels = LabelRepository(database, clock: clock.now);
     final shopping = ShoppingRepository(database, clock: clock.now);
+    final planning = PlanningRepository(database, clock: clock.now);
     final photos = PhotoStore(Directory(p.join(root.path, 'photos')));
     final services = AppServices(
       database: database,
@@ -104,6 +108,7 @@ class AppServices {
       equipment: equipment,
       labels: labels,
       shopping: shopping,
+      planning: planning,
       photos: photos,
       clock: clock,
       root: root,
@@ -112,6 +117,7 @@ class AppServices {
         equipment: equipment,
         labels: labels,
         shopping: shopping,
+        planning: planning,
         photos: photos,
         backupsDirectory: backupsDir,
         appVersion: appVersion,
@@ -153,6 +159,10 @@ final labelRepositoryProvider = Provider<LabelRepository>(
 
 final shoppingRepositoryProvider = Provider<ShoppingRepository>(
   (ref) => ref.watch(appServicesProvider).shopping,
+);
+
+final planningRepositoryProvider = Provider<PlanningRepository>(
+  (ref) => ref.watch(appServicesProvider).planning,
 );
 
 final photoStoreProvider = Provider<PhotoStore>(
