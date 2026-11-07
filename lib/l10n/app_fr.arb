@@ -33,6 +33,9 @@
     }
   },
   "editMeal": "Modifier le repas",
+  "editMealQuantities": "Modifier les quantités",
+  "editMealNote": "Modifier la note",
+  "dragMealHint": "Appui long puis glisser pour changer de créneau ou de jour",
   "mealRecipe": "Recette",
   "mealNote": "Note",
   "mealNoteHint": "Restaurant, pizza, chez mamie…",
@@ -630,6 +633,7 @@
     }
   },
   "syncResultUpToDate": "Tout est déjà à jour.",
+  "syncResultBusy": "Une synchronisation est déjà en cours (en arrière-plan) : la tienne suivra dans un instant.",
   "syncResultDone": "Synchronisé : {sent} envoyés, {received} reçus.",
   "@syncResultDone": {
     "placeholders": {
