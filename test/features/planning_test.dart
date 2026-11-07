@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:recettes/domain/ingredient_text.dart';
 import 'package:recettes/domain/planning.dart';
 
 import '../helpers/test_app.dart';
@@ -254,5 +255,96 @@ void main() {
     await settle(tester);
     final meals = await _meals(app, tester);
     expect(meals.firstWhere((m) => m.id == meal.id).servings, 2);
+  });
+
+  testWidgets('les repas de la semaine vers les courses ; changer de créneau', (
+    tester,
+  ) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(TestApp.create))!;
+    final ids = await tester.runAsync(() async {
+      final repo = app.services.recipes;
+      final created = await repo.create();
+      final quiche = await repo.save(
+        created.copyWith(
+          title: 'Quiche',
+          servings: () => 6,
+          ingredients: IngredientText.parseList(
+            '200 g de lardons\n3 œufs\nSel',
+          ),
+        ),
+      );
+      final planning = app.services.planning;
+      final tuesday = DateTime(monday.year, monday.month, monday.day + 1);
+      final a = await planning.add(
+        day: monday,
+        slotId: dinner,
+        recipeId: quiche.id,
+        recipeTitle: 'Quiche',
+        servings: 6,
+      );
+      await planning.add(
+        day: tuesday,
+        slotId: dinner,
+        recipeId: quiche.id,
+        recipeTitle: 'Quiche',
+        servings: 3,
+      );
+      await planning.addLeftovers(a, lunch);
+      await planning.add(day: tuesday, slotId: lunch, note: 'Pain');
+      return (quiche: quiche.id, a: a.id);
+    });
+    await app.pump(tester);
+    await tester.tap(find.text('Planning').last);
+    await settle(tester);
+
+    // Changer de créneau, par le menu.
+    await tester.tap(find.byKey(ValueKey('planning-meal-menu-${ids!.a}')));
+    await settle(tester);
+    await tester.tap(find.text('Changer de créneau'));
+    await settle(tester);
+    await tester.tap(find.text('Déjeuner').last);
+    await settle(tester);
+    var meals = await _meals(app, tester);
+    expect(meals.firstWhere((m) => m.id == ids.a).slotId, lunch);
+
+    await tester.tap(find.byKey(const ValueKey('planning-shopping')));
+    await settle(tester);
+    expect(find.text('Les repas à mettre dans les courses'), findsOneWidget);
+    // « Tout cocher » : les repas, pas les restes.
+    await tester.tap(find.byKey(const ValueKey('week-shop-all')));
+    await settle(tester);
+    final rest = meals.firstWhere((m) => m.isLeftovers);
+    expect(
+      tester
+          .widget<CheckboxListTile>(
+            find.byKey(ValueKey('week-shop-${rest.id}')),
+          )
+          .value,
+      isFalse,
+    );
+    await tester.tap(find.byKey(const ValueKey('week-shop-ok')));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await settle(tester);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('add-shopping-confirm')));
+    await settle(tester);
+
+    final list = (await tester.runAsync(app.services.shopping.getAllLists))!
+        .single;
+    String amountOf(String name) =>
+        list.items.firstWhere((i) => i.name == name).amount;
+    // 6 personnes + 3 personnes = une fois et demie la recette.
+    expect(amountOf('Lardons'), '300 g');
+    expect(amountOf('Œufs'), '5');
+    expect(list.items.any((i) => i.name == 'Sel'), isFalse);
+    expect(list.items.any((i) => i.name == 'Pain'), isTrue);
+    meals = await _meals(app, tester);
+    expect(meals, hasLength(4));
   });
 }

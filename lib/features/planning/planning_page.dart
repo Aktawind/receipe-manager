@@ -11,6 +11,7 @@ import '../recipes/recipe_photo.dart';
 import '../recipes/recipe_providers.dart';
 import 'meal_sheet.dart';
 import 'planning_providers.dart';
+import 'planning_shopping.dart';
 
 /// Planning : la semaine (lundi à dimanche) ou un jour, avec ses créneaux
 /// et leurs repas.
@@ -61,6 +62,22 @@ class PlanningPage extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.navPlanning),
         actions: [
+          IconButton(
+            key: const ValueKey('planning-shopping'),
+            tooltip: l10n.planningToShopping,
+            icon: const Icon(Icons.add_shopping_cart),
+            onPressed: () => addWeekToShopping(
+              context,
+              ref,
+              meals: day == null
+                  ? meals
+                  : [
+                      for (final m in meals)
+                        if (m.day == day) m,
+                    ],
+              slots: allSlots,
+            ),
+          ),
           IconButton(
             key: const ValueKey('planning-today'),
             tooltip: l10n.today,
@@ -321,7 +338,7 @@ class _SlotTarget extends ConsumerWidget {
   }
 }
 
-enum _MealAction { edit, date, copy, leftovers, delete }
+enum _MealAction { edit, date, slot, copy, leftovers, delete }
 
 class _MealTile extends ConsumerWidget {
   const _MealTile({required this.meal, required this.slots});
@@ -361,6 +378,27 @@ class _MealTile extends ConsumerWidget {
           helpText: l10n.changeMealDate,
         );
         if (picked != null) await planning.move(meal, day: picked);
+      case _MealAction.slot:
+        final chosen = await showDialog<MealSlot>(
+          context: context,
+          builder: (context) => SimpleDialog(
+            title: Text(l10n.changeMealSlot),
+            children: [
+              for (final s in slots)
+                if (!s.hidden || s.id == meal.slotId)
+                  SimpleDialogOption(
+                    onPressed: () => Navigator.pop(context, s),
+                    child: Text(
+                      s.name,
+                      style: s.id == meal.slotId
+                          ? const TextStyle(fontWeight: FontWeight.bold)
+                          : null,
+                    ),
+                  ),
+            ],
+          ),
+        );
+        if (chosen != null) await planning.move(meal, slotId: chosen.id);
       case _MealAction.copy:
         final days = await showDialog<List<DateTime>>(
           context: context,
@@ -477,6 +515,10 @@ class _MealTile extends ConsumerWidget {
               PopupMenuItem(
                 value: _MealAction.date,
                 child: Text(l10n.changeMealDate),
+              ),
+              PopupMenuItem(
+                value: _MealAction.slot,
+                child: Text(l10n.changeMealSlot),
               ),
               PopupMenuItem(
                 value: _MealAction.copy,

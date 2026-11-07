@@ -10,13 +10,22 @@ import '../../l10n/app_localizations.dart';
 import '../recipes/recipe_scale.dart';
 import 'shopping_providers.dart';
 
+/// Une recette à ajouter aux courses, avec son facteur de départ
+/// (personnes voulues / personnes de la recette) et une précision (« lundi,
+/// dîner ») ; une même recette peut venir plusieurs fois (planning).
+typedef ShoppingEntry = ({Recipe recipe, double factor, String? label});
+
 /// « Ajouter aux courses » : les ingrédients de [recipes] (une recette depuis
 /// sa fiche, ou plusieurs depuis une liste), le nombre de personnes de
 /// chacune, et la liste où les mettre ([listId] : déjà choisie). [factors] :
 /// le facteur de départ de chaque recette (portions affichées sur la fiche).
+/// [entries] remplace [recipes] quand une recette revient plusieurs fois ;
+/// [notes] : des produits écrits tels quels (notes du planning).
 Future<void> showAddToShoppingSheet(
   BuildContext context, {
-  required List<Recipe> recipes,
+  List<Recipe> recipes = const [],
+  List<ShoppingEntry>? entries,
+  List<String> notes = const [],
   String? listId,
   Map<String, double> factors = const {},
 }) => showModalBottomSheet<void>(
@@ -30,9 +39,14 @@ Future<void> showAddToShoppingSheet(
     minChildSize: 0.5,
     maxChildSize: 0.95,
     builder: (context, controller) => _AddSheet(
-      recipes: recipes,
+      entries:
+          entries ??
+          [
+            for (final r in recipes)
+              (recipe: r, factor: factors[r.id] ?? 1, label: null),
+          ],
+      notes: notes,
       listId: listId,
-      factors: factors,
       controller: controller,
     ),
   ),
@@ -40,15 +54,15 @@ Future<void> showAddToShoppingSheet(
 
 class _AddSheet extends ConsumerStatefulWidget {
   const _AddSheet({
-    required this.recipes,
+    required this.entries,
+    required this.notes,
     required this.listId,
-    required this.factors,
     required this.controller,
   });
 
-  final List<Recipe> recipes;
+  final List<ShoppingEntry> entries;
+  final List<String> notes;
   final String? listId;
-  final Map<String, double> factors;
   final ScrollController controller;
 
   @override
@@ -59,13 +73,14 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
   /// Les recettes liées (pâtes, sauces), lues une fois, à toute profondeur.
   Map<String, Recipe>? _linked;
 
-  /// Le facteur de chaque recette (personnes voulues / personnes prévues).
-  late final Map<String, double> _factors = {
-    for (final r in widget.recipes) r.id: widget.factors[r.id] ?? 1,
-  };
+  /// Le facteur de chaque entrée (personnes voulues / personnes prévues).
+  late final List<double> _factors = [for (final e in widget.entries) e.factor];
 
-  /// Ce que l'on a décoché ou coché à la main : recette → index → coché.
-  final _choices = <String, Map<int, bool>>{};
+  /// Ce que l'on a décoché ou coché à la main : entrée → index → coché.
+  final _choices = <int, Map<int, bool>>{};
+
+  /// Les notes cochées (toutes au départ).
+  late final List<bool> _notes = [for (final _ in widget.notes) true];
 
   /// La liste choisie ; `null` = une nouvelle liste.
   String? _listId;
@@ -83,7 +98,7 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
   Future<void> _loadLinked() async {
     final repository = ref.read(recipeRepositoryProvider);
     final found = <String, Recipe>{};
-    final queue = [for (final r in widget.recipes) ...r.linkedRecipeIds];
+    final queue = [for (final e in widget.entries) ...e.recipe.linkedRecipeIds];
     while (queue.isNotEmpty) {
       final id = queue.removeLast();
       if (found.containsKey(id)) continue;
@@ -95,24 +110,24 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
     if (mounted) setState(() => _linked = found);
   }
 
-  List<ShoppingCandidate> _candidatesOf(Recipe recipe) =>
+  List<ShoppingCandidate> _candidatesOf(int entry) =>
       ShoppingFromRecipes.candidates(
-        recipe,
-        _factors[recipe.id]!,
+        widget.entries[entry].recipe,
+        _factors[entry],
         linked: (id) => _linked?[id],
       );
 
-  bool _isChecked(Recipe recipe, int index, ShoppingCandidate c) =>
-      _choices[recipe.id]?[index] ?? c.selected;
+  bool _isChecked(int entry, int index, ShoppingCandidate c) =>
+      _choices[entry]?[index] ?? c.selected;
 
   int get _selectedCount {
     var count = 0;
-    for (final recipe in widget.recipes) {
-      for (final (i, c) in _candidatesOf(recipe).indexed) {
-        if (_isChecked(recipe, i, c)) count++;
+    for (var e = 0; e < widget.entries.length; e++) {
+      for (final (i, c) in _candidatesOf(e).indexed) {
+        if (_isChecked(e, i, c)) count++;
       }
     }
-    return count;
+    return count + _notes.where((on) => on).length;
   }
 
   Future<void> _add() async {
@@ -131,12 +146,17 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
     }
     var items = target.items;
     var added = 0;
-    for (final recipe in widget.recipes) {
-      for (final (i, c) in _candidatesOf(recipe).indexed) {
-        if (!_isChecked(recipe, i, c)) continue;
+    for (var e = 0; e < widget.entries.length; e++) {
+      for (final (i, c) in _candidatesOf(e).indexed) {
+        if (!_isChecked(e, i, c)) continue;
         items = ShoppingProducts.merge(items, c.item);
         added++;
       }
+    }
+    for (final (i, note) in widget.notes.indexed) {
+      if (!_notes[i]) continue;
+      items = ShoppingProducts.merge(items, ShoppingProducts.parse(note));
+      added++;
     }
     await repository.save(target.copyWith(items: items));
     navigator.pop();
@@ -210,8 +230,29 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
               : ListView(
                   controller: widget.controller,
                   children: [
-                    for (final recipe in widget.recipes)
-                      ..._recipeRows(context, recipe),
+                    for (var e = 0; e < widget.entries.length; e++)
+                      ..._recipeRows(context, e),
+                    if (widget.notes.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
+                        child: Text(
+                          l10n.planningNotes,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      for (final (i, note) in widget.notes.indexed)
+                        CheckboxListTile(
+                          key: ValueKey('add-shopping-note-$i'),
+                          dense: true,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          value: _notes[i],
+                          title: Text(note),
+                          onChanged: (on) =>
+                              setState(() => _notes[i] = on ?? false),
+                        ),
+                    ],
                   ],
                 ),
         ),
@@ -237,15 +278,19 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
     );
   }
 
-  List<Widget> _recipeRows(BuildContext context, Recipe recipe) {
+  List<Widget> _recipeRows(BuildContext context, int entry) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final candidates = _candidatesOf(recipe);
+    final recipe = widget.entries[entry].recipe;
+    final label = widget.entries[entry].label;
+    final candidates = _candidatesOf(entry);
     final servings = recipe.servings;
-    final factor = _factors[recipe.id]!;
+    final factor = _factors[entry];
     final count = servings == null ? null : (servings * factor).round();
+    // Les clés gardent l'identifiant de la recette pour la première entrée.
+    final key = entry == 0 ? recipe.id : '${recipe.id}-$entry';
     void setCount(int value) => setState(() {
-      _factors[recipe.id] = value / servings!;
+      _factors[entry] = value / servings!;
     });
     return [
       Padding(
@@ -253,23 +298,30 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
         child: Row(
           children: [
             Expanded(
-              child: Text(
-                recipe.title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recipe.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  if (label != null)
+                    Text(label, style: theme.textTheme.bodySmall),
+                ],
               ),
             ),
             if (count != null) ...[
               IconButton(
-                key: ValueKey('add-shopping-less-${recipe.id}'),
+                key: ValueKey('add-shopping-less-$key'),
                 tooltip: l10n.fewerServings,
                 onPressed: count > 1 ? () => setCount(count - 1) : null,
                 icon: const Icon(Icons.remove_circle_outline),
               ),
               Text(servingsText(l10n, recipe, count)),
               IconButton(
-                key: ValueKey('add-shopping-more-${recipe.id}'),
+                key: ValueKey('add-shopping-more-$key'),
                 tooltip: l10n.moreServings,
                 onPressed: () => setCount(count + 1),
                 icon: const Icon(Icons.add_circle_outline),
@@ -280,10 +332,10 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
       ),
       for (final (i, c) in candidates.indexed)
         CheckboxListTile(
-          key: ValueKey('add-shopping-${recipe.id}-$i'),
+          key: ValueKey('add-shopping-$key-$i'),
           dense: true,
           controlAffinity: ListTileControlAffinity.leading,
-          value: _isChecked(recipe, i, c),
+          value: _isChecked(entry, i, c),
           title: Text(
             [
               if (c.item.amount.isNotEmpty) c.item.amount,
@@ -294,7 +346,7 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
               ? null
               : Text(l10n.fromLinkedRecipe(c.viaRecipe!)),
           onChanged: (on) => setState(() {
-            (_choices[recipe.id] ??= {})[i] = on ?? false;
+            (_choices[entry] ??= {})[i] = on ?? false;
           }),
         ),
     ];
