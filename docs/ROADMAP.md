@@ -396,7 +396,11 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
 *Avancement* : trois étapes.
 - **Étape 1 (à tester)** : le planning (semaine, jour, créneaux configurables, recettes avec leurs
   personnes et notes, restes, changer la date ou le créneau, copier), sauvegardé et synchronisé
-  (base v11, sauvegarde v10).
+  (base v11, sauvegarde v10). Retour du 2026-11-07 : **glisser-déposer** pour changer de créneau
+  (plus dans le menu), « Modifier les quantités » avec le nom des portions de la recette ;
+  « Synchroniser maintenant » annonçait « Tout est déjà à jour » quand une autre synchro tenait le
+  verrou (arrière-plan, ou verrou laissé par l'app fermée en pleine synchro) et la date de la
+  dernière synchro n'était pas gardée : corrigé.
 - **Étape 2** : choisir les repas de la semaine à mettre dans une liste de courses.
 - **Étape 3** : le planificateur.
 

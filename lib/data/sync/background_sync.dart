@@ -130,6 +130,10 @@ Future<bool> runBackgroundSync() async {
       // Connexion à refaire : inutile d'insister depuis l'arrière-plan.
       return report.errors.any((e) => e.contains('DriveSignInRequired'));
     }
+    await prefs.setString(
+      SyncPrefs.lastSync,
+      DateTime.now().toUtc().toIso8601String(),
+    );
 
     final frequency = BackupFrequency.fromName(
       prefs.getString(SyncPrefs.backupFrequency),

@@ -7,6 +7,7 @@ import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
 import '../../l10n/app_localizations.dart';
 import '../recipes/recipe_providers.dart';
+import '../recipes/recipe_scale.dart';
 
 /// Ajouter un repas au créneau [slot] du jour [day] : une recette (avec le
 /// nombre de personnes) ou une note libre. Avec [meal], le modifie (personnes,
@@ -94,6 +95,20 @@ class _MealSheetState extends ConsumerState<_MealSheet> {
         if (key.isEmpty || normalizeForSearch(r.title).contains(key)) r,
     ];
     final recipeChosen = _editing ? widget.meal!.isRecipe : _recipe != null;
+    // La recette du repas : ses portions s'appellent peut-être « cake ».
+    final recipe =
+        _recipe ??
+        recipes.where((r) => r.id == widget.meal?.recipeId).firstOrNull;
+    final unitLabel = recipe != null && recipe.servingsUnit.isNotEmpty
+        ? l10n.quantityLabel
+        : l10n.servingsLabel;
+    String countText(int? count) {
+      if (count == null) return '–';
+      return recipe == null
+          ? l10n.personsShort(count)
+          : servingsText(l10n, recipe, count);
+    }
+
     final canSave = _editing
         ? true
         : _isNote
@@ -102,7 +117,7 @@ class _MealSheetState extends ConsumerState<_MealSheet> {
 
     Widget servingsRow() => Row(
       children: [
-        Expanded(child: Text(l10n.servingsLabel)),
+        Expanded(child: Text(unitLabel)),
         IconButton(
           key: const ValueKey('meal-servings-less'),
           tooltip: l10n.fewerServings,
@@ -111,7 +126,11 @@ class _MealSheetState extends ConsumerState<_MealSheet> {
               : null,
           icon: const Icon(Icons.remove_circle_outline),
         ),
-        Text('${_servings ?? '–'}', style: theme.textTheme.titleMedium),
+        Text(
+          countText(_servings),
+          key: const ValueKey('meal-servings'),
+          style: theme.textTheme.titleMedium,
+        ),
         IconButton(
           key: const ValueKey('meal-servings-more'),
           tooltip: l10n.moreServings,
@@ -133,7 +152,11 @@ class _MealSheetState extends ConsumerState<_MealSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            _editing ? l10n.editMeal : l10n.addMealTo(widget.slot.name),
+            _editing
+                ? (widget.meal!.isRecipe
+                      ? l10n.editMealQuantities
+                      : l10n.editMealNote)
+                : l10n.addMealTo(widget.slot.name),
             style: theme.textTheme.titleLarge,
           ),
           Text(day, style: theme.textTheme.bodyMedium),

@@ -184,6 +184,8 @@ class SyncController extends Notifier<SyncState> {
       lastBackup: DateTime.tryParse(
         prefs.getString(SyncPrefs.lastBackup) ?? '',
       ),
+      lastSync: DateTime.tryParse(prefs.getString(SyncPrefs.lastSync) ?? '')
+          ?.toLocal(),
     );
   }
 
@@ -267,12 +269,15 @@ class SyncController extends Notifier<SyncState> {
   static const _stuckAfter = Duration(minutes: 3);
 
   /// Synchronise maintenant (bouton, ou déclenchement automatique).
-  Future<void> syncNow() async {
-    if (!state.enabled) return;
+  /// Renvoie [SyncRun.busy] si une autre synchro travaille déjà (celle de
+  /// l'application ou celle d'arrière-plan) : elle est alors relancée
+  /// dès que possible.
+  Future<SyncRun> syncNow() async {
+    if (!state.enabled) return SyncRun.off;
     if (_running) {
       if (DateTime.now().difference(_lastProgress) < _stuckAfter) {
         _again = true;
-        return;
+        return SyncRun.busy;
       }
       debugPrint('Synchro : la précédente ne répond plus, on repart.');
     }
@@ -282,7 +287,7 @@ class SyncController extends Notifier<SyncState> {
     );
     if (!gate.tryAcquire()) {
       _schedule(const Duration(seconds: 30));
-      return;
+      return SyncRun.busy;
     }
     final run = ++_runId;
     _running = true;
@@ -306,7 +311,7 @@ class SyncController extends Notifier<SyncState> {
           }
         },
       );
-      if (run != _runId) return;
+      if (run != _runId) return SyncRun.done;
       if (report.ok) {
         state = state.copyWith(
           phase: SyncPhase.idle,
@@ -315,6 +320,14 @@ class SyncController extends Notifier<SyncState> {
           lastUploaded: report.uploaded + report.deletedRemote,
           lastDownloaded: report.downloaded + report.deletedLocal,
           clearError: true,
+        );
+        unawaited(
+          ref
+              .read(sharedPreferencesProvider)
+              .setString(
+                SyncPrefs.lastSync,
+                DateTime.now().toUtc().toIso8601String(),
+              ),
         );
         unawaited(_afterSuccess());
       } else {
@@ -340,6 +353,7 @@ class SyncController extends Notifier<SyncState> {
         }
       }
     }
+    return SyncRun.done;
   }
 
   /// Au retour dans l'application.
@@ -478,4 +492,16 @@ class SyncController extends Notifier<SyncState> {
     unawaited(syncNow());
     return result;
   }
+}
+
+/// Ce qu'a fait une demande de synchro.
+enum SyncRun {
+  /// La synchro a eu lieu (réussie ou non : voir l'état).
+  done,
+
+  /// Une autre synchro travaillait déjà : elle reprend dès que possible.
+  busy,
+
+  /// La synchro n'est pas activée.
+  off,
 }

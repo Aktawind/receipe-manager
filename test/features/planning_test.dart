@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/domain/planning.dart';
@@ -50,7 +51,7 @@ void main() {
     await tester.tap(find.text('Quiche lorraine'));
     await settle(tester);
     // Le nombre de personnes de la recette, modifiable.
-    expect(find.text('6'), findsOneWidget);
+    expect(find.text('6 pers.'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('meal-servings-less')));
     await settle(tester);
     await tester.tap(find.byKey(const ValueKey('meal-save')));
@@ -61,7 +62,7 @@ void main() {
     expect(meals.single.servings, 5);
     expect(meals.single.day, monday);
     expect(find.text('Quiche lorraine'), findsOneWidget);
-    expect(find.text('5 portions'), findsOneWidget);
+    expect(find.text('5 pers.'), findsOneWidget);
 
     final tuesday = DateTime(monday.year, monday.month, monday.day + 1);
     final add = find.byKey(ValueKey('planning-add-${_key(tuesday)}-$lunch'));
@@ -122,8 +123,24 @@ void main() {
       hasLength(1),
     );
 
-    await menu(quiche.id, 'Changer de créneau');
-    await tester.tap(find.text('Déjeuner').last);
+    // Glisser-déposer : appui long sur le repas, puis sur « Déjeuner ».
+    expect(find.text('Changer de créneau'), findsNothing);
+    final target = find.byKey(ValueKey('planning-slot-${_key(monday)}-$lunch'));
+    // Le repas sous les yeux (pas sous la barre du haut), le créneau dessous.
+    await tester.ensureVisible(
+      find.byKey(ValueKey('planning-meal-${quiche.id}')),
+    );
+    await settle(tester);
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(ValueKey('planning-meal-${quiche.id}'))),
+    );
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    await gesture.moveBy(const Offset(0, -20));
+    await tester.pump();
+    await gesture.moveTo(tester.getCenter(target));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    await gesture.up();
     await settle(tester);
     meals = await _meals(app, tester);
     expect(meals.firstWhere((m) => m.id == quiche.id).slotId, lunch);
@@ -194,5 +211,47 @@ void main() {
       ),
       findsNothing,
     );
+  });
+
+  testWidgets('les quantités gardent le nom des portions (« 1 cake »)', (
+    tester,
+  ) async {
+    final app = await open(tester);
+    final cake = await tester.runAsync(() async {
+      final repo = app.services.recipes;
+      final created = await repo.create();
+      return repo.save(
+        created.copyWith(
+          title: 'Cake citron',
+          servings: () => 1,
+          servingsUnit: 'cake',
+        ),
+      );
+    });
+    final meal = await tester.runAsync(
+      () => app.services.planning.add(
+        day: monday,
+        slotId: dinner,
+        recipeId: cake!.id,
+        recipeTitle: 'Cake citron',
+        servings: 1,
+      ),
+    );
+    await settle(tester);
+    expect(find.text('1 cake'), findsOneWidget);
+    await tester.tap(find.byKey(ValueKey('planning-meal-menu-${meal!.id}')));
+    await settle(tester);
+    await tester.tap(find.text('Modifier les quantités'));
+    await settle(tester);
+    expect(find.text('Quantité'), findsOneWidget);
+    expect(find.text('Nombre de personnes'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('meal-servings-more')));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('meal-servings')), findsOneWidget);
+    expect(find.text('2 cake'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('meal-save')));
+    await settle(tester);
+    final meals = await _meals(app, tester);
+    expect(meals.firstWhere((m) => m.id == meal.id).servings, 2);
   });
 }
