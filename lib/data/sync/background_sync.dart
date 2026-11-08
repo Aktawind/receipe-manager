@@ -92,6 +92,9 @@ void backgroundDispatcher() {
 Future<bool> runBackgroundSync() async {
   final prefs = await SharedPreferences.getInstance();
   if (prefs.getBool(SyncPrefs.enabled) != true) return true;
+  // Nouvelle version installée : la migration se fera à l'ouverture de
+  // l'appli (deux migrations en même temps se bloquent).
+  if (AppServices.migrationPending(prefs)) return true;
 
   final root = await getApplicationDocumentsDirectory();
   final gate = SyncGate(File(p.join(root.path, SyncGate.fileName)));

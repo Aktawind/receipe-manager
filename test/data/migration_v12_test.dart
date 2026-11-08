@@ -89,4 +89,37 @@ void main() {
     expect(setups.single.slots.single.minutes, 45);
     await db.close();
   });
+
+  // Sur le téléphone, la migration a été interrompue par un verrou (synchro en
+  // arrière-plan) après avoir créé les tables et deux accompagnements : la
+  // base est restée en v11. Au démarrage suivant, elle se termine.
+  test('une migration interrompue se termine au démarrage suivant', () async {
+    final schema = await verifier.schemaAt(11);
+    final oldDb = v11.DatabaseAtV11(schema.newConnection());
+    // La table telle que la migration l'avait créée.
+    await oldDb.customStatement(
+      'CREATE TABLE IF NOT EXISTS "side_dishes" ("id" TEXT NOT NULL, '
+      '"kind" TEXT NOT NULL, "name" TEXT NOT NULL, '
+      '"seasons" TEXT NOT NULL DEFAULT \'\', '
+      '"position" INTEGER NOT NULL DEFAULT 0, "created_at" TEXT NOT NULL, '
+      '"updated_at" TEXT NOT NULL, "deleted_at" TEXT NULL, '
+      'PRIMARY KEY ("id"));',
+    );
+    final now = DateTime.utc(2026, 11, 8, 17, 59);
+    final stamp = now.toIso8601String();
+    for (final side in DefaultSideDishes.build(now).take(2)) {
+      await oldDb.customStatement(
+        'INSERT INTO side_dishes (id, kind, name, seasons, position, '
+        'created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [side.id, side.kind.name, side.name, '', side.position, stamp, stamp],
+      );
+    }
+    await oldDb.close();
+
+    final db = AppDatabase(schema.newConnection());
+    await verifier.migrateAndValidate(db, 12);
+    final sides = await PlanningRepository(db).getAllSides();
+    expect(sides, hasLength(DefaultSideDishes.build(now).length));
+    await db.close();
+  });
 }
