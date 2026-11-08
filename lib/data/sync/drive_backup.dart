@@ -129,6 +129,12 @@ class DriveBackupService {
         plannedMeals: [
           for (final m in contents.plannedMeals) m.copyWith(updatedAt: stamp),
         ],
+        sideDishes: [
+          for (final d in contents.sideDishes) d.copyWith(updatedAt: stamp),
+        ],
+        plannerSetups: [
+          for (final p in contents.plannerSetups) p.copyWith(updatedAt: stamp),
+        ],
       ),
       ImportMode.replace,
     );

@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import '../domain/meal_planner.dart';
 import '../domain/planning.dart';
 import 'database.dart';
 
@@ -253,6 +256,151 @@ class PlanningRepository {
       note: r.note,
       leftoverOf: r.leftoverOf,
       position: r.position,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      deletedAt: r.deletedAt,
+    );
+  }
+
+  // --- Accompagnements (planificateur) ---
+
+  /// Les accompagnements actifs, par sorte puis dans l'ordre choisi.
+  Stream<List<SideDish>> watchSides() {
+    final query = _db.select(_db.sideDishes)
+      ..where((s) => s.deletedAt.isNull())
+      ..orderBy([(s) => OrderingTerm.asc(s.position)]);
+    return query.watch().map((rows) => [for (final r in rows) ?_side(r)]);
+  }
+
+  Future<List<SideDish>> getAllSides() async => [
+    for (final r in await _db.select(_db.sideDishes).get()) ?_side(r),
+  ];
+
+  Future<SideDish> createSide(SideKind kind, String name) async {
+    final now = _clock();
+    final same = [
+      for (final s in await getAllSides())
+        if (s.kind == kind) s.position,
+    ];
+    final side = SideDish(
+      id: _uuid.v4(),
+      kind: kind,
+      name: name.trim(),
+      position: same.isEmpty ? 0 : same.reduce((a, b) => a > b ? a : b) + 1,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await putSide(side);
+    return side;
+  }
+
+  Future<void> updateSide(SideDish side) =>
+      putSide(side.copyWith(updatedAt: _clock()));
+
+  Future<void> deleteSide(SideDish side) {
+    final now = _clock();
+    return putSide(side.copyWith(updatedAt: now, deletedAt: () => now));
+  }
+
+  Future<void> putSide(SideDish side) => _db
+      .into(_db.sideDishes)
+      .insertOnConflictUpdate(
+        SideDishesCompanion.insert(
+          id: side.id,
+          kind: side.kind.name,
+          name: side.name,
+          seasons: Value([for (final s in side.seasons) s.name].join(',')),
+          position: Value(side.position),
+          createdAt: side.createdAt,
+          updatedAt: side.updatedAt,
+          deletedAt: Value(side.deletedAt),
+        ),
+      );
+
+  static SideDish? _side(SideDishRow r) {
+    final kind = SideKind.fromCode(r.kind);
+    if (kind == null) return null;
+    return SideDish(
+      id: r.id,
+      kind: kind,
+      name: r.name,
+      seasons: {
+        for (final code in r.seasons.split(',')) ?Season.fromCode(code.trim()),
+      },
+      position: r.position,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      deletedAt: r.deletedAt,
+    );
+  }
+
+  // --- Planifications enregistrées ---
+
+  Stream<List<PlannerSetup>> watchSetups() {
+    final query = _db.select(_db.plannerSetups)
+      ..where((s) => s.deletedAt.isNull())
+      ..orderBy([(s) => OrderingTerm.asc(s.name)]);
+    return query.watch().map((rows) => [for (final r in rows) _setup(r)]);
+  }
+
+  Future<List<PlannerSetup>> getAllSetups() async => [
+    for (final r in await _db.select(_db.plannerSetups).get()) _setup(r),
+  ];
+
+  /// Enregistre [slots] sous [name] ; une planification du même nom est
+  /// remplacée.
+  Future<PlannerSetup> saveSetup(String name, List<PlannerSlot> slots) async {
+    final now = _clock();
+    final clean = name.trim();
+    final existing = (await getAllSetups())
+        .where((s) => !s.isDeleted && s.name == clean)
+        .firstOrNull;
+    final setup = existing != null
+        ? existing.copyWith(slots: slots, updatedAt: now)
+        : PlannerSetup(
+            id: _uuid.v4(),
+            name: clean,
+            slots: slots,
+            createdAt: now,
+            updatedAt: now,
+          );
+    await putSetup(setup);
+    return setup;
+  }
+
+  Future<void> deleteSetup(PlannerSetup setup) {
+    final now = _clock();
+    return putSetup(setup.copyWith(updatedAt: now, deletedAt: () => now));
+  }
+
+  Future<void> putSetup(PlannerSetup setup) => _db
+      .into(_db.plannerSetups)
+      .insertOnConflictUpdate(
+        PlannerSetupsCompanion.insert(
+          id: setup.id,
+          name: setup.name,
+          slots: Value(jsonEncode([for (final s in setup.slots) s.toJson()])),
+          createdAt: setup.createdAt,
+          updatedAt: setup.updatedAt,
+          deletedAt: Value(setup.deletedAt),
+        ),
+      );
+
+  static PlannerSetup _setup(PlannerSetupRow r) {
+    List<PlannerSlot> slots;
+    try {
+      final data = jsonDecode(r.slots);
+      slots = [
+        if (data is List)
+          for (final item in data) ?PlannerSlot.fromJson(item),
+      ];
+    } on FormatException {
+      slots = const [];
+    }
+    return PlannerSetup(
+      id: r.id,
+      name: r.name,
+      slots: slots,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       deletedAt: r.deletedAt,

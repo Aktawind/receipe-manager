@@ -7,6 +7,7 @@ import '../domain/default_labels.dart';
 import '../domain/equipment.dart';
 import '../domain/label.dart';
 import '../domain/legacy_classification.dart';
+import '../domain/meal_planner.dart';
 import '../domain/planning.dart';
 
 import 'database.steps.dart';
@@ -296,6 +297,38 @@ class PlannedMeals extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+/// Les accompagnements du planificateur ([seasons] : « winter,spring », vide
+/// = toute l'année) ; v12. Suppression douce.
+@DataClassName('SideDishRow')
+class SideDishes extends Table {
+  TextColumn get id => text()();
+  TextColumn get kind => text()();
+  TextColumn get name => text()();
+  TextColumn get seasons => text().withDefault(const Constant(''))();
+  IntColumn get position => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Les planifications enregistrées ([slots] : les repas à prévoir, en
+/// JSON) ; v12. Suppression douce.
+@DataClassName('PlannerSetupRow')
+class PlannerSetups extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get slots => text().withDefault(const Constant('[]'))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     Recipes,
@@ -314,6 +347,8 @@ class PlannedMeals extends Table {
     ProductAisles,
     MealSlots,
     PlannedMeals,
+    SideDishes,
+    PlannerSetups,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -321,7 +356,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 11;
+  static const latestSchemaVersion = 12;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -333,6 +368,7 @@ class AppDatabase extends _$AppDatabase {
       await _seedDefaultLabels(DateTime.now());
       await _seedDefaultAisles(DateTime.now());
       await _seedDefaultMealSlots(DateTime.now());
+      await _seedDefaultSideDishes(DateTime.now());
     },
     onUpgrade: stepByStep(
       // v2 : titres d'étapes, et « Astuces » fusionnées dans « Notes ».
@@ -442,6 +478,12 @@ UPDATE recipes SET
         await m.createTable(schema.plannedMeals);
         await _seedDefaultMealSlots(DateTime.now());
       },
+      // v12 : planificateur (accompagnements, planifications enregistrées).
+      from11To12: (m, schema) async {
+        await m.createTable(schema.sideDishes);
+        await m.createTable(schema.plannerSetups);
+        await _seedDefaultSideDishes(DateTime.now());
+      },
     ),
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -544,6 +586,25 @@ UPDATE recipes SET
   }
 
   /// Les catégories, étiquettes et saisons fournies au départ.
+  Future<void> _seedDefaultSideDishes(DateTime now) async {
+    final stamp = now.toUtc().toIso8601String();
+    for (final side in DefaultSideDishes.build(now)) {
+      await customStatement(
+        'INSERT OR IGNORE INTO side_dishes (id, kind, name, seasons, position, '
+        'created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+          side.id,
+          side.kind.name,
+          side.name,
+          [for (final s in side.seasons) s.name].join(','),
+          side.position,
+          stamp,
+          stamp,
+        ],
+      );
+    }
+  }
+
   Future<void> _seedDefaultMealSlots(DateTime now) async {
     final stamp = now.toUtc().toIso8601String();
     for (final slot in DefaultMealSlots.build(now)) {

@@ -63,6 +63,12 @@ class PlanningPage extends ConsumerWidget {
         title: Text(l10n.navPlanning),
         actions: [
           IconButton(
+            key: const ValueKey('planning-planner'),
+            tooltip: l10n.plannerOpen,
+            icon: const Icon(Icons.auto_awesome_outlined),
+            onPressed: () => context.push('/planning/planificateur'),
+          ),
+          IconButton(
             key: const ValueKey('planning-shopping'),
             tooltip: l10n.planningToShopping,
             icon: const Icon(Icons.add_shopping_cart),

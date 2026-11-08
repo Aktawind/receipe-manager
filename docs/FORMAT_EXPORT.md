@@ -35,6 +35,11 @@ recettes-2026-10-27-1430.zip
 
 | 10 | 0.11.0 | Planning des repas : créneaux (`mealSlots`) et repas (`plannedMeals`), au niveau du document ; absents quand ils sont vides |
 
+| 11 | 0.11.0 | Planificateur : accompagnements (`sideDishes`) et planifications enregistrées (`plannerSetups`) |
+
+Lecture d'une version 10 (et avant) : pas d'accompagnements ni de planifications enregistrées ;
+les accompagnements fournis sont créés par l'application.
+
 Lecture d'une version 9 (et avant) : pas de planning.
 
 Lecture d'une version 8 (et avant) : pas de listes de courses ni de rayons ; une restauration qui
@@ -61,12 +66,12 @@ Lecture d'une version 2 : les champs ajoutés par la version 3 prennent leur val
 Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une ligne vide) ; les
 étapes n'ont pas de titre.
 
-## `recettes.json` — version 10
+## `recettes.json` — version 11
 
 ```json
 {
   "format": "recettes-backup",
-  "version": 10,
+  "version": 11,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
   "equipment": [
@@ -144,6 +149,30 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
 | `ingredients[].unit` | texte | forme canonique : `g`, `kg`, `ml`, `cl`, `L`, `c. à s.`, `c. à c.`, `pincée`… |
 
 L'ordre des listes `ingredients` et `steps` est l'ordre d'affichage.
+
+### Planificateur (version 11)
+
+```json
+{
+  "sideDishes": [
+    { "id": "…", "kind": "vegetable", "name": "Courgettes", "seasons": ["summer"], "position": 12,
+      "createdAt": "…", "updatedAt": "…", "deletedAt": null }
+  ],
+  "plannerSetups": [
+    { "id": "…", "name": "Semaine de travail",
+      "slots": [ { "weekday": 1, "slot": "<id de « Dîner »>", "minutes": 30, "collection": null } ],
+      "createdAt": "…", "updatedAt": "…", "deletedAt": null }
+  ]
+}
+```
+
+| Champ | Type | Remarque |
+|---|---|---|
+| `sideDishes[].kind` | `starch`, `protein` ou `vegetable` | féculent, protéine, légume |
+| `sideDishes[].seasons` | liste de `spring`, `summer`, `autumn`, `winter` | vide = toute l'année |
+| `plannerSetups[].slots[].weekday` | entier 1 à 7 | 1 = lundi |
+| `plannerSetups[].slots[].minutes` | entier | temps disponible pour ce repas |
+| `plannerSetups[].slots[].collection` | `id` ou `null` | collection du classement à respecter |
 
 ### Planning (version 10)
 
@@ -236,8 +265,7 @@ Réglages → Importer depuis Recipe Keeper, avec le ZIP produit par Recipe Keep
 ## Synchronisation (0.4)
 
 Le dossier Drive utilise le même format : chaque fichier de `recipes/`, `labels/`, `equipment/`, `aisles/`, `products/` et
-`shopping/` (une liste de courses avec ses produits), `slots/` et `meals/` (planning) est un
-document `recettes-backup` de la version courante qui ne contient **qu'un seul élément**,
+`shopping/` (une liste de courses avec ses produits), `slots/` et `meals/` (planning), `sides/` et `setups/` (planificateur) est un document `recettes-backup` de la version courante qui ne contient **qu'un seul élément**,
 et `media/` contient les photos sous leur nom. Les versions écartées d'un conflit sont dans
 `history/`. Les sauvegardes automatiques sont dans `backups/` : un seul fichier
 `sauvegarde-AAAA-MM-JJ-HHMM.json` par sauvegarde, au format `recettes-backup` **sans les photos**

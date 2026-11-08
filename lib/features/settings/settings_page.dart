@@ -132,6 +132,13 @@ class SettingsPage extends ConsumerWidget {
             onTap: () => context.push('/reglages/creneaux'),
           ),
           ListTile(
+            key: const ValueKey('settings-side-dishes'),
+            leading: const Icon(Icons.rice_bowl_outlined),
+            title: Text(l10n.sideDishesTitle),
+            subtitle: Text(l10n.sideDishesSubtitle),
+            onTap: () => context.push('/reglages/accompagnements'),
+          ),
+          ListTile(
             key: const ValueKey('settings-aisles'),
             leading: const Icon(Icons.storefront_outlined),
             title: Text(l10n.aislesTitle),

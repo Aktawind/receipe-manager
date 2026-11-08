@@ -391,7 +391,11 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
 - **planificateur** (calcul, sans IA) : nombre de repas, saison, temps disponible par repas (30 min
   par défaut), collection éventuelle, ingrédients à écouler ; garder ou remplacer chaque recette
   proposée ; « + féculent », « + protéine », « + légume » complètent un repas depuis une liste
-  prédéfinie (légumes de saison), remplaçables ; pas de critère « pas faite récemment ».
+  prédéfinie (légumes de saison), remplaçables ; pas de critère « pas faite récemment » ;
+- *2026-11-08* : une recette sans durée ou sans saison est proposée ; les listes de féculents,
+  protéines et légumes (avec leurs saisons) se modifient dans les réglages ; une planification
+  (créneaux et durées) s'enregistre pour la reprendre d'une semaine sur l'autre ; le planificateur
+  ne remplit que les créneaux libres, les accompagnements y deviennent des notes.
 
 *Avancement* : trois étapes.
 - **Étape 1 (validée le 2026-11-07)** : le planning (semaine, jour, créneaux configurables, recettes avec leurs
@@ -403,11 +407,14 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   dernière synchro n'était pas gardée : corrigé.
   Retour suivant : aujourd'hui en clair (bordure), miniature de la photo à la place de l'icône,
   plus de portions sous les recettes.
-- **Étape 2 (à tester)** : 🛒 du planning → les repas de la semaine (ou du jour) à cocher, « Tout
+- **Étape 2 (validée le 2026-11-08)** : 🛒 du planning → les repas de la semaine (ou du jour) à cocher, « Tout
   cocher » (sans les restes) → la feuille « Ajouter aux courses », une entrée par repas avec ses
   personnes ; les notes vont telles quelles dans la liste. « Changer de créneau » est revenu dans le
   menu d'un repas (retour du 2026-11-07), en plus du glisser-déposer.
-- **Étape 3** : le planificateur.
+- **Étape 3 (à tester)** : le planificateur (✨ en haut du planning) : repas à prévoir (jour,
+  créneau, temps, collection), saison, ingrédients à écouler, propositions à garder ou remplacer,
+  « + Féculent / Protéine / Légume » ; planifications enregistrées ; Réglages → Accompagnements
+  (base v12, sauvegarde v11).
 
 ## 0.12 — Accueil, statistiques, partage et export
 

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
+import '../../domain/meal_planner.dart';
 import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
 import '../../domain/shopping.dart';
@@ -18,6 +19,8 @@ enum SyncKind {
   shoppingList('shopping'),
   mealSlot('slots'),
   plannedMeal('meals'),
+  sideDish('sides'),
+  plannerSetup('setups'),
   media('media');
 
   const SyncKind(this.folder);
@@ -128,6 +131,30 @@ abstract final class SyncCodec {
   static PlannedMeal decodePlannedMeal(Uint8List bytes) =>
       _single(_decode(bytes).plannedMeals, 'plannedMeals');
 
+  static Uint8List sideDish(SideDish side) => _bytes(
+    BackupFormat.encode(
+      const [],
+      sideDishes: [side],
+      exportedAt: side.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static Uint8List plannerSetup(PlannerSetup setup) => _bytes(
+    BackupFormat.encode(
+      const [],
+      plannerSetups: [setup],
+      exportedAt: setup.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static SideDish decodeSideDish(Uint8List bytes) =>
+      _single(_decode(bytes).sideDishes, 'sideDishes');
+
+  static PlannerSetup decodePlannerSetup(Uint8List bytes) =>
+      _single(_decode(bytes).plannerSetups, 'plannerSetups');
+
   static Aisle decodeAisle(Uint8List bytes) =>
       _single(_decode(bytes).aisles, 'aisles');
 
@@ -185,6 +212,8 @@ abstract final class SyncCodec {
       'shoppingLists',
       'mealSlots',
       'plannedMeals',
+      'sideDishes',
+      'plannerSetups',
     ]) {
       for (final item in (root[key] as List? ?? const [])) {
         (item as Map<String, Object?>)

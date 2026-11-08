@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/app_services.dart';
+import '../../domain/meal_planner.dart';
 import '../../domain/planning.dart';
 
 /// Les créneaux, dans l'ordre choisi (masqués compris).
@@ -40,3 +41,13 @@ class PlannedDay extends Notifier<DateTime?> {
   void show(DateTime? day) =>
       state = day == null ? null : PlannedMeal.dayOf(day);
 }
+
+/// Les accompagnements du planificateur.
+final sideDishesProvider = StreamProvider<List<SideDish>>(
+  (ref) => ref.watch(planningRepositoryProvider).watchSides(),
+);
+
+/// Les planifications enregistrées.
+final plannerSetupsProvider = StreamProvider<List<PlannerSetup>>(
+  (ref) => ref.watch(planningRepositoryProvider).watchSetups(),
+);
