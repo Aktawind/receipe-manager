@@ -1075,5 +1075,74 @@
   "aislesHint": "Glisse ☰ pour changer l'ordre. Un produit rangé à la main dans un rayon y retourne ensuite.",
   "removeProduct": "Retirer de la liste",
   "save": "Enregistrer",
-  "moveProduct": "Déplacer"
+  "moveProduct": "Déplacer",
+  "seasonSpring": "Printemps",
+  "seasonSummer": "Été",
+  "seasonAutumn": "Automne",
+  "seasonWinter": "Hiver",
+  "sideStarches": "Féculents",
+  "sideProteins": "Protéines",
+  "sideVegetables": "Légumes",
+  "sideStarch": "Féculent",
+  "sideProtein": "Protéine",
+  "sideVegetable": "Légume",
+  "sideDishesTitle": "Accompagnements",
+  "sideDishesSubtitle": "Les féculents, protéines et légumes que le planificateur propose",
+  "addSideDish": "Ajouter",
+  "renameSideDish": "Renommer",
+  "sideDishesHint": "Touche un nom pour le modifier. Coche les saisons où il est proposé ; sans saison cochée, il l'est toute l'année.",
+  "plannerTitle": "Planificateur",
+  "plannerOpen": "Proposer des repas",
+  "plannerWeekOf": "Semaine du {date}",
+  "@plannerWeekOf": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "plannerSetups": "Planifications enregistrées",
+  "plannerSaveSetup": "Enregistrer cette planification",
+  "plannerSetupName": "Nom de la planification",
+  "plannerSetupSaved": "Planification « {name} » enregistrée",
+  "@plannerSetupSaved": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "plannerMeals": "Repas à prévoir",
+  "plannerNoMeals": "Ajoute les repas à prévoir : le jour, le créneau et le temps dont tu disposes.",
+  "plannerAddMeals": "Ajouter des repas",
+  "plannerDays": "Jours",
+  "plannerSlot": "Créneau",
+  "plannerMinutes": "{minutes} min",
+  "@plannerMinutes": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "plannerLessTime": "Moins de temps",
+  "plannerMoreTime": "Plus de temps",
+  "plannerCollection": "Collection",
+  "plannerAnyCollection": "Toutes les recettes",
+  "plannerSeason": "Saison",
+  "plannerUseUp": "Ingrédients à écouler",
+  "plannerUseUpHint": "courgettes, crème, jambon…",
+  "plannerPropose": "Proposer",
+  "plannerProposeAgain": "Tout reproposer",
+  "plannerAlreadyPlanned": "Déjà prévu",
+  "plannerNoRecipe": "Aucune recette ne convient",
+  "plannerKeep": "Garder",
+  "plannerReplace": "Remplacer",
+  "plannerNoSide": "La liste des accompagnements est vide (Réglages → Accompagnements).",
+  "plannerApply": "{count, plural, =0{Ajouter au planning} =1{Ajouter 1 repas au planning} other{Ajouter {count} repas au planning}}",
+  "@plannerApply": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "plannerAdded": "{count, plural, =1{1 repas ajouté au planning} other{{count} repas ajoutés au planning}}",
+  "@plannerAdded": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
 }

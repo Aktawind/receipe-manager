@@ -7,7 +7,9 @@ import '../../features/classification/labels_page.dart';
 import '../../features/equipment/equipment_page.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/planning/meal_slots_page.dart';
+import '../../features/planning/planner_page.dart';
 import '../../features/planning/planning_page.dart';
+import '../../features/planning/side_dishes_page.dart';
 import '../../features/recipes/cooking_mode_page.dart';
 import '../../features/recipes/recipe_detail_page.dart';
 import '../../features/recipes/recipe_editor_page.dart';
@@ -74,7 +76,21 @@ GoRouter buildRouter() => GoRouter(
             ),
           ],
         ),
-        _branch('/planning', const PlanningPage()),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/planning',
+              builder: (context, state) => const PlanningPage(),
+              routes: [
+                GoRoute(
+                  path: 'planificateur',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const PlannerPage(),
+                ),
+              ],
+            ),
+          ],
+        ),
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -130,6 +146,11 @@ GoRouter buildRouter() => GoRouter(
                   builder: (context, state) => const MealSlotsPage(),
                 ),
                 GoRoute(
+                  path: 'accompagnements',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const SideDishesPage(),
+                ),
+                GoRoute(
                   path: 'rayons',
                   parentNavigatorKey: _rootKey,
                   builder: (context, state) => const AislesPage(),
@@ -151,8 +172,4 @@ GoRouter buildRouter() => GoRouter(
       ],
     ),
   ],
-);
-
-StatefulShellBranch _branch(String path, Widget page) => StatefulShellBranch(
-  routes: [GoRoute(path: path, builder: (context, state) => page)],
 );
