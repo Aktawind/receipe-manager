@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
+import '../../domain/meal_planner.dart';
 import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
 import '../../domain/shopping.dart';
@@ -198,6 +199,44 @@ class SyncEngine {
         decode: SyncCodec.decodePlannedMeal,
         put: planning.putMeal,
         titleOf: (m) => m.recipeTitle.isNotEmpty ? m.recipeTitle : m.note,
+      ),
+      _Adapter.of<SideDish>(
+        kind: SyncKind.sideDish,
+        stamps: () => _stamps(
+          _db.sideDishes,
+          _db.sideDishes.id,
+          _db.sideDishes.updatedAt,
+        ),
+        load: (id) async =>
+            {for (final s in await planning.getAllSides()) s.id: s}[id],
+        loadAll: () async => {
+          for (final s in await planning.getAllSides()) s.id: s,
+        },
+        idOf: (s) => s.id,
+        updatedAt: (s) => s.updatedAt,
+        encode: SyncCodec.sideDish,
+        decode: SyncCodec.decodeSideDish,
+        put: planning.putSide,
+        titleOf: (s) => s.name,
+      ),
+      _Adapter.of<PlannerSetup>(
+        kind: SyncKind.plannerSetup,
+        stamps: () => _stamps(
+          _db.plannerSetups,
+          _db.plannerSetups.id,
+          _db.plannerSetups.updatedAt,
+        ),
+        load: (id) async =>
+            {for (final s in await planning.getAllSetups()) s.id: s}[id],
+        loadAll: () async => {
+          for (final s in await planning.getAllSetups()) s.id: s,
+        },
+        idOf: (s) => s.id,
+        updatedAt: (s) => s.updatedAt,
+        encode: SyncCodec.plannerSetup,
+        decode: SyncCodec.decodePlannerSetup,
+        put: planning.putSetup,
+        titleOf: (s) => s.name,
       ),
       _Adapter.of<Recipe>(
         kind: SyncKind.recipe,

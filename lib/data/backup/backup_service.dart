@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import '../../core/format/text_search.dart';
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
+import '../../domain/meal_planner.dart';
 import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
 import '../../domain/shopping.dart';
@@ -44,9 +45,15 @@ class BackupContents {
     this.productAisles = const [],
     this.mealSlots = const [],
     this.plannedMeals = const [],
+    this.sideDishes = const [],
+    this.plannerSetups = const [],
   });
 
   final List<Recipe> recipes;
+
+  /// Le planificateur : accompagnements et planifications enregistrées.
+  final List<SideDish> sideDishes;
+  final List<PlannerSetup> plannerSetups;
 
   /// Le planning : créneaux et repas.
   final List<MealSlot> mealSlots;
@@ -142,6 +149,8 @@ class BackupService {
         productAisles: await shopping.getAllProductAisles(),
         mealSlots: await planning.getAllSlots(),
         plannedMeals: await planning.getAllMeals(),
+        sideDishes: await planning.getAllSides(),
+        plannerSetups: await planning.getAllSetups(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -173,6 +182,8 @@ class BackupService {
         productAisles: await shopping.getAllProductAisles(),
         mealSlots: await planning.getAllSlots(),
         plannedMeals: await planning.getAllMeals(),
+        sideDishes: await planning.getAllSides(),
+        plannerSetups: await planning.getAllSetups(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -199,6 +210,8 @@ class BackupService {
       productAisles: decoded.productAisles,
       mealSlots: decoded.mealSlots,
       plannedMeals: decoded.plannedMeals,
+      sideDishes: decoded.sideDishes,
+      plannerSetups: decoded.plannerSetups,
     );
   }
 
@@ -252,6 +265,8 @@ class BackupService {
       productAisles: decoded.productAisles,
       mealSlots: decoded.mealSlots,
       plannedMeals: decoded.plannedMeals,
+      sideDishes: decoded.sideDishes,
+      plannerSetups: decoded.plannerSetups,
     );
   }
 
@@ -360,6 +375,22 @@ class BackupService {
       for (final slot in contents.mealSlots) {
         if (newer(slot.updatedAt, existingSlots[slot.id]?.updatedAt)) {
           await planning.putSlot(slot);
+        }
+      }
+      final existingSides = {
+        for (final d in await planning.getAllSides()) d.id: d,
+      };
+      final existingSetups = {
+        for (final p in await planning.getAllSetups()) p.id: p,
+      };
+      for (final side in contents.sideDishes) {
+        if (newer(side.updatedAt, existingSides[side.id]?.updatedAt)) {
+          await planning.putSide(side);
+        }
+      }
+      for (final setup in contents.plannerSetups) {
+        if (newer(setup.updatedAt, existingSetups[setup.id]?.updatedAt)) {
+          await planning.putSetup(setup);
         }
       }
       for (final meal in contents.plannedMeals) {

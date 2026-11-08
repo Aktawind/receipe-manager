@@ -1,6 +1,7 @@
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
 import '../../domain/legacy_classification.dart';
+import '../../domain/meal_planner.dart';
 import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
 import '../../domain/recipe_links.dart';
@@ -29,9 +30,11 @@ import '../photo_store.dart';
 ///   retenu pour chaque produit (`productAisles`).
 /// - v10 : planning des repas : créneaux (`mealSlots`) et repas
 ///   (`plannedMeals`).
+/// - v11 : planificateur : accompagnements (`sideDishes`) et planifications
+///   enregistrées (`plannerSetups`).
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 10;
+  static const currentVersion = 11;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 
@@ -44,6 +47,8 @@ abstract final class BackupFormat {
     List<ProductAisle> productAisles = const [],
     List<MealSlot> mealSlots = const [],
     List<PlannedMeal> plannedMeals = const [],
+    List<SideDish> sideDishes = const [],
+    List<PlannerSetup> plannerSetups = const [],
     required DateTime exportedAt,
     required String appVersion,
   }) {
@@ -112,6 +117,32 @@ abstract final class BackupFormat {
               'createdAt': s.createdAt.toUtc().toIso8601String(),
               'updatedAt': s.updatedAt.toUtc().toIso8601String(),
               'deletedAt': s.deletedAt?.toUtc().toIso8601String(),
+            },
+        ],
+      if (sideDishes.isNotEmpty)
+        'sideDishes': [
+          for (final d in sideDishes)
+            {
+              'id': d.id,
+              'kind': d.kind.name,
+              'name': d.name,
+              'seasons': [for (final s in d.seasons) s.name],
+              'position': d.position,
+              'createdAt': d.createdAt.toUtc().toIso8601String(),
+              'updatedAt': d.updatedAt.toUtc().toIso8601String(),
+              'deletedAt': d.deletedAt?.toUtc().toIso8601String(),
+            },
+        ],
+      if (plannerSetups.isNotEmpty)
+        'plannerSetups': [
+          for (final p in plannerSetups)
+            {
+              'id': p.id,
+              'name': p.name,
+              'slots': [for (final s in p.slots) s.toJson()],
+              'createdAt': p.createdAt.toUtc().toIso8601String(),
+              'updatedAt': p.updatedAt.toUtc().toIso8601String(),
+              'deletedAt': p.deletedAt?.toUtc().toIso8601String(),
             },
         ],
       if (plannedMeals.isNotEmpty)
@@ -378,8 +409,59 @@ abstract final class BackupFormat {
       productAisles: version >= 9 ? _decodeProductAisles(root) : const [],
       mealSlots: version >= 10 ? _decodeSlots(root) : const [],
       plannedMeals: version >= 10 ? _decodeMeals(root) : const [],
+      sideDishes: version >= 11 ? _decodeSides(root) : const [],
+      plannerSetups: version >= 11 ? _decodeSetups(root) : const [],
     );
   }
+
+  static List<SideDish> _decodeSides(Map<String, Object?> root) => [
+    for (final item in _list(root, 'sideDishes'))
+      () {
+        final m = _map(item, 'sideDish');
+        final id = _string(m, 'id', required: true);
+        final kind = SideKind.fromCode(_string(m, 'kind', required: true));
+        final name = _string(m, 'name', required: true).trim();
+        if (id.isEmpty || kind == null || name.isEmpty) {
+          throw const BackupFormatException(BackupError.invalid, 'sideDishes');
+        }
+        return SideDish(
+          id: id,
+          kind: kind,
+          name: name,
+          seasons: {
+            for (final code in _strings(m, 'seasons')) ?Season.fromCode(code),
+          },
+          position: _int(m, 'position') ?? 0,
+          createdAt: _date(m, 'createdAt')!,
+          updatedAt: _date(m, 'updatedAt')!,
+          deletedAt: _date(m, 'deletedAt', required: false),
+        );
+      }(),
+  ];
+
+  static List<PlannerSetup> _decodeSetups(Map<String, Object?> root) => [
+    for (final item in _list(root, 'plannerSetups'))
+      () {
+        final m = _map(item, 'plannerSetup');
+        final id = _string(m, 'id', required: true);
+        if (id.isEmpty) {
+          throw const BackupFormatException(
+            BackupError.invalid,
+            'plannerSetups',
+          );
+        }
+        return PlannerSetup(
+          id: id,
+          name: _string(m, 'name'),
+          slots: [
+            for (final raw in _list(m, 'slots')) ?PlannerSlot.fromJson(raw),
+          ],
+          createdAt: _date(m, 'createdAt')!,
+          updatedAt: _date(m, 'updatedAt')!,
+          deletedAt: _date(m, 'deletedAt', required: false),
+        );
+      }(),
+  ];
 
   static List<MealSlot> _decodeSlots(Map<String, Object?> root) => [
     for (final item in _list(root, 'mealSlots'))
@@ -678,6 +760,8 @@ class BackupData {
     this.productAisles = const [],
     this.mealSlots = const [],
     this.plannedMeals = const [],
+    this.sideDishes = const [],
+    this.plannerSetups = const [],
   });
 
   final List<Recipe> recipes;
@@ -688,6 +772,8 @@ class BackupData {
   final List<ProductAisle> productAisles;
   final List<MealSlot> mealSlots;
   final List<PlannedMeal> plannedMeals;
+  final List<SideDish> sideDishes;
+  final List<PlannerSetup> plannerSetups;
 }
 
 enum BackupError { notABackup, newerVersion, invalid, missingPhoto }
