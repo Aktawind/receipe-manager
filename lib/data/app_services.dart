@@ -52,6 +52,11 @@ class AppServices {
 
   static const _schemaVersionKey = 'db_schema_version';
 
+  /// La base attend une migration (nouvelle version de l'appli pas encore
+  /// ouverte) : c'est à l'appli de la faire, pas à la synchro en arrière-plan.
+  static bool migrationPending(SharedPreferences prefs) =>
+      (prefs.getInt(_schemaVersionKey) ?? 0) < AppDatabase.latestSchemaVersion;
+
   /// Ouvre la base dans [root] (dossier de documents de l'app) ; [cache] sert
   /// aux fichiers temporaires de SQLite.
   ///
@@ -91,6 +96,9 @@ class AppServices {
             native: DriftNativeOptions(
               databasePath: () async => dbFile.path,
               tempDirectoryPath: () async => cache.path,
+              // L'appli et la synchro en arrière-plan peuvent ouvrir la base en
+              // même temps : attendre le verrou plutôt qu'échouer aussitôt.
+              setup: (db) => db.execute('PRAGMA busy_timeout = 15000'),
             ),
           ),
     );

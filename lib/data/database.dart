@@ -370,11 +370,19 @@ class AppDatabase extends _$AppDatabase {
       await _seedDefaultMealSlots(DateTime.now());
       await _seedDefaultSideDishes(DateTime.now());
     },
-    onUpgrade: stepByStep(
-      // v2 : titres d'étapes, et « Astuces » fusionnées dans « Notes ».
-      from1To2: (m, schema) async {
-        await m.addColumn(schema.recipeSteps, schema.recipeSteps.title);
-        await customStatement('''
+    // Tout ou rien : une migration interrompue (verrou, appli fermée) ne
+    // laisse pas la base à moitié migrée.
+    onUpgrade: (m, from, to) => transaction(() => _upgrade(m, from, to)),
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+    },
+  );
+
+  late final _upgrade = stepByStep(
+    // v2 : titres d'étapes, et « Astuces » fusionnées dans « Notes ».
+    from1To2: (m, schema) async {
+      await m.addColumn(schema.recipeSteps, schema.recipeSteps.title);
+      await customStatement('''
 UPDATE recipes SET
   notes = CASE
     WHEN trim(tips) = '' THEN notes
@@ -383,110 +391,103 @@ UPDATE recipes SET
   END,
   tips = ''
 ''');
-      },
-      // v3 : favoris, note, statut, classement libre, photos supplémentaires
-      // et recettes liées.
-      from2To3: (m, schema) async {
-        await m.addColumn(schema.recipes, schema.recipes.isFavorite);
-        await m.addColumn(schema.recipes, schema.recipes.rating);
-        await m.addColumn(schema.recipes, schema.recipes.status);
-        await m.addColumn(schema.recipes, schema.recipes.course);
-        await m.addColumn(schema.recipes, schema.recipes.category);
-        await m.addColumn(schema.recipes, schema.recipes.collections);
-        await m.createTable(schema.recipePhotos);
-        await m.createTable(schema.recipeLinks);
-      },
-      // v4 : ce que comptent les portions (« 12 blinis »). L'import de la
-      // 0.2 de test avait gardé ces quantités en tête des notes
-      // (« Quantité : 12 blinis ») : elles redeviennent des portions.
-      from3To4: (m, schema) async {
-        await m.addColumn(schema.recipes, schema.recipes.servingsUnit);
-        final rows = await m.database
-            .customSelect(
-              'SELECT id, notes FROM recipes '
-              "WHERE servings IS NULL AND notes LIKE 'Quantité : %'",
-            )
-            .get();
-        for (final row in rows) {
-          final notes = row.read<String>('notes');
-          final newline = notes.indexOf('\n');
-          final first = newline < 0 ? notes : notes.substring(0, newline);
-          final match = RegExp(r'^Quantité : (\d+)\s+(\S.*)$')
-              .firstMatch(first.trim());
-          if (match == null) continue;
-          await m.database.customUpdate(
-            'UPDATE recipes SET servings = ?, servings_unit = ?, notes = ? '
-            'WHERE id = ?',
-            variables: [
-              Variable.withInt(int.parse(match.group(1)!)),
-              Variable.withString(match.group(2)!.trim()),
-              Variable.withString(
-                newline < 0 ? '' : notes.substring(newline + 1).trim(),
-              ),
-              Variable.withString(row.read<String>('id')),
-            ],
-          );
-        }
-      },
-      // v5 : matériel, liens vidéo et remplaçants d'ingrédients.
-      from4To5: (m, schema) async {
-        await m.addColumn(schema.recipes, schema.recipes.equipment);
-        await m.addColumn(schema.recipes, schema.recipes.videoLinks);
-        await m.addColumn(schema.ingredients, schema.ingredients.substitutes);
-      },
-      // v6 : le matériel devient une liste commune, et les recettes liées
-      // passent dans les ingrédients.
-      from5To6: (m, schema) async {
-        await m.createTable(schema.equipmentItems);
-        await m.createTable(schema.recipeEquipment);
-        await m.addColumn(
-          schema.ingredients,
-          schema.ingredients.linkedRecipeId,
+    },
+    // v3 : favoris, note, statut, classement libre, photos supplémentaires
+    // et recettes liées.
+    from2To3: (m, schema) async {
+      await m.addColumn(schema.recipes, schema.recipes.isFavorite);
+      await m.addColumn(schema.recipes, schema.recipes.rating);
+      await m.addColumn(schema.recipes, schema.recipes.status);
+      await m.addColumn(schema.recipes, schema.recipes.course);
+      await m.addColumn(schema.recipes, schema.recipes.category);
+      await m.addColumn(schema.recipes, schema.recipes.collections);
+      await m.createTable(schema.recipePhotos);
+      await m.createTable(schema.recipeLinks);
+    },
+    // v4 : ce que comptent les portions (« 12 blinis »). L'import de la
+    // 0.2 de test avait gardé ces quantités en tête des notes
+    // (« Quantité : 12 blinis ») : elles redeviennent des portions.
+    from3To4: (m, schema) async {
+      await m.addColumn(schema.recipes, schema.recipes.servingsUnit);
+      final rows = await m.database
+          .customSelect(
+            'SELECT id, notes FROM recipes '
+            "WHERE servings IS NULL AND notes LIKE 'Quantité : %'",
+          )
+          .get();
+      for (final row in rows) {
+        final notes = row.read<String>('notes');
+        final newline = notes.indexOf('\n');
+        final first = newline < 0 ? notes : notes.substring(0, newline);
+        final match = RegExp(r'^Quantité : (\d+)\s+(\S.*)$')
+            .firstMatch(first.trim());
+        if (match == null) continue;
+        await m.database.customUpdate(
+          'UPDATE recipes SET servings = ?, servings_unit = ?, notes = ? '
+          'WHERE id = ?',
+          variables: [
+            Variable.withInt(int.parse(match.group(1)!)),
+            Variable.withString(match.group(2)!.trim()),
+            Variable.withString(
+              newline < 0 ? '' : notes.substring(newline + 1).trim(),
+            ),
+            Variable.withString(row.read<String>('id')),
+          ],
         );
-        await _equipmentTextToCatalog();
-        await _linksToIngredients();
-        await customStatement('DROP TABLE IF EXISTS recipe_links');
-      },
-      // v7 : classement commun (catégories, collections, étiquettes, saisons…).
-      from6To7: (m, schema) async {
-        await m.addColumn(schema.recipes, schema.recipes.lastViewedAt);
-        await m.createTable(schema.labels);
-        await m.createTable(schema.recipeLabels);
-        await _legacyClassificationToLabels();
-      },
-      // v8 : le classement se limite à quatre familles ; étiquettes et
-      // occasions deviennent des collections, le type de repas disparaît.
-      from7To8: (m, schema) async {
-        await _foldRemovedLabelKinds();
-      },
-      // v9 : suivi de la synchronisation Google Drive (0.4).
-      from8To9: (m, schema) async {
-        await m.createTable(schema.syncEntries);
-        await m.createTable(schema.syncSettings);
-      },
-      // v10 : listes de courses et rayons (0.10).
-      from9To10: (m, schema) async {
-        await m.createTable(schema.shoppingLists);
-        await m.createTable(schema.shoppingItems);
-        await m.createTable(schema.aisles);
-        await m.createTable(schema.productAisles);
-        await _seedDefaultAisles(DateTime.now());
-      },
-      // v11 : planning des repas (0.11).
-      from10To11: (m, schema) async {
-        await m.createTable(schema.mealSlots);
-        await m.createTable(schema.plannedMeals);
-        await _seedDefaultMealSlots(DateTime.now());
-      },
-      // v12 : planificateur (accompagnements, planifications enregistrées).
-      from11To12: (m, schema) async {
-        await m.createTable(schema.sideDishes);
-        await m.createTable(schema.plannerSetups);
-        await _seedDefaultSideDishes(DateTime.now());
-      },
-    ),
-    beforeOpen: (details) async {
-      await customStatement('PRAGMA foreign_keys = ON');
+      }
+    },
+    // v5 : matériel, liens vidéo et remplaçants d'ingrédients.
+    from4To5: (m, schema) async {
+      await m.addColumn(schema.recipes, schema.recipes.equipment);
+      await m.addColumn(schema.recipes, schema.recipes.videoLinks);
+      await m.addColumn(schema.ingredients, schema.ingredients.substitutes);
+    },
+    // v6 : le matériel devient une liste commune, et les recettes liées
+    // passent dans les ingrédients.
+    from5To6: (m, schema) async {
+      await m.createTable(schema.equipmentItems);
+      await m.createTable(schema.recipeEquipment);
+      await m.addColumn(schema.ingredients, schema.ingredients.linkedRecipeId);
+      await _equipmentTextToCatalog();
+      await _linksToIngredients();
+      await customStatement('DROP TABLE IF EXISTS recipe_links');
+    },
+    // v7 : classement commun (catégories, collections, étiquettes, saisons…).
+    from6To7: (m, schema) async {
+      await m.addColumn(schema.recipes, schema.recipes.lastViewedAt);
+      await m.createTable(schema.labels);
+      await m.createTable(schema.recipeLabels);
+      await _legacyClassificationToLabels();
+    },
+    // v8 : le classement se limite à quatre familles ; étiquettes et
+    // occasions deviennent des collections, le type de repas disparaît.
+    from7To8: (m, schema) async {
+      await _foldRemovedLabelKinds();
+    },
+    // v9 : suivi de la synchronisation Google Drive (0.4).
+    from8To9: (m, schema) async {
+      await m.createTable(schema.syncEntries);
+      await m.createTable(schema.syncSettings);
+    },
+    // v10 : listes de courses et rayons (0.10).
+    from9To10: (m, schema) async {
+      await m.createTable(schema.shoppingLists);
+      await m.createTable(schema.shoppingItems);
+      await m.createTable(schema.aisles);
+      await m.createTable(schema.productAisles);
+      await _seedDefaultAisles(DateTime.now());
+    },
+    // v11 : planning des repas (0.11).
+    from10To11: (m, schema) async {
+      await m.createTable(schema.mealSlots);
+      await m.createTable(schema.plannedMeals);
+      await _seedDefaultMealSlots(DateTime.now());
+    },
+    // v12 : planificateur (accompagnements, planifications enregistrées).
+    from11To12: (m, schema) async {
+      await m.createTable(schema.sideDishes);
+      await m.createTable(schema.plannerSetups);
+      await _seedDefaultSideDishes(DateTime.now());
     },
   );
 

@@ -414,7 +414,9 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
 - **Étape 3 (à tester)** : le planificateur (✨ en haut du planning) : repas à prévoir (jour,
   créneau, temps, collection), saison, ingrédients à écouler, propositions à garder ou remplacer,
   « + Féculent / Protéine / Légume » ; planifications enregistrées ; Réglages → Accompagnements
-  (base v12, sauvegarde v11).
+  (base v12, sauvegarde v11). Retour du 2026-11-08 : l'appli ne démarrait pas (« database is
+  locked ») quand la synchro en arrière-plan migrait la base en même temps : corrigé (attente du
+  verrou, migration tout ou rien, synchro d'arrière-plan qui laisse la migration à l'appli).
 
 ## 0.12 — Accueil, statistiques, partage et export
 
