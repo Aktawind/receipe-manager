@@ -161,4 +161,64 @@ void main() {
     expect(PlannerSlot.fromJson(line.toJson()), line);
     expect(PlannerSlot.fromJson({'weekday': 9, 'slot': 'x'}), isNull);
   });
+
+  test('sans limite de temps', () {
+    const free = PlannerSlot(weekday: 7, slotId: _dinner, minutes: null);
+    final options = MealPlanner.candidates(
+      recipes,
+      free,
+      season: Season.winter,
+      random: Random(1),
+    );
+    expect(options.map((r) => r.title), contains('Gratin'));
+    // `null` se garde ; une ancienne ligne sans temps reste à 30 min.
+    expect(PlannerSlot.fromJson(free.toJson())!.minutes, isNull);
+    expect(PlannerSlot.fromJson({'weekday': 1, 'slot': _dinner})!.minutes, 30);
+  });
+
+  test('les types de plat du créneau', () {
+    final breakfast = [
+      recipe('Tarte aux pommes', collections: ['dessert']),
+      recipe('Choucroute', collections: ['plat']),
+      recipe('Porridge', collections: ['petit-dej']),
+    ];
+    const morning = PlannerSlot(weekday: 7, slotId: 'matin', minutes: null);
+    expect(
+      titles(
+        MealPlanner.candidates(
+          breakfast,
+          morning,
+          season: Season.winter,
+          categories: {'petit-dej'},
+          random: Random(1),
+        ),
+      ),
+      ['Porridge'],
+    );
+    // Sans type de plat choisi : tout convient.
+    expect(
+      MealPlanner.candidates(
+        breakfast,
+        morning,
+        season: Season.winter,
+        random: Random(1),
+      ),
+      hasLength(3),
+    );
+    expect(
+      titles(
+        MealPlanner.propose(
+          breakfast,
+          [morning, const PlannerSlot(weekday: 7, slotId: _dinner)],
+          season: Season.winter,
+          categories: {
+            'matin': {'petit-dej'},
+            _dinner: {'plat'},
+          },
+          random: Random(1),
+        ),
+      ),
+      ['Porridge', 'Choucroute'],
+    );
+  });
 }

@@ -86,7 +86,7 @@ void main() {
     expect(find.text('Restaurant'), findsOneWidget);
   });
 
-  testWidgets('restes, copier, changer de créneau, retirer', (tester) async {
+  testWidgets('restes, glisser-déposer, retirer', (tester) async {
     final app = await open(tester);
     final quiche = await tester.runAsync(
       () => app.services.planning.add(
@@ -113,17 +113,12 @@ void main() {
     expect(rest.slotId, lunch);
     expect(find.textContaining('Restes'), findsWidgets);
 
-    await menu(quiche.id, 'Copier sur d\'autres jours');
-    final thursday = DateTime(monday.year, monday.month, monday.day + 3);
-    await tester.tap(find.byKey(ValueKey('copy-${_key(thursday)}')));
+    // Plus de « Copier sur d'autres jours ».
+    await tester.tap(find.byKey(ValueKey('planning-meal-menu-${quiche.id}')));
     await settle(tester);
-    await tester.tap(find.byKey(const ValueKey('copy-ok')));
+    expect(find.text('Copier sur d\'autres jours'), findsNothing);
+    await tester.tapAt(Offset.zero);
     await settle(tester);
-    meals = await _meals(app, tester);
-    expect(
-      meals.where((m) => m.day == thursday && !m.isLeftovers),
-      hasLength(1),
-    );
 
     // Glisser-déposer : appui long sur le repas, puis sur « Déjeuner ».
     expect(find.text('Changer de créneau'), findsNothing);
@@ -298,12 +293,14 @@ void main() {
     await tester.tap(find.text('Planning').last);
     await settle(tester);
 
-    // Changer de créneau, par le menu.
+    // Changer de créneau, par le menu (date et créneau ensemble).
     await tester.tap(find.byKey(ValueKey('planning-meal-menu-${ids!.a}')));
     await settle(tester);
-    await tester.tap(find.text('Changer de créneau'));
+    await tester.tap(find.text('Changer la date ou le créneau'));
     await settle(tester);
-    await tester.tap(find.text('Déjeuner').last);
+    await tester.tap(find.byKey(ValueKey('move-slot-$lunch')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('move-ok')));
     await settle(tester);
     var meals = await _meals(app, tester);
     expect(meals.firstWhere((m) => m.id == ids.a).slotId, lunch);

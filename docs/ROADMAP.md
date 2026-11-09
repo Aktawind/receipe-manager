@@ -417,6 +417,10 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   (base v12, sauvegarde v11). Retour du 2026-11-08 : l'appli ne démarrait pas (« database is
   locked ») quand la synchro en arrière-plan migrait la base en même temps : corrigé (attente du
   verrou, migration tout ou rien, synchro d'arrière-plan qui laisse la migration à l'appli).
+  Retours du 2026-11-09 : planifier **plusieurs semaines** ; temps disponible **sans limite** ;
+  **types de plat par créneau** dans Réglages → Créneaux (base v13, sauvegarde v12) ; « Changer la
+  date ou le créneau » dans une seule fenêtre ; plus de « Copier sur d'autres jours » ; emoji des
+  accompagnements, séparés des boutons « + ».
 
 ## 0.12 — Accueil, statistiques, partage et export
 

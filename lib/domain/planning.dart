@@ -10,6 +10,7 @@ class MealSlot {
     required this.name,
     this.position = 0,
     this.hidden = false,
+    this.categoryIds = const {},
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -19,6 +20,10 @@ class MealSlot {
   final String name;
   final int position;
   final bool hidden;
+
+  /// Les catégories (types de plat) proposées par le planificateur pour ce
+  /// créneau ; vide = toutes.
+  final Set<String> categoryIds;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -29,6 +34,7 @@ class MealSlot {
     String? name,
     int? position,
     bool? hidden,
+    Set<String>? categoryIds,
     DateTime? updatedAt,
     DateTime? Function()? deletedAt,
   }) => MealSlot(
@@ -36,6 +42,7 @@ class MealSlot {
     name: name ?? this.name,
     position: position ?? this.position,
     hidden: hidden ?? this.hidden,
+    categoryIds: categoryIds ?? this.categoryIds,
     createdAt: createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt != null ? deletedAt() : this.deletedAt,
@@ -48,13 +55,25 @@ class MealSlot {
       other.name == name &&
       other.position == position &&
       other.hidden == hidden &&
+      _sameSet(other.categoryIds, categoryIds) &&
       other.createdAt == createdAt &&
       other.updatedAt == updatedAt &&
       other.deletedAt == deletedAt;
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, position, hidden, createdAt, updatedAt, deletedAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    position,
+    hidden,
+    Object.hashAllUnordered(categoryIds),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  );
+
+  static bool _sameSet(Set<String> a, Set<String> b) =>
+      a.length == b.length && a.containsAll(b);
 }
 
 /// Les créneaux fournis au départ ; identifiants déterministes (les mêmes sur

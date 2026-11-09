@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/domain/meal_planner.dart';
 import 'package:recettes/domain/planning.dart';
+import 'package:recettes/domain/side_emoji.dart';
 
 import '../helpers/test_app.dart';
 
@@ -39,10 +40,13 @@ void main() {
     }
     expect(find.byKey(const ValueKey('planner-slot-2')), findsNothing);
     expect(find.text('Déjà prévu'), findsOneWidget);
-    // Plus de temps pour mardi.
-    await tester.tap(find.byKey(const ValueKey('planner-more-1')));
+    // Mardi : pas de limite de temps.
+    expect(find.text('30 min'), findsNWidgets(2));
+    await tester.tap(find.byKey(const ValueKey('planner-time-1')));
     await settle(tester);
-    expect(find.text('40 min'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('planner-time-1-0')));
+    await settle(tester);
+    expect(find.text('Sans limite'), findsOneWidget);
 
     // Enregistrer la planification.
     await tester.tap(find.byKey(const ValueKey('planner-save-setup')));
@@ -59,21 +63,28 @@ void main() {
     final setups = (await tester.runAsync(app.services.planning.getAllSetups))!;
     expect(setups.single.name, 'Semaine');
     expect(setups.single.slots, hasLength(2));
-    expect(setups.single.slots.last.minutes, 40);
+    expect(setups.single.slots.first.minutes, 30);
+    expect(setups.single.slots.last.minutes, isNull);
 
     tester
         .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
         .removeCurrentSnackBar();
     await settle(tester);
+    // Deux semaines.
+    await tester.tap(find.byKey(const ValueKey('planner-weeks-more')));
+    await settle(tester);
+    expect(find.text('2 semaines'), findsOneWidget);
+    expect(find.text('Déjà prévu certaines semaines'), findsOneWidget);
+
     final propose = find.byKey(const ValueKey('planner-propose'));
     await tester.ensureVisible(propose);
     await settle(tester);
     await tester.tap(propose);
     await settle(tester);
-    // Seul mardi est proposé (lundi est déjà prévu).
+    // Mardi, puis lundi et mardi de la semaine suivante (ce lundi est déjà
+    // prévu).
     expect(find.byKey(const ValueKey('planner-proposal-0')), findsOneWidget);
-    expect(find.byKey(const ValueKey('planner-proposal-1')), findsNothing);
-    expect(find.text('Gratin'), findsOneWidget);
+    expect(find.text('Gratin'), findsWidgets);
 
     final addStarch = find.byKey(const ValueKey('planner-add-starch-0'));
     await tester.ensureVisible(addStarch);
@@ -84,18 +95,32 @@ void main() {
     expect(side, findsOneWidget);
     final sideName = (tester.widget<InputChip>(side).label as Text).data!;
     expect(DefaultSideDishes.starches, contains(sideName));
+    // Avec son emoji.
+    expect(
+      (tester.widget<InputChip>(side).avatar! as Text).data,
+      SideEmoji.forName(sideName, SideKind.starch),
+    );
 
     final apply = find.byKey(const ValueKey('planner-apply'));
+    await scrollTo(tester, apply);
     await tester.ensureVisible(apply);
     await settle(tester);
     await tester.tap(apply);
     await settle(tester);
 
-    final meals = [
+    final all = [
       for (final m in (await tester.runAsync(
         app.services.planning.getAllMeals,
       ))!)
-        if (!m.isDeleted && m.day == tuesday) m,
+        if (!m.isDeleted) m,
+    ];
+    final nextMonday = DateTime(monday.year, monday.month, monday.day + 7);
+    final nextTuesday = DateTime(monday.year, monday.month, monday.day + 8);
+    expect(all.where((m) => m.day == nextMonday && m.isRecipe), hasLength(1));
+    expect(all.where((m) => m.day == nextTuesday && m.isRecipe), hasLength(1));
+    final meals = [
+      for (final m in all)
+        if (m.day == tuesday) m,
     ];
     expect(meals, hasLength(2));
     final recipe = meals.firstWhere((m) => m.isRecipe);
@@ -116,7 +141,7 @@ void main() {
     await scrollTo(tester, find.byKey(const ValueKey('settings-side-dishes')));
     await tester.tap(find.byKey(const ValueKey('settings-side-dishes')));
     await settle(tester);
-    expect(find.text('Riz'), findsOneWidget);
+    expect(find.text('🍚  Riz'), findsOneWidget);
 
     await tester.enterText(
       find.byKey(const ValueKey('sides-add-starch')),

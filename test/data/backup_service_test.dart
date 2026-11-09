@@ -15,6 +15,7 @@ import 'package:recettes/data/planning_repository.dart';
 import 'package:recettes/data/recipe_repository.dart';
 import 'package:recettes/data/shopping_repository.dart';
 import 'package:recettes/domain/label.dart';
+import 'package:recettes/domain/meal_planner.dart';
 import 'package:recettes/domain/recipe.dart';
 import 'package:recettes/domain/shopping.dart';
 
@@ -221,15 +222,36 @@ void main() {
     expect((await target.repo.getRecipe('old-1'))!.notes, contains('Précuire'));
   });
 
-  test('l’export est en version 11, sans champ « tips »', () async {
+  test('l’export est en version 12, sans champ « tips »', () async {
     await addRecipe(source, 'Tarte');
     final archive = ZipDecoder().decodeBytes(await source.service.exportZip());
     final json = jsonDecode(
       utf8.decode(archive.findFile(BackupFormat.dataFile)!.content),
     ) as Map<String, Object?>;
-    expect(json['version'], 11);
+    expect(json['version'], 12);
     final recipe = (json['recipes'] as List).single as Map<String, Object?>;
     expect(recipe.containsKey('tips'), isFalse);
+  });
+
+  test('types de plat des créneaux et temps « sans limite » (v12)', () async {
+    final planning = source.service.planning;
+    final slot = (await planning.watchSlots().first).first;
+    await planning.putSlot(
+      slot.copyWith(categoryIds: {'petit-dej'}, updatedAt: DateTime(2030)),
+    );
+    await planning.saveSetup('Week-end', const [
+      PlannerSlot(weekday: 7, slotId: 'x', minutes: null),
+      PlannerSlot(weekday: 6, slotId: 'x', minutes: 45),
+    ]);
+
+    final contents = target.service.readZip(await source.service.exportZip());
+    await target.service.import(contents, ImportMode.merge);
+    final copy = (await target.service.planning.watchSlots().first).firstWhere(
+      (s) => s.id == slot.id,
+    );
+    expect(copy.categoryIds, {'petit-dej'});
+    final setup = (await target.service.planning.getAllSetups()).single;
+    expect([for (final s in setup.slots) s.minutes], [null, 45]);
   });
 
   test('les listes de courses et les rayons font l’aller-retour', () async {

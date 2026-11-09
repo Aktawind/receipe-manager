@@ -6406,6 +6406,18 @@ class $MealSlotsTable extends MealSlots
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _categoryIdsMeta = const VerificationMeta(
+    'categoryIds',
+  );
+  @override
+  late final GeneratedColumn<String> categoryIds = GeneratedColumn<String>(
+    'category_ids',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -6445,6 +6457,7 @@ class $MealSlotsTable extends MealSlots
     name,
     position,
     hidden,
+    categoryIds,
     createdAt,
     updatedAt,
     deletedAt,
@@ -6484,6 +6497,15 @@ class $MealSlotsTable extends MealSlots
       context.handle(
         _hiddenMeta,
         hidden.isAcceptableOrUnknown(data['hidden']!, _hiddenMeta),
+      );
+    }
+    if (data.containsKey('category_ids')) {
+      context.handle(
+        _categoryIdsMeta,
+        categoryIds.isAcceptableOrUnknown(
+          data['category_ids']!,
+          _categoryIdsMeta,
+        ),
       );
     }
     if (data.containsKey('created_at')) {
@@ -6533,6 +6555,10 @@ class $MealSlotsTable extends MealSlots
         DriftSqlType.bool,
         data['${effectivePrefix}hidden'],
       )!,
+      categoryIds: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category_ids'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -6559,6 +6585,10 @@ class MealSlotRow extends DataClass implements Insertable<MealSlotRow> {
   final String name;
   final int position;
   final bool hidden;
+
+  /// Catégories proposées par le planificateur, séparées par des virgules
+  /// (v13) ; vide = toutes.
+  final String categoryIds;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -6567,6 +6597,7 @@ class MealSlotRow extends DataClass implements Insertable<MealSlotRow> {
     required this.name,
     required this.position,
     required this.hidden,
+    required this.categoryIds,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -6578,6 +6609,7 @@ class MealSlotRow extends DataClass implements Insertable<MealSlotRow> {
     map['name'] = Variable<String>(name);
     map['position'] = Variable<int>(position);
     map['hidden'] = Variable<bool>(hidden);
+    map['category_ids'] = Variable<String>(categoryIds);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
@@ -6592,6 +6624,7 @@ class MealSlotRow extends DataClass implements Insertable<MealSlotRow> {
       name: Value(name),
       position: Value(position),
       hidden: Value(hidden),
+      categoryIds: Value(categoryIds),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
@@ -6610,6 +6643,7 @@ class MealSlotRow extends DataClass implements Insertable<MealSlotRow> {
       name: serializer.fromJson<String>(json['name']),
       position: serializer.fromJson<int>(json['position']),
       hidden: serializer.fromJson<bool>(json['hidden']),
+      categoryIds: serializer.fromJson<String>(json['categoryIds']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
@@ -6623,6 +6657,7 @@ class MealSlotRow extends DataClass implements Insertable<MealSlotRow> {
       'name': serializer.toJson<String>(name),
       'position': serializer.toJson<int>(position),
       'hidden': serializer.toJson<bool>(hidden),
+      'categoryIds': serializer.toJson<String>(categoryIds),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
@@ -6634,6 +6669,7 @@ class MealSlotRow extends DataClass implements Insertable<MealSlotRow> {
     String? name,
     int? position,
     bool? hidden,
+    String? categoryIds,
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
@@ -6642,6 +6678,7 @@ class MealSlotRow extends DataClass implements Insertable<MealSlotRow> {
     name: name ?? this.name,
     position: position ?? this.position,
     hidden: hidden ?? this.hidden,
+    categoryIds: categoryIds ?? this.categoryIds,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
@@ -6652,6 +6689,9 @@ class MealSlotRow extends DataClass implements Insertable<MealSlotRow> {
       name: data.name.present ? data.name.value : this.name,
       position: data.position.present ? data.position.value : this.position,
       hidden: data.hidden.present ? data.hidden.value : this.hidden,
+      categoryIds: data.categoryIds.present
+          ? data.categoryIds.value
+          : this.categoryIds,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
@@ -6665,6 +6705,7 @@ class MealSlotRow extends DataClass implements Insertable<MealSlotRow> {
           ..write('name: $name, ')
           ..write('position: $position, ')
           ..write('hidden: $hidden, ')
+          ..write('categoryIds: $categoryIds, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt')
@@ -6673,8 +6714,16 @@ class MealSlotRow extends DataClass implements Insertable<MealSlotRow> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, position, hidden, createdAt, updatedAt, deletedAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    position,
+    hidden,
+    categoryIds,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -6683,6 +6732,7 @@ class MealSlotRow extends DataClass implements Insertable<MealSlotRow> {
           other.name == this.name &&
           other.position == this.position &&
           other.hidden == this.hidden &&
+          other.categoryIds == this.categoryIds &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt);
@@ -6693,6 +6743,7 @@ class MealSlotsCompanion extends UpdateCompanion<MealSlotRow> {
   final Value<String> name;
   final Value<int> position;
   final Value<bool> hidden;
+  final Value<String> categoryIds;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
@@ -6702,6 +6753,7 @@ class MealSlotsCompanion extends UpdateCompanion<MealSlotRow> {
     this.name = const Value.absent(),
     this.position = const Value.absent(),
     this.hidden = const Value.absent(),
+    this.categoryIds = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -6712,6 +6764,7 @@ class MealSlotsCompanion extends UpdateCompanion<MealSlotRow> {
     required String name,
     this.position = const Value.absent(),
     this.hidden = const Value.absent(),
+    this.categoryIds = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
@@ -6725,6 +6778,7 @@ class MealSlotsCompanion extends UpdateCompanion<MealSlotRow> {
     Expression<String>? name,
     Expression<int>? position,
     Expression<bool>? hidden,
+    Expression<String>? categoryIds,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
@@ -6735,6 +6789,7 @@ class MealSlotsCompanion extends UpdateCompanion<MealSlotRow> {
       if (name != null) 'name': name,
       if (position != null) 'position': position,
       if (hidden != null) 'hidden': hidden,
+      if (categoryIds != null) 'category_ids': categoryIds,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
@@ -6747,6 +6802,7 @@ class MealSlotsCompanion extends UpdateCompanion<MealSlotRow> {
     Value<String>? name,
     Value<int>? position,
     Value<bool>? hidden,
+    Value<String>? categoryIds,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
@@ -6757,6 +6813,7 @@ class MealSlotsCompanion extends UpdateCompanion<MealSlotRow> {
       name: name ?? this.name,
       position: position ?? this.position,
       hidden: hidden ?? this.hidden,
+      categoryIds: categoryIds ?? this.categoryIds,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -6778,6 +6835,9 @@ class MealSlotsCompanion extends UpdateCompanion<MealSlotRow> {
     }
     if (hidden.present) {
       map['hidden'] = Variable<bool>(hidden.value);
+    }
+    if (categoryIds.present) {
+      map['category_ids'] = Variable<String>(categoryIds.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -6801,6 +6861,7 @@ class MealSlotsCompanion extends UpdateCompanion<MealSlotRow> {
           ..write('name: $name, ')
           ..write('position: $position, ')
           ..write('hidden: $hidden, ')
+          ..write('categoryIds: $categoryIds, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -13176,6 +13237,7 @@ typedef $$MealSlotsTableCreateCompanionBuilder = MealSlotsCompanion Function({
   required String name,
   Value<int> position,
   Value<bool> hidden,
+  Value<String> categoryIds,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<DateTime?> deletedAt,
@@ -13186,6 +13248,7 @@ typedef $$MealSlotsTableUpdateCompanionBuilder = MealSlotsCompanion Function({
   Value<String> name,
   Value<int> position,
   Value<bool> hidden,
+  Value<String> categoryIds,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<DateTime?> deletedAt,
@@ -13218,6 +13281,11 @@ class $$MealSlotsTableFilterComposer
 
   ColumnFilters<bool> get hidden => $composableBuilder(
     column: $table.hidden,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categoryIds => $composableBuilder(
+    column: $table.categoryIds,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13266,6 +13334,11 @@ class $$MealSlotsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get categoryIds => $composableBuilder(
+    column: $table.categoryIds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -13302,6 +13375,11 @@ class $$MealSlotsTableAnnotationComposer
 
   GeneratedColumn<bool> get hidden =>
       $composableBuilder(column: $table.hidden, builder: (column) => column);
+
+  GeneratedColumn<String> get categoryIds => $composableBuilder(
+    column: $table.categoryIds,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -13348,6 +13426,7 @@ class $$MealSlotsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<bool> hidden = const Value.absent(),
+                Value<String> categoryIds = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -13357,6 +13436,7 @@ class $$MealSlotsTableTableManager
                 name: name,
                 position: position,
                 hidden: hidden,
+                categoryIds: categoryIds,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -13368,6 +13448,7 @@ class $$MealSlotsTableTableManager
                 required String name,
                 Value<int> position = const Value.absent(),
                 Value<bool> hidden = const Value.absent(),
+                Value<String> categoryIds = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -13377,6 +13458,7 @@ class $$MealSlotsTableTableManager
                 name: name,
                 position: position,
                 hidden: hidden,
+                categoryIds: categoryIds,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,

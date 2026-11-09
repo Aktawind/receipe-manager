@@ -73,6 +73,7 @@ class PlanningRepository {
           name: slot.name,
           position: Value(slot.position),
           hidden: Value(slot.hidden),
+          categoryIds: Value(slot.categoryIds.join(',')),
           createdAt: slot.createdAt,
           updatedAt: slot.updatedAt,
           deletedAt: Value(slot.deletedAt),
@@ -84,6 +85,10 @@ class PlanningRepository {
     name: r.name,
     position: r.position,
     hidden: r.hidden,
+    categoryIds: {
+      for (final id in r.categoryIds.split(','))
+        if (id.trim().isNotEmpty) id.trim(),
+    },
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
     deletedAt: r.deletedAt,
@@ -167,23 +172,6 @@ class PlanningRepository {
       ),
     );
   }
-
-  /// Le même repas sur d'autres jours (même créneau).
-  Future<void> copyTo(PlannedMeal meal, Iterable<DateTime> days) =>
-      _db.transaction(() async {
-        for (final day in days) {
-          final target = PlannedMeal.dayOf(day);
-          if (target == meal.day) continue;
-          await add(
-            day: target,
-            slotId: meal.slotId,
-            recipeId: meal.recipeId,
-            recipeTitle: meal.recipeTitle,
-            servings: meal.servings,
-            note: meal.note,
-          );
-        }
-      });
 
   /// Les restes de [meal] au créneau [slotId] du lendemain.
   Future<PlannedMeal> addLeftovers(PlannedMeal meal, String slotId) {

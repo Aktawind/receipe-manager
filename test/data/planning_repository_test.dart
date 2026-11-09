@@ -52,14 +52,11 @@ void main() {
     expect(rest.leftoverOf, quiche.id);
     expect(rest.recipeTitle, 'Quiche');
 
-    // Copier sur d'autres jours (le jour même est ignoré).
-    await planning.copyTo(moved, [
-      DateTime(2026, 11, 11),
-      DateTime(2026, 11, 13),
-      DateTime(2026, 11, 14),
-    ]);
+    // Changer le créneau et la date ensemble.
+    await planning.move(moved, day: DateTime(2026, 11, 13), slotId: lunch);
     meals = await week();
-    expect(meals.where((m) => m.recipeId == 'q'), hasLength(4));
+    final again = meals.firstWhere((m) => m.id == quiche.id);
+    expect((again.day, again.slotId), (DateTime(2026, 11, 13), lunch));
 
     // Supprimer, puis annuler.
     await planning.delete(rest);

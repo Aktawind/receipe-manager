@@ -10,6 +10,7 @@ import '../../domain/label.dart';
 import '../../domain/meal_planner.dart';
 import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
+import '../../domain/side_emoji.dart';
 import '../../l10n/app_localizations.dart';
 import '../classification/labels_providers.dart';
 import '../recipes/recipe_photo.dart';
@@ -18,9 +19,10 @@ import 'side_dishes_page.dart';
 
 /// Une proposition du planificateur pour un repas à prévoir.
 class _Proposal {
-  _Proposal(this.slot, this.recipe);
+  _Proposal(this.slot, this.day, this.recipe);
 
   final PlannerSlot slot;
+  final DateTime day;
   Recipe? recipe;
   var keep = true;
   final sides = <SideDish>[];
@@ -29,7 +31,7 @@ class _Proposal {
   final rejected = <String>{};
 }
 
-/// Le planificateur : les repas à prévoir de la semaine affichée (jour,
+/// Le planificateur : les repas à prévoir d'une ou plusieurs semaines (jour,
 /// créneau, temps, collection), la saison et les ingrédients à écouler ;
 /// propose une recette par repas, à garder ou remplacer, avec des
 /// accompagnements, puis remplit les créneaux libres du planning.
@@ -47,7 +49,11 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
   /// Les repas à prévoir ; `null` tant que la planification de départ
   /// n'est pas choisie.
   List<PlannerSlot>? _slots;
-  late Season _season = Season.of(ref.read(plannedWeekProvider));
+
+  /// Le lundi de la première semaine à prévoir, et le nombre de semaines.
+  late DateTime _start = ref.read(plannedWeekProvider);
+  var _weeks = 1;
+  late Season _season = Season.of(_start);
   List<Recipe>? _recipes;
   List<_Proposal>? _proposals;
   var _busy = false;
@@ -58,10 +64,40 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
     super.dispose();
   }
 
-  DateTime get _monday => ref.read(plannedWeekProvider);
+  DateTime _weekStart(int week) =>
+      DateTime(_start.year, _start.month, _start.day + 7 * week);
 
-  DateTime _dayOf(int weekday) =>
-      DateTime(_monday.year, _monday.month, _monday.day + weekday - 1);
+  DateTime _dayOf(int weekday, [int week = 0]) =>
+      DateTime(_start.year, _start.month, _start.day + 7 * week + weekday - 1);
+
+  void _setStart(DateTime monday) {
+    _start = monday;
+    _season = Season.of(monday);
+    _proposals = null;
+  }
+
+  /// Les types de plat de chaque créneau, sous-catégories comprises.
+  Map<String, Set<String>> _categories(List<MealSlot> slots) {
+    final labels = ref.read(labelsProvider).value ?? const <Label>[];
+    final children = <String, List<String>>{};
+    for (final l in labels) {
+      if (l.parentId != null) (children[l.parentId!] ??= []).add(l.id);
+    }
+    Set<String> expand(Set<String> ids) {
+      final all = <String>{};
+      final queue = [...ids];
+      while (queue.isNotEmpty) {
+        final id = queue.removeLast();
+        if (all.add(id)) queue.addAll(children[id] ?? const []);
+      }
+      return all;
+    }
+
+    return {
+      for (final s in slots)
+        if (s.categoryIds.isNotEmpty) s.id: expand(s.categoryIds),
+    };
+  }
 
   List<String> get _useUpTerms => [
     for (final t in _useUp.text.split(RegExp(r'[,;\n]')))
@@ -100,37 +136,54 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
     });
   }
 
-  bool _isFilled(List<PlannedMeal> meals, PlannerSlot slot) {
-    final day = _dayOf(slot.weekday);
+  bool _isFilled(List<PlannedMeal> meals, PlannerSlot slot, int week) {
+    final day = _dayOf(slot.weekday, week);
     return meals.any((m) => m.day == day && m.slotId == slot.slotId);
   }
 
-  Future<void> _propose(List<PlannedMeal> meals) async {
+  /// Le nombre de semaines où le repas est déjà prévu.
+  int _filledWeeks(List<PlannedMeal> meals, PlannerSlot slot) => [
+    for (var w = 0; w < _weeks; w++)
+      if (_isFilled(meals, slot, w)) w,
+  ].length;
+
+  Future<void> _propose(
+    List<PlannedMeal> meals,
+    List<MealSlot> mealSlots,
+  ) async {
     setState(() => _busy = true);
     final recipes = _recipes ??= await ref
         .read(recipeRepositoryProvider)
         .getAllWithDetails();
     final free = [
-      for (final s in _slots!)
-        if (!_isFilled(meals, s)) s,
+      for (var w = 0; w < _weeks; w++)
+        for (final s in _slots!)
+          if (!_isFilled(meals, s, w)) (s, _dayOf(s.weekday, w)),
     ];
     final picks = MealPlanner.propose(
       recipes,
-      free,
+      [for (final (s, _) in free) s],
       season: _season,
       useUp: _useUpTerms,
+      categories: _categories(mealSlots),
       random: _random,
     );
     if (!mounted) return;
     setState(() {
       _busy = false;
       _proposals = [
-        for (final (i, slot) in free.indexed) _Proposal(slot, picks[i]),
+        for (final (i, (slot, day)) in free.indexed)
+          _Proposal(slot, day, picks[i]),
       ];
     });
   }
 
   void _replace(_Proposal proposal) {
+    final categories =
+        _categories(
+          ref.read(mealSlotsProvider).value ?? const <MealSlot>[],
+        )[proposal.slot.slotId] ??
+        const <String>{};
     final current = proposal.recipe;
     if (current != null) proposal.rejected.add(current.id);
     final taken = {
@@ -144,6 +197,7 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
       useUp: _useUpTerms,
       taken: taken,
       rejected: proposal.rejected,
+      categories: categories,
       random: _random,
     );
     if (next == null && proposal.rejected.isNotEmpty) {
@@ -158,6 +212,7 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
         useUp: _useUpTerms,
         taken: taken,
         rejected: proposal.rejected,
+        categories: categories,
         random: _random,
       );
     }
@@ -204,7 +259,7 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
     for (final p in _proposals!) {
       final recipe = p.recipe;
       if (!p.keep || recipe == null) continue;
-      final day = _dayOf(p.slot.weekday);
+      final day = p.day;
       await repository.add(
         day: day,
         slotId: p.slot.slotId,
@@ -270,13 +325,14 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).toString();
-    final monday = ref.watch(plannedWeekProvider);
     final mealSlots = ref.watch(mealSlotsProvider).value;
     final setups = ref.watch(plannerSetupsProvider).value;
     // Lus au moment d'ajouter un accompagnement.
     ref.watch(sideDishesProvider);
-    final meals =
-        ref.watch(weekMealsProvider(monday)).value ?? const <PlannedMeal>[];
+    final meals = [
+      for (var w = 0; w < _weeks; w++)
+        ...?ref.watch(weekMealsProvider(_weekStart(w))).value,
+    ];
     final collections = [
       for (final l in ref.watch(labelsProvider).value ?? const <Label>[])
         if (l.kind == LabelKind.collection && !l.isDeleted) l,
@@ -297,6 +353,10 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
     String slotTitle(PlannerSlot s) =>
         '${DateFormat.EEEE(locale).format(_dayOf(s.weekday))} · '
         '${slotNames[s.slotId] ?? ''}';
+    String proposalTitle(_Proposal p) =>
+        '${DateFormat.MMMMEEEEd(locale).format(p.day)} · '
+        '${slotNames[p.slot.slotId] ?? ''}';
+    final allPlanned = slots.every((s) => _filledWeeks(meals, s) == _weeks);
     final proposals = _proposals;
     final keptCount = proposals == null
         ? 0
@@ -316,11 +376,58 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
         ),
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text(
-              l10n.plannerWeekOf(DateFormat.MMMMd(locale).format(monday)),
-              style: theme.textTheme.titleMedium,
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+            child: Row(
+              children: [
+                IconButton(
+                  key: const ValueKey('planner-week-previous'),
+                  tooltip: l10n.plannerPreviousWeek,
+                  onPressed: () => setState(() => _setStart(_weekStart(-1))),
+                  icon: const Icon(Icons.chevron_left),
+                ),
+                Expanded(
+                  child: Text(
+                    l10n.plannerWeekOf(DateFormat.MMMMd(locale).format(_start)),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  key: const ValueKey('planner-week-next'),
+                  tooltip: l10n.plannerNextWeek,
+                  onPressed: () => setState(() => _setStart(_weekStart(1))),
+                  icon: const Icon(Icons.chevron_right),
+                ),
+              ],
             ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                key: const ValueKey('planner-weeks-less'),
+                tooltip: l10n.plannerFewerWeeks,
+                onPressed: _weeks > 1
+                    ? () => setState(() {
+                        _weeks--;
+                        _proposals = null;
+                      })
+                    : null,
+                icon: const Icon(Icons.remove_circle_outline),
+              ),
+              Text(l10n.plannerWeeks(_weeks)),
+              IconButton(
+                key: const ValueKey('planner-weeks-more'),
+                tooltip: l10n.plannerMoreWeeks,
+                onPressed: _weeks < 8
+                    ? () => setState(() {
+                        _weeks++;
+                        _proposals = null;
+                      })
+                    : null,
+                icon: const Icon(Icons.add_circle_outline),
+              ),
+            ],
           ),
           if (saved.isNotEmpty) ...[
             _Header(l10n.plannerSetups),
@@ -355,84 +462,110 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
               child: Text(l10n.plannerNoMeals),
             ),
           for (final (i, slot) in slots.indexed)
-            Padding(
-              key: ValueKey('planner-slot-$i'),
-              padding: const EdgeInsets.fromLTRB(16, 2, 4, 2),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          slotTitle(slot),
-                          style: _isFilled(meals, slot)
-                              ? theme.textTheme.bodyLarge?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                )
-                              : theme.textTheme.bodyLarge,
-                        ),
-                        if (_isFilled(meals, slot))
+            if (_filledWeeks(meals, slot) case final filled)
+              Padding(
+                key: ValueKey('planner-slot-$i'),
+                padding: const EdgeInsets.fromLTRB(16, 2, 4, 2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            l10n.plannerAlreadyPlanned,
-                            style: theme.textTheme.bodySmall,
-                          )
-                        else if (collections.isNotEmpty)
-                          DropdownButton<String?>(
-                            key: ValueKey('planner-collection-$i'),
-                            value: slot.collectionId,
-                            isDense: true,
-                            underline: const SizedBox.shrink(),
-                            style: theme.textTheme.bodySmall,
-                            items: [
-                              DropdownMenuItem(
-                                child: Text(l10n.plannerAnyCollection),
-                              ),
-                              for (final c in collections)
+                            slotTitle(slot),
+                            style: filled == _weeks
+                                ? theme.textTheme.bodyLarge?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  )
+                                : theme.textTheme.bodyLarge,
+                          ),
+                          if (filled > 0)
+                            Text(
+                              filled == _weeks
+                                  ? l10n.plannerAlreadyPlanned
+                                  : l10n.plannerPartlyPlanned,
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          if (filled < _weeks && collections.isNotEmpty)
+                            DropdownButton<String?>(
+                              key: ValueKey('planner-collection-$i'),
+                              value: slot.collectionId,
+                              isDense: true,
+                              underline: const SizedBox.shrink(),
+                              style: theme.textTheme.bodySmall,
+                              items: [
                                 DropdownMenuItem(
-                                  value: c.id,
-                                  child: Text(c.name),
+                                  child: Text(l10n.plannerAnyCollection),
                                 ),
-                            ],
-                            onChanged: (id) => editSlot(
-                              i,
-                              slot.copyWith(collectionId: () => id),
+                                for (final c in collections)
+                                  DropdownMenuItem(
+                                    value: c.id,
+                                    child: Text(c.name),
+                                  ),
+                              ],
+                              onChanged: (id) => editSlot(
+                                i,
+                                slot.copyWith(collectionId: () => id),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuButton<int>(
+                      key: ValueKey('planner-time-$i'),
+                      tooltip: l10n.plannerTime,
+                      initialValue: slot.minutes ?? 0,
+                      onSelected: (minutes) => editSlot(
+                        i,
+                        slot.copyWith(
+                          minutes: () => minutes == 0 ? null : minutes,
+                        ),
+                      ),
+                      itemBuilder: (context) => [
+                        for (final m in const [0, 15, 20, 30, 45, 60, 90, 120])
+                          PopupMenuItem(
+                            key: ValueKey('planner-time-$i-$m'),
+                            value: m,
+                            child: Text(
+                              m == 0
+                                  ? l10n.plannerNoLimit
+                                  : l10n.plannerMinutes(m),
                             ),
                           ),
                       ],
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.timer_outlined, size: 18),
+                            const SizedBox(width: 4),
+                            Text(
+                              slot.minutes == null
+                                  ? l10n.plannerNoLimit
+                                  : l10n.plannerMinutes(slot.minutes!),
+                            ),
+                            const Icon(Icons.arrow_drop_down),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    key: ValueKey('planner-less-$i'),
-                    tooltip: l10n.plannerLessTime,
-                    onPressed: slot.minutes > 10
-                        ? () => editSlot(
-                            i,
-                            slot.copyWith(minutes: slot.minutes - 10),
-                          )
-                        : null,
-                    icon: const Icon(Icons.remove_circle_outline),
-                  ),
-                  Text(l10n.plannerMinutes(slot.minutes)),
-                  IconButton(
-                    key: ValueKey('planner-more-$i'),
-                    tooltip: l10n.plannerMoreTime,
-                    onPressed: () =>
-                        editSlot(i, slot.copyWith(minutes: slot.minutes + 10)),
-                    icon: const Icon(Icons.add_circle_outline),
-                  ),
-                  IconButton(
-                    key: ValueKey('planner-remove-$i'),
-                    tooltip: l10n.delete,
-                    onPressed: () => setState(() {
-                      slots.removeAt(i);
-                      _proposals = null;
-                    }),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
+                    IconButton(
+                      key: ValueKey('planner-remove-$i'),
+                      tooltip: l10n.delete,
+                      onPressed: () => setState(() {
+                        slots.removeAt(i);
+                        _proposals = null;
+                      }),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
               ),
-            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
             child: Wrap(
@@ -457,7 +590,8 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: DropdownButtonFormField<Season>(
-              key: const ValueKey('planner-season'),
+              // La saison suit la semaine choisie.
+              key: ValueKey('planner-season-${_season.name}'),
               initialValue: _season,
               decoration: InputDecoration(
                 labelText: l10n.plannerSeason,
@@ -491,9 +625,9 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: FilledButton.icon(
               key: const ValueKey('planner-propose'),
-              onPressed: _busy || slots.every((s) => _isFilled(meals, s))
+              onPressed: _busy || allPlanned
                   ? null
-                  : () => _propose(meals),
+                  : () => _propose(meals, mealSlots),
               icon: const Icon(Icons.auto_awesome_outlined),
               label: Text(
                 proposals == null
@@ -507,7 +641,7 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
               _ProposalCard(
                 key: ValueKey('planner-proposal-$i'),
                 index: i,
-                title: slotTitle(p.slot),
+                title: proposalTitle(p),
                 proposal: p,
                 onKeep: (on) => setState(() => p.keep = on),
                 onReplace: () => _replace(p),
@@ -630,32 +764,55 @@ class _ProposalCard extends StatelessWidget {
                 ],
               ],
             ),
-            if (recipe != null && proposal.keep)
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: [
-                  for (final (i, side) in proposal.sides.indexed)
-                    InputChip(
-                      key: ValueKey('planner-side-$index-$i'),
-                      label: Text(side.name),
-                      onPressed: () => onReplaceSide(i),
-                      onDeleted: () => onRemoveSide(i),
-                      deleteButtonTooltipMessage: l10n.delete,
-                    ),
-                  for (final kind in SideKind.values)
-                    ActionChip(
-                      key: ValueKey('planner-add-${kind.name}-$index'),
-                      avatar: const Icon(Icons.add, size: 18),
-                      label: Text(switch (kind) {
-                        SideKind.starch => l10n.sideStarch,
-                        SideKind.protein => l10n.sideProtein,
-                        SideKind.vegetable => l10n.sideVegetable,
-                      }),
-                      onPressed: () => onAddSide(kind),
-                    ),
-                ],
+            if (recipe != null && proposal.keep) ...[
+              // Les accompagnements choisis, en couleur, avec leur emoji.
+              if (proposal.sides.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, right: 8),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      for (final (i, side) in proposal.sides.indexed)
+                        InputChip(
+                          key: ValueKey('planner-side-$index-$i'),
+                          avatar: Text(SideEmoji.of(side)),
+                          label: Text(side.name),
+                          backgroundColor: theme.colorScheme.secondaryContainer,
+                          labelStyle: TextStyle(
+                            color: theme.colorScheme.onSecondaryContainer,
+                          ),
+                          side: BorderSide.none,
+                          onPressed: () => onReplaceSide(i),
+                          onDeleted: () => onRemoveSide(i),
+                          deleteButtonTooltipMessage: l10n.delete,
+                        ),
+                    ],
+                  ),
+                ),
+              // Les boutons pour en ajouter, à part et discrets.
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Wrap(
+                  children: [
+                    for (final kind in SideKind.values)
+                      TextButton.icon(
+                        key: ValueKey('planner-add-${kind.name}-$index'),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: () => onAddSide(kind),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: Text(switch (kind) {
+                          SideKind.starch => l10n.sideStarch,
+                          SideKind.protein => l10n.sideProtein,
+                          SideKind.vegetable => l10n.sideVegetable,
+                        }),
+                      ),
+                  ],
+                ),
               ),
+            ],
           ],
         ),
       ),
