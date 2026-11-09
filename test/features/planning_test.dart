@@ -153,6 +153,8 @@ void main() {
 
   testWidgets('semaine suivante, vue jour', (tester) async {
     await open(tester);
+    // « Revenir à aujourd'hui » n'apparaît qu'en s'éloignant d'aujourd'hui.
+    expect(find.byKey(const ValueKey('planning-today')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('planning-next')));
     await settle(tester);
     final nextMonday = DateTime(monday.year, monday.month, monday.day + 7);

@@ -51,6 +51,11 @@ class PlanningPage extends ConsumerWidget {
       }
     }
 
+    final today = PlannedMeal.dayOf(DateTime.now());
+    final showsToday = day != null
+        ? day == today
+        : !today.isBefore(monday) && !today.isAfter(sunday);
+
     final days = day != null
         ? [day]
         : [
@@ -83,16 +88,6 @@ class PlanningPage extends ConsumerWidget {
                     ],
               slots: allSlots,
             ),
-          ),
-          IconButton(
-            key: const ValueKey('planning-today'),
-            tooltip: l10n.today,
-            icon: const Icon(Icons.today_outlined),
-            onPressed: () {
-              final now = DateTime.now();
-              ref.read(plannedWeekProvider.notifier).show(now);
-              if (day != null) ref.read(plannedDayProvider.notifier).show(now);
-            },
           ),
           IconButton(
             key: const ValueKey('planning-view'),
@@ -129,10 +124,32 @@ class PlanningPage extends ConsumerWidget {
                   onPressed: () => shift(-1),
                 ),
                 Expanded(
-                  child: Text(
-                    rangeLabel(),
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        rangeLabel(),
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      // Seulement quand on s'est éloigné d'aujourd'hui.
+                      if (!showsToday)
+                        TextButton.icon(
+                          key: const ValueKey('planning-today'),
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          onPressed: () {
+                            final now = DateTime.now();
+                            ref.read(plannedWeekProvider.notifier).show(now);
+                            if (day != null) {
+                              ref.read(plannedDayProvider.notifier).show(now);
+                            }
+                          },
+                          icon: const Icon(Icons.today_outlined, size: 18),
+                          label: Text(l10n.backToToday),
+                        ),
+                    ],
                   ),
                 ),
                 IconButton(

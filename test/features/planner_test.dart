@@ -73,10 +73,19 @@ void main() {
     // Deux semaines.
     await tester.tap(find.byKey(const ValueKey('planner-weeks-more')));
     await settle(tester);
-    expect(find.text('2 semaines'), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('planner-weeks'))).data,
+      '2',
+    );
+    // Les dates couvertes sont écrites en clair.
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('planner-range'))).data,
+      startsWith('Du lundi'),
+    );
     expect(find.text('Déjà prévu certaines semaines'), findsOneWidget);
 
     final propose = find.byKey(const ValueKey('planner-propose'));
+    await scrollTo(tester, propose);
     await tester.ensureVisible(propose);
     await settle(tester);
     await tester.tap(propose);

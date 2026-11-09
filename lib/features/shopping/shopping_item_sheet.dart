@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/ingredient_text.dart';
+import '../../domain/recipe.dart';
 import '../../domain/shopping.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -117,6 +118,34 @@ class _ItemSheetState extends State<_ItemSheet> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
+            // Ce que chaque recette demande : « Quiche · 2 tranches ».
+            if (widget.item.sources.isNotEmpty) ...[
+              Text(
+                l10n.productRecipes,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              for (final (i, s) in widget.item.sources.indexed)
+                Padding(
+                  key: ValueKey('shopping-item-source-$i'),
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(s.recipeTitle)),
+                      Text(
+                        IngredientText.formatAmount(
+                          IngredientLine(
+                            id: '',
+                            quantity: s.quantity,
+                            unit: s.unit,
+                          ),
+                        ),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 16),
+            ],
             field('name', _name, l10n.productName),
             field(
               'amount',

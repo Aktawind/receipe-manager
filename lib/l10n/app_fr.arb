@@ -1084,12 +1084,6 @@
   "sideDishesHint": "Touche un nom pour le modifier. Coche les saisons où il est proposé ; sans saison cochée, il l'est toute l'année.",
   "plannerTitle": "Planificateur",
   "plannerOpen": "Proposer des repas",
-  "plannerWeekOf": "Semaine du {date}",
-  "@plannerWeekOf": {
-    "placeholders": {
-      "date": {"type": "String"}
-    }
-  },
   "plannerSetups": "Planifications enregistrées",
   "plannerSaveSetup": "Enregistrer cette planification",
   "plannerSetupName": "Nom de la planification",
@@ -1138,12 +1132,6 @@
   "mealDate": "Date",
   "plannerNoLimit": "Sans limite",
   "plannerTime": "Temps disponible",
-  "plannerWeeks": "{count, plural, =1{1 semaine} other{{count} semaines}}",
-  "@plannerWeeks": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
   "plannerFewerWeeks": "Une semaine de moins",
   "plannerMoreWeeks": "Une semaine de plus",
   "plannerPreviousWeek": "Semaine précédente",
@@ -1151,5 +1139,17 @@
   "plannerPartlyPlanned": "Déjà prévu certaines semaines",
   "mealSlotCategories": "Types de plat proposés",
   "mealSlotAllCategories": "Tous les types de plat",
-  "mealSlotCategoriesHint": "Le planificateur ne propose que des recettes de ces catégories pour ce créneau. Rien de coché : toutes."
+  "mealSlotCategoriesHint": "Le planificateur ne propose que des recettes de ces catégories pour ce créneau. Rien de coché : toutes.",
+  "productRecipes": "Pour les recettes",
+  "backToToday": "Revenir à aujourd'hui",
+  "plannerPeriod": "Période",
+  "plannerFirstWeek": "À partir de la semaine du",
+  "plannerWeekCount": "Nombre de semaines",
+  "plannerRange": "Du {from} au {to}",
+  "@plannerRange": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"}
+    }
+  }
 }

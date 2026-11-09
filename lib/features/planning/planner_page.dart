@@ -375,22 +375,22 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
           bottom: 24 + MediaQuery.paddingOf(context).bottom,
         ),
         children: [
+          // La période : la première semaine, et combien de semaines.
+          _Header(l10n.plannerPeriod),
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+            padding: const EdgeInsets.fromLTRB(16, 0, 4, 0),
             child: Row(
               children: [
+                Expanded(child: Text(l10n.plannerFirstWeek)),
                 IconButton(
                   key: const ValueKey('planner-week-previous'),
                   tooltip: l10n.plannerPreviousWeek,
                   onPressed: () => setState(() => _setStart(_weekStart(-1))),
                   icon: const Icon(Icons.chevron_left),
                 ),
-                Expanded(
-                  child: Text(
-                    l10n.plannerWeekOf(DateFormat.MMMMd(locale).format(_start)),
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleMedium,
-                  ),
+                Text(
+                  DateFormat.MMMd(locale).format(_start),
+                  style: theme.textTheme.titleSmall,
                 ),
                 IconButton(
                   key: const ValueKey('planner-week-next'),
@@ -401,33 +401,53 @@ class _PlannerPageState extends ConsumerState<PlannerPage> {
               ],
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                key: const ValueKey('planner-weeks-less'),
-                tooltip: l10n.plannerFewerWeeks,
-                onPressed: _weeks > 1
-                    ? () => setState(() {
-                        _weeks--;
-                        _proposals = null;
-                      })
-                    : null,
-                icon: const Icon(Icons.remove_circle_outline),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 4, 0),
+            child: Row(
+              children: [
+                Expanded(child: Text(l10n.plannerWeekCount)),
+                IconButton(
+                  key: const ValueKey('planner-weeks-less'),
+                  tooltip: l10n.plannerFewerWeeks,
+                  onPressed: _weeks > 1
+                      ? () => setState(() {
+                          _weeks--;
+                          _proposals = null;
+                        })
+                      : null,
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                Text(
+                  '$_weeks',
+                  key: const ValueKey('planner-weeks'),
+                  style: theme.textTheme.titleSmall,
+                ),
+                IconButton(
+                  key: const ValueKey('planner-weeks-more'),
+                  tooltip: l10n.plannerMoreWeeks,
+                  onPressed: _weeks < 8
+                      ? () => setState(() {
+                          _weeks++;
+                          _proposals = null;
+                        })
+                      : null,
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: Text(
+              l10n.plannerRange(
+                DateFormat.MMMMEEEEd(locale).format(_start),
+                DateFormat.MMMMEEEEd(locale).format(_dayOf(7, _weeks - 1)),
               ),
-              Text(l10n.plannerWeeks(_weeks)),
-              IconButton(
-                key: const ValueKey('planner-weeks-more'),
-                tooltip: l10n.plannerMoreWeeks,
-                onPressed: _weeks < 8
-                    ? () => setState(() {
-                        _weeks++;
-                        _proposals = null;
-                      })
-                    : null,
-                icon: const Icon(Icons.add_circle_outline),
+              key: const ValueKey('planner-range'),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-            ],
+            ),
           ),
           if (saved.isNotEmpty) ...[
             _Header(l10n.plannerSetups),
