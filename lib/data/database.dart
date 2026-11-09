@@ -269,6 +269,10 @@ class MealSlots extends Table {
   TextColumn get name => text()();
   IntColumn get position => integer().withDefault(const Constant(0))();
   BoolColumn get hidden => boolean().withDefault(const Constant(false))();
+
+  /// Catégories proposées par le planificateur, séparées par des virgules
+  /// (v13) ; vide = toutes.
+  TextColumn get categoryIds => text().withDefault(const Constant(''))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -356,7 +360,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 12;
+  static const latestSchemaVersion = 13;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -488,6 +492,10 @@ UPDATE recipes SET
       await m.createTable(schema.sideDishes);
       await m.createTable(schema.plannerSetups);
       await _seedDefaultSideDishes(DateTime.now());
+    },
+    // v13 : types de plat d'un créneau, pour le planificateur.
+    from12To13: (m, schema) async {
+      await m.addColumn(schema.mealSlots, schema.mealSlots.categoryIds);
     },
   );
 

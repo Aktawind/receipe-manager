@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/widgets/name_dialog.dart';
 import '../../data/app_services.dart';
 import '../../domain/meal_planner.dart';
+import '../../domain/side_emoji.dart';
 import '../../l10n/app_localizations.dart';
 import 'planning_providers.dart';
 
@@ -148,7 +149,7 @@ class _SideListState extends ConsumerState<_SideList> {
                       InkWell(
                         onTap: () => _rename(side),
                         child: Text(
-                          side.name,
+                          '${SideEmoji.of(side)}  ${side.name}',
                           style: theme.textTheme.bodyLarge,
                         ),
                       ),

@@ -32,9 +32,12 @@ import '../photo_store.dart';
 ///   (`plannedMeals`).
 /// - v11 : planificateur : accompagnements (`sideDishes`) et planifications
 ///   enregistrées (`plannerSetups`).
+/// - v12 : types de plat d'un créneau pour le planificateur (`categories`
+///   des `mealSlots`) ; le temps disponible d'une planification peut être
+///   `null` (sans limite).
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 11;
+  static const currentVersion = 12;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 
@@ -114,6 +117,7 @@ abstract final class BackupFormat {
               'name': s.name,
               'position': s.position,
               'hidden': s.hidden,
+              if (s.categoryIds.isNotEmpty) 'categories': [...s.categoryIds],
               'createdAt': s.createdAt.toUtc().toIso8601String(),
               'updatedAt': s.updatedAt.toUtc().toIso8601String(),
               'deletedAt': s.deletedAt?.toUtc().toIso8601String(),
@@ -477,6 +481,7 @@ abstract final class BackupFormat {
           name: name,
           position: _int(m, 'position') ?? 0,
           hidden: m['hidden'] == true,
+          categoryIds: _strings(m, 'categories').toSet(),
           createdAt: _date(m, 'createdAt')!,
           updatedAt: _date(m, 'updatedAt')!,
           deletedAt: _date(m, 'deletedAt', required: false),

@@ -32,10 +32,12 @@ recettes-2026-10-27-1430.zip
 | 7 | 0.3.0 | Classement commun : `labels` (document) et `labels` (recettes = identifiants) remplacent `course`, `category` et `collections`. Quatre familles ; les étiquettes (`tag`) et occasions (`occasion`) des versions de test sont lues comme des collections, le type de repas (`meal`) est ignoré |
 | 8 | 0.4.0 | Nouveau statut `toRetest` (« à retester »). Le nombre de réalisations (`timesCooked`) n'est plus affiché mais reste écrit et lu |
 | 9 | 0.10.0 | Listes de courses (`shoppingLists`), rayons (`aisles`) et rayon retenu pour chaque produit (`productAisles`), au niveau du document ; absents quand ils sont vides. Rien ne change pour les recettes |
-
 | 10 | 0.11.0 | Planning des repas : créneaux (`mealSlots`) et repas (`plannedMeals`), au niveau du document ; absents quand ils sont vides |
-
 | 11 | 0.11.0 | Planificateur : accompagnements (`sideDishes`) et planifications enregistrées (`plannerSetups`) |
+| 12 | 0.11.0 | Types de plat d'un créneau (`mealSlots[].categories`) ; temps d'une planification `null` = sans limite |
+
+Lecture d'une version 11 (et avant) : les créneaux proposent tous les types de plat ; le temps
+des planifications est toujours un nombre.
 
 Lecture d'une version 10 (et avant) : pas d'accompagnements ni de planifications enregistrées ;
 les accompagnements fournis sont créés par l'application.
@@ -71,7 +73,7 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
 ```json
 {
   "format": "recettes-backup",
-  "version": 11,
+  "version": 12,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
   "equipment": [
@@ -171,7 +173,7 @@ L'ordre des listes `ingredients` et `steps` est l'ordre d'affichage.
 | `sideDishes[].kind` | `starch`, `protein` ou `vegetable` | féculent, protéine, légume |
 | `sideDishes[].seasons` | liste de `spring`, `summer`, `autumn`, `winter` | vide = toute l'année |
 | `plannerSetups[].slots[].weekday` | entier 1 à 7 | 1 = lundi |
-| `plannerSetups[].slots[].minutes` | entier | temps disponible pour ce repas |
+| `plannerSetups[].slots[].minutes` | entier ou `null` | temps disponible pour ce repas ; `null` = sans limite (v12) ; absent = 30 |
 | `plannerSetups[].slots[].collection` | `id` ou `null` | collection du classement à respecter |
 
 ### Planning (version 10)
@@ -194,6 +196,7 @@ L'ordre des listes `ingredients` et `steps` est l'ordre d'affichage.
 | Champ | Type | Remarque |
 |---|---|---|
 | `mealSlots` | liste d'objets | les créneaux, dans l'ordre de `position` ; `hidden` = masqué dans le planning ; ceux fournis au départ ont un identifiant calculé à partir de leur nom |
+| `mealSlots[].categories` | liste d'`id` (facultatif, v12) | les catégories (types de plat) que le planificateur propose pour ce créneau ; absent ou vide = toutes |
 | `plannedMeals[].day` | texte `AAAA-MM-JJ` | le jour, sans heure |
 | `plannedMeals[].recipe` | `id` ou `null` | `null` = une note libre (`note`, « Restaurant ») ; `recipeTitle` garde le titre au moment de l'ajout |
 | `plannedMeals[].leftoverOf` | `id` ou `null` | les restes d'un autre repas (déjà cuisiné) |

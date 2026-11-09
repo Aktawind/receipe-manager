@@ -205,18 +205,20 @@ class PlannerSlot {
 
   final int weekday;
   final String slotId;
-  final int minutes;
+
+  /// Le temps disponible ; `null` = sans limite.
+  final int? minutes;
   final String? collectionId;
 
   PlannerSlot copyWith({
     int? weekday,
     String? slotId,
-    int? minutes,
+    int? Function()? minutes,
     String? Function()? collectionId,
   }) => PlannerSlot(
     weekday: weekday ?? this.weekday,
     slotId: slotId ?? this.slotId,
-    minutes: minutes ?? this.minutes,
+    minutes: minutes != null ? minutes() : this.minutes,
     collectionId: collectionId != null ? collectionId() : this.collectionId,
   );
 
@@ -238,7 +240,12 @@ class PlannerSlot {
     return PlannerSlot(
       weekday: weekday,
       slotId: slot,
-      minutes: minutes is int && minutes > 0 ? minutes : 30,
+      // `null` écrit = sans limite ; absent (ancienne version) = 30 min.
+      minutes: minutes is int && minutes > 0
+          ? minutes
+          : json.containsKey('minutes') && minutes == null
+          ? null
+          : 30,
       collectionId: json['collection'] is String
           ? json['collection'] as String
           : null,
@@ -324,12 +331,14 @@ abstract final class MealPlanner {
   /// disponible (une recette sans durée convient), de [season] (une recette
   /// sans saison convient), de la collection demandée ; celles qui
   /// utilisent le plus d'ingrédients de [useUp] d'abord, les autres dans un
-  /// ordre tiré au sort ([random]).
+  /// ordre tiré au sort ([random]). [categories] : les types de plat du
+  /// créneau (sous-catégories comprises) ; vide = tous.
   static List<Recipe> candidates(
     List<Recipe> recipes,
     PlannerSlot slot, {
     required Season season,
     List<String> useUp = const [],
+    Set<String> categories = const {},
     required Random random,
   }) {
     final seasonIds = {for (final s in Season.values) s.labelId};
@@ -337,7 +346,10 @@ abstract final class MealPlanner {
     final fitting = [
       for (final r in recipes)
         if (!r.isDeleted &&
-            (r.totalMinutes == null || r.totalMinutes! <= slot.minutes) &&
+            (slot.minutes == null ||
+                r.totalMinutes == null ||
+                r.totalMinutes! <= slot.minutes!) &&
+            (categories.isEmpty || r.labelIds.any(categories.contains)) &&
             (slot.collectionId == null ||
                 r.labelIds.contains(slot.collectionId)) &&
             _fitsSeason(r, season, seasonIds, allSeasons))
@@ -369,11 +381,13 @@ abstract final class MealPlanner {
 
   /// Une recette par repas à prévoir, sans en prendre deux fois la même
   /// (sauf s'il n'y en a pas assez) ; `null` quand aucune ne convient.
+  /// [categories] : les types de plat de chaque créneau (par identifiant).
   static List<Recipe?> propose(
     List<Recipe> recipes,
     List<PlannerSlot> slots, {
     required Season season,
     List<String> useUp = const [],
+    Map<String, Set<String>> categories = const {},
     required Random random,
   }) {
     final used = <String>{};
@@ -385,6 +399,7 @@ abstract final class MealPlanner {
             slot,
             season: season,
             useUp: useUp,
+            categories: categories[slot.slotId] ?? const {},
             random: random,
           );
           final pick =
@@ -405,6 +420,7 @@ abstract final class MealPlanner {
     List<String> useUp = const [],
     Set<String> taken = const {},
     Set<String> rejected = const {},
+    Set<String> categories = const {},
     required Random random,
   }) {
     final options = candidates(
@@ -412,6 +428,7 @@ abstract final class MealPlanner {
       slot,
       season: season,
       useUp: useUp,
+      categories: categories,
       random: random,
     );
     return options

@@ -344,7 +344,7 @@ class _SlotTarget extends ConsumerWidget {
   }
 }
 
-enum _MealAction { edit, date, slot, copy, leftovers, delete }
+enum _MealAction { edit, move, leftovers, delete }
 
 class _MealTile extends ConsumerWidget {
   const _MealTile({required this.meal, required this.slots});
@@ -375,49 +375,13 @@ class _MealTile extends ConsumerWidget {
     switch (action) {
       case _MealAction.edit:
         await showMealSheet(context, day: meal.day, slot: slot, meal: meal);
-      case _MealAction.date:
-        final picked = await showDatePicker(
+      case _MealAction.move:
+        final target = await showDialog<(DateTime, String)>(
           context: context,
-          initialDate: meal.day,
-          firstDate: DateTime(meal.day.year - 1),
-          lastDate: DateTime(meal.day.year + 2),
-          helpText: l10n.changeMealDate,
+          builder: (context) => _MoveDialog(meal: meal, slots: slots),
         );
-        if (picked != null) await planning.move(meal, day: picked);
-      case _MealAction.slot:
-        final chosen = await showDialog<MealSlot>(
-          context: context,
-          builder: (context) => SimpleDialog(
-            title: Text(l10n.changeMealSlot),
-            children: [
-              for (final s in slots)
-                if (!s.hidden || s.id == meal.slotId)
-                  SimpleDialogOption(
-                    onPressed: () => Navigator.pop(context, s),
-                    child: Text(
-                      s.name,
-                      style: s.id == meal.slotId
-                          ? const TextStyle(fontWeight: FontWeight.bold)
-                          : null,
-                    ),
-                  ),
-            ],
-          ),
-        );
-        if (chosen != null) await planning.move(meal, slotId: chosen.id);
-      case _MealAction.copy:
-        final days = await showDialog<List<DateTime>>(
-          context: context,
-          builder: (context) => _CopyDialog(from: meal.day),
-        );
-        if (days != null && days.isNotEmpty) {
-          await planning.copyTo(meal, days);
-          messenger.showSnackBar(
-            SnackBar(
-              persist: false,
-              content: Text(l10n.mealCopied(days.length)),
-            ),
-          );
+        if (target != null) {
+          await planning.move(meal, day: target.$1, slotId: target.$2);
         }
       case _MealAction.leftovers:
         final lunch = slots.where(
@@ -519,16 +483,8 @@ class _MealTile extends ConsumerWidget {
                 ),
               ),
               PopupMenuItem(
-                value: _MealAction.date,
-                child: Text(l10n.changeMealDate),
-              ),
-              PopupMenuItem(
-                value: _MealAction.slot,
-                child: Text(l10n.changeMealSlot),
-              ),
-              PopupMenuItem(
-                value: _MealAction.copy,
-                child: Text(l10n.copyMeal),
+                value: _MealAction.move,
+                child: Text(l10n.moveMeal),
               ),
               if (!meal.isLeftovers)
                 PopupMenuItem(
@@ -560,45 +516,70 @@ class _MealTile extends ConsumerWidget {
   }
 }
 
-/// Choisir les jours où copier un repas : les deux semaines qui suivent.
-class _CopyDialog extends StatefulWidget {
-  const _CopyDialog({required this.from});
+/// Changer la date et le créneau d'un repas, ensemble.
+class _MoveDialog extends StatefulWidget {
+  const _MoveDialog({required this.meal, required this.slots});
 
-  final DateTime from;
+  final PlannedMeal meal;
+  final List<MealSlot> slots;
 
   @override
-  State<_CopyDialog> createState() => _CopyDialogState();
+  State<_MoveDialog> createState() => _MoveDialogState();
 }
 
-class _CopyDialogState extends State<_CopyDialog> {
-  final _chosen = <DateTime>{};
+class _MoveDialogState extends State<_MoveDialog> {
+  late DateTime _day = widget.meal.day;
+  late String _slotId = widget.meal.slotId;
+
+  Future<void> _pickDay() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _day,
+      firstDate: DateTime(_day.year - 1),
+      lastDate: DateTime(_day.year + 2),
+    );
+    if (picked != null) setState(() => _day = PlannedMeal.dayOf(picked));
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).toString();
-    final days = [
-      for (var i = 1; i <= 14; i++)
-        DateTime(widget.from.year, widget.from.month, widget.from.day + i),
-    ];
     return AlertDialog(
-      title: Text(l10n.copyMeal),
-      content: SizedBox(
-        width: 360,
-        height: 420,
-        child: ListView(
+      title: Text(l10n.moveMeal),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final d in days)
-              CheckboxListTile(
-                key: ValueKey('copy-${PlannedMeal.dayKey(d)}'),
-                dense: true,
-                controlAffinity: ListTileControlAffinity.leading,
-                value: _chosen.contains(d),
-                title: Text(DateFormat.MMMMEEEEd(locale).format(d)),
-                onChanged: (on) => setState(() {
-                  on == true ? _chosen.add(d) : _chosen.remove(d);
-                }),
+            Text(l10n.mealDate, style: theme.textTheme.labelLarge),
+            const SizedBox(height: 4),
+            OutlinedButton.icon(
+              key: const ValueKey('move-date'),
+              onPressed: _pickDay,
+              icon: const Icon(Icons.event_outlined),
+              label: Text(DateFormat.MMMMEEEEd(locale).format(_day)),
+            ),
+            const SizedBox(height: 12),
+            Text(l10n.plannerSlot, style: theme.textTheme.labelLarge),
+            RadioGroup<String>(
+              groupValue: _slotId,
+              onChanged: (id) => setState(() => _slotId = id ?? _slotId),
+              child: Column(
+                children: [
+                  for (final s in widget.slots)
+                    if (!s.hidden || s.id == widget.meal.slotId)
+                      RadioListTile<String>(
+                        key: ValueKey('move-slot-${s.id}'),
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        value: s.id,
+                        title: Text(s.name),
+                      ),
+                ],
               ),
+            ),
           ],
         ),
       ),
@@ -608,10 +589,8 @@ class _CopyDialogState extends State<_CopyDialog> {
           child: Text(l10n.cancel),
         ),
         FilledButton(
-          key: const ValueKey('copy-ok'),
-          onPressed: _chosen.isEmpty
-              ? null
-              : () => Navigator.pop(context, _chosen.toList()..sort()),
+          key: const ValueKey('move-ok'),
+          onPressed: () => Navigator.pop(context, (_day, _slotId)),
           child: Text(l10n.validate),
         ),
       ],
