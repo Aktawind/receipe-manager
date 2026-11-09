@@ -173,7 +173,15 @@ void main() {
       await _openNewList(tester, 'Semaine');
       await _type(tester, '250 g de beurre');
 
+      // Toucher la ligne coche le produit ; ✎ ouvre sa fiche.
       await tester.tap(find.textContaining('Beurre', findRichText: true));
+      await settle(tester);
+      expect((await _onlyList(app, tester)).items.single.checked, isTrue);
+      await tester.tap(find.textContaining('Beurre', findRichText: true));
+      await settle(tester);
+      expect((await _onlyList(app, tester)).items.single.checked, isFalse);
+      final id = (await _onlyList(app, tester)).items.single.id;
+      await tester.tap(find.byKey(ValueKey('shopping-item-edit-$id')));
       await settle(tester);
       // Plus de « Ce que j'achète » ni de « Format » ; le rayon suit la quantité.
       expect(find.byKey(const ValueKey('shopping-item-to-buy')), findsNothing);
@@ -223,8 +231,18 @@ void main() {
               quantity: 250,
               unit: 'g',
               sources: [
-                ShoppingSource(recipeId: 'q', recipeTitle: 'Quiche'),
-                ShoppingSource(recipeId: 'c', recipeTitle: 'Crêpes'),
+                ShoppingSource(
+                  recipeId: 'q',
+                  recipeTitle: 'Quiche',
+                  quantity: 100,
+                  unit: 'g',
+                ),
+                ShoppingSource(
+                  recipeId: 'c',
+                  recipeTitle: 'Crêpes',
+                  quantity: 150,
+                  unit: 'g',
+                ),
               ],
             ),
           ],
@@ -238,6 +256,25 @@ void main() {
     await tester.tap(find.text('Semaine'));
     await settle(tester);
     expect(find.text('Quiche, Crêpes'), findsOneWidget);
+
+    // La fiche donne ce que demande chaque recette.
+    await tester.tap(find.byKey(const ValueKey('shopping-item-edit-b')));
+    await settle(tester);
+    expect(find.text('Pour les recettes'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('shopping-item-source-0')),
+        matching: find.text('100 g'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('shopping-item-source-1')),
+        matching: find.text('Crêpes'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('réutiliser une liste : mêmes produits, tous à acheter', (
@@ -296,7 +333,9 @@ void main() {
       expect(y.values.toList(), [...y.values]..sort());
 
       // Kombucha → Boissons, à la main : retenu pour la prochaine fois.
-      await tester.tap(find.textContaining('Kombucha', findRichText: true));
+      await tester.longPress(
+        find.textContaining('Kombucha', findRichText: true),
+      );
       await settle(tester);
       await tester.tap(find.byKey(const ValueKey('shopping-item-aisle')));
       await settle(tester);

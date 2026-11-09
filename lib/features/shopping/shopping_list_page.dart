@@ -357,7 +357,8 @@ class _Items extends ConsumerWidget {
 }
 
 /// Une ligne de la liste, compacte : case, quantité et nom ; en petit
-/// dessous, le commentaire et les recettes.
+/// dessous, le commentaire et les recettes. Toucher la ligne coche le
+/// produit ; ✎ ouvre sa fiche (détail par recette, modifier).
 class _ItemTile extends StatelessWidget {
   const _ItemTile({
     required this.item,
@@ -391,7 +392,8 @@ class _ItemTile extends StatelessWidget {
     );
     return InkWell(
       key: ValueKey('shopping-item-${item.id}'),
-      onTap: onEdit,
+      onTap: onToggle,
+      onLongPress: onEdit,
       child: Padding(
         padding: const EdgeInsets.only(left: 4, right: 4),
         child: Row(
@@ -439,6 +441,17 @@ class _ItemTile extends StatelessWidget {
                       ),
                   ],
                 ),
+              ),
+            ),
+            IconButton(
+              key: ValueKey('shopping-item-edit-${item.id}'),
+              tooltip: l10n.editProduct,
+              visualDensity: VisualDensity.compact,
+              onPressed: onEdit,
+              icon: Icon(
+                Icons.edit_outlined,
+                size: 20,
+                color: scheme.onSurfaceVariant,
               ),
             ),
             if (index != null)
