@@ -995,7 +995,7 @@
   "addRecipesToShopping": "Ajouter des recettes",
   "chooseRecipes": "Choisir les recettes",
   "searchRecipes": "Rechercher une recette",
-  "shoppingListChoice": "Liste",
+  "shoppingListChoice": "Ajouter à la liste",
   "newShoppingListNamed": "Nouvelle liste « {name} »",
   "@newShoppingListNamed": {
     "placeholders": {
@@ -1163,6 +1163,13 @@
   },
   "productsTransferred": "{count, plural, =1{1 produit transféré vers « {name} »} other{{count} produits transférés vers « {name} »}}",
   "@productsTransferred": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "name": {"type": "String"}
+    }
+  },
+  "addProductsToList": "{count, plural, =1{Ajouter 1 produit à « {name} »} other{Ajouter {count} produits à « {name} »}}",
+  "@addProductsToList": {
     "placeholders": {
       "count": {"type": "int"},
       "name": {"type": "String"}

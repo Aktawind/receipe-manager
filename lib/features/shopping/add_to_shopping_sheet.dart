@@ -187,6 +187,10 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
       _listId = lists.first.id;
     }
     final linked = _linked;
+    final targetName = _listId == null
+        ? l10n.shoppingListDefaultName
+        : lists.where((l) => l.id == _listId).firstOrNull?.name ??
+              l10n.shoppingListDefaultName;
     return Column(
       children: [
         Padding(
@@ -195,32 +199,6 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(l10n.addToShopping, style: theme.textTheme.titleLarge),
-              if (widget.listId == null) ...[
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String?>(
-                  key: const ValueKey('add-shopping-list'),
-                  initialValue: _listId,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: l10n.shoppingListChoice,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  items: [
-                    for (final list in lists)
-                      DropdownMenuItem(value: list.id, child: Text(list.name)),
-                    DropdownMenuItem(
-                      child: Text(
-                        l10n.newShoppingListNamed(l10n.shoppingListDefaultName),
-                      ),
-                    ),
-                  ],
-                  onChanged: (id) => setState(() {
-                    _listId = id;
-                    _listChosen = true;
-                  }),
-                ),
-              ],
             ],
           ),
         ),
@@ -260,17 +238,65 @@ class _AddSheetState extends ConsumerState<_AddSheet> {
           top: false,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: FilledButton.icon(
-              key: const ValueKey('add-shopping-confirm'),
-              onPressed: linked == null || _saving || _selectedCount == 0
-                  ? null
-                  : _add,
-              icon: const Icon(Icons.add_shopping_cart),
-              label: Text(
-                linked == null
-                    ? l10n.addToShopping
-                    : l10n.addProductsCount(_selectedCount),
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // La liste d'arrivée, juste au-dessus du bouton : on la voit
+                // au moment de valider.
+                if (widget.listId == null) ...[
+                  // Recréé quand les listes arrivent (valeur de départ).
+                  KeyedSubtree(
+                    key: ValueKey(lists.length),
+                    child: DropdownButtonFormField<String?>(
+                      key: const ValueKey('add-shopping-list'),
+                      initialValue: _listId,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: l10n.shoppingListChoice,
+                        prefixIcon: const Icon(Icons.checklist),
+                        border: const OutlineInputBorder(),
+                      ),
+                      items: [
+                        for (final list in lists)
+                          DropdownMenuItem(
+                            value: list.id,
+                            child: Text(list.name),
+                          ),
+                        DropdownMenuItem(
+                          child: Text(
+                            l10n.newShoppingListNamed(
+                              l10n.shoppingListDefaultName,
+                            ),
+                          ),
+                        ),
+                      ],
+                      onChanged: (id) => setState(() {
+                        _listId = id;
+                        _listChosen = true;
+                      }),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                FilledButton.icon(
+                  key: const ValueKey('add-shopping-confirm'),
+                  onPressed: linked == null || _saving || _selectedCount == 0
+                      ? null
+                      : _add,
+                  icon: const Icon(Icons.add_shopping_cart),
+                  label: Text(
+                    linked == null
+                        ? l10n.addToShopping
+                        : widget.listId == null && _selectedCount > 0
+                        ? l10n.addProductsToList(_selectedCount, targetName)
+                        : l10n.addProductsCount(_selectedCount),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
