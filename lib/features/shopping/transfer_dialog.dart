@@ -69,7 +69,8 @@ class _TransferDialogState extends ConsumerState<_TransferDialog> {
         if (!i.checked) i,
     ];
     final others = [
-      for (final l in ref.watch(shoppingListsProvider).value ?? const <ShoppingList>[])
+      for (final l
+          in ref.watch(shoppingListsProvider).value ?? const <ShoppingList>[])
         if (l.id != widget.list.id && !l.isDeleted) l,
     ];
     // Par défaut : l'autre liste la plus récemment modifiée.
