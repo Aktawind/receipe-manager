@@ -56,6 +56,47 @@ Future<List<ShoppingList>> _lists(TestApp app, WidgetTester tester) async =>
     (await tester.runAsync(() => app.services.shopping.getAllLists()))!;
 
 void main() {
+  testWidgets('la liste d’arrivée se choisit juste au-dessus du bouton', (
+    tester,
+  ) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(TestApp.create))!;
+    await _seed(app, tester);
+    final market = await tester.runAsync(
+      () => app.services.shopping.createList('Marché'),
+    );
+    await tester.runAsync(() => app.services.shopping.createList('Super'));
+    await app.pump(tester);
+    await tester.tap(find.text('Quiche'));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('recipe-add-to-shopping')));
+    await settle(tester);
+
+    // Par défaut la dernière liste modifiée ; le bouton dit laquelle.
+    expect(find.text('Ajouter 4 produits à « Super »'), findsOneWidget);
+    final choice = find.byKey(const ValueKey('add-shopping-list'));
+    final button = find.byKey(const ValueKey('add-shopping-confirm'));
+    expect(tester.getTopLeft(choice).dy < tester.getTopLeft(button).dy, isTrue);
+    expect(
+      tester.getTopLeft(find.text('250 g Farine')).dy <
+          tester.getTopLeft(choice).dy,
+      isTrue,
+    );
+
+    await tester.tap(choice);
+    await settle(tester);
+    await tester.tap(find.text('Marché').last);
+    await settle(tester);
+    expect(find.text('Ajouter 4 produits à « Marché »'), findsOneWidget);
+    await tester.tap(button);
+    await settle(tester);
+
+    final lists = {for (final l in await _lists(app, tester)) l.name: l};
+    expect(lists['Marché']!.id, market!.id);
+    expect(lists['Marché']!.items, hasLength(4));
+    expect(lists['Super']!.items, isEmpty);
+  });
+
   testWidgets('depuis la fiche : pâte liée dépliée, basiques décochés', (
     tester,
   ) async {
@@ -72,7 +113,8 @@ void main() {
     expect(find.text('250 g Farine'), findsOneWidget);
     expect(find.text('pour la recette « Pâte brisée »'), findsWidgets);
     // Sel et poivre décochés : 4 produits sur 6.
-    expect(find.text('Ajouter 4 produits'), findsOneWidget);
+    // Aucune liste : une nouvelle « Courses », annoncée sur le bouton.
+    expect(find.text('Ajouter 4 produits à « Courses »'), findsOneWidget);
 
     // Pour 12 personnes : tout est doublé.
     await tester.tap(_keyStarting('add-shopping-more'));
