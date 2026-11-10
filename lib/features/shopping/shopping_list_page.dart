@@ -14,6 +14,7 @@ import 'shopping_item_sheet.dart';
 import 'shopping_page.dart';
 import 'shopping_pdf.dart';
 import 'shopping_providers.dart';
+import 'transfer_dialog.dart';
 
 /// Une liste de courses : les produits à acheter, dans l'ordre choisi, puis
 /// ceux du panier (cochés), et la saisie d'un produit en bas.
@@ -43,6 +44,10 @@ class ShoppingListPage extends ConsumerWidget {
           PopupMenuButton<String>(
             key: const ValueKey('shopping-list-menu'),
             onSelected: (action) async {
+              if (action == 'transfer') {
+                await transferShoppingItems(context, ref, list);
+                return;
+              }
               if (action == 'share' || action == 'print') {
                 await _export(context, ref, list, print: action == 'print');
                 return;
@@ -66,6 +71,11 @@ class ShoppingListPage extends ConsumerWidget {
                 ),
               ),
               const PopupMenuDivider(),
+              PopupMenuItem(
+                key: const ValueKey('shopping-transfer'),
+                value: 'transfer',
+                child: Text(l10n.transferProducts),
+              ),
               PopupMenuItem(
                 value: 'rename',
                 child: Text(l10n.renameShoppingList),

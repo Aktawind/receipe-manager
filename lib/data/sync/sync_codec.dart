@@ -6,6 +6,7 @@ import '../../domain/label.dart';
 import '../../domain/meal_planner.dart';
 import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
+import '../../domain/saved_search.dart';
 import '../../domain/shopping.dart';
 import '../backup/backup_format.dart';
 
@@ -21,6 +22,7 @@ enum SyncKind {
   plannedMeal('meals'),
   sideDish('sides'),
   plannerSetup('setups'),
+  savedSearch('searches'),
   media('media');
 
   const SyncKind(this.folder);
@@ -149,6 +151,18 @@ abstract final class SyncCodec {
     ),
   );
 
+  static Uint8List savedSearch(SavedSearch search) => _bytes(
+    BackupFormat.encode(
+      const [],
+      savedSearches: [search],
+      exportedAt: search.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static SavedSearch decodeSavedSearch(Uint8List bytes) =>
+      _single(_decode(bytes).savedSearches, 'savedSearches');
+
   static SideDish decodeSideDish(Uint8List bytes) =>
       _single(_decode(bytes).sideDishes, 'sideDishes');
 
@@ -214,6 +228,7 @@ abstract final class SyncCodec {
       'plannedMeals',
       'sideDishes',
       'plannerSetups',
+      'savedSearches',
     ]) {
       for (final item in (root[key] as List? ?? const [])) {
         (item as Map<String, Object?>)

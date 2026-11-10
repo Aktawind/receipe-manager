@@ -135,6 +135,9 @@ class DriveBackupService {
         plannerSetups: [
           for (final p in contents.plannerSetups) p.copyWith(updatedAt: stamp),
         ],
+        savedSearches: [
+          for (final s in contents.savedSearches) s.copyWith(updatedAt: stamp),
+        ],
       ),
       ImportMode.replace,
     );

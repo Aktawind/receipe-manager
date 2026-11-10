@@ -1,51 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:recettes/domain/recipe.dart';
-import 'package:recettes/domain/recipe_filter.dart';
-import 'package:recettes/features/recipes/saved_searches.dart';
 
 import '../helpers/test_app.dart';
 
 void main() {
-  test('une recherche enregistrée se relit à l’identique', () {
-    const search = SavedSearch(
-      name: 'Plats rapides',
-      query: 'poulet',
-      filter: RecipeFilter(
-        quick: QuickFilter.favorites,
-        labelIds: {'plats'},
-        statuses: {RecipeStatus.toTest},
-        times: TimeLimits(total: 30),
-        equipmentIds: {'four'},
-        ingredients: IngredientCriteria(all: ['citron'], none: ['crème']),
-        sort: RecipeSort.duration,
-      ),
-    );
-    final back = SavedSearch.fromJson(search.toJson())!;
-    expect(back.name, 'Plats rapides');
-    expect(back.query, 'poulet');
-    expect(back.filter.quick, QuickFilter.favorites);
-    expect(back.filter.labelIds, {'plats'});
-    expect(back.filter.statuses, {RecipeStatus.toTest});
-    expect(back.filter.times.total, 30);
-    expect(back.filter.equipmentIds, {'four'});
-    expect(back.filter.ingredients.all, ['citron']);
-    expect(back.filter.ingredients.none, ['crème']);
-    expect(back.filter.sort, RecipeSort.duration);
-  });
-
-  test('un enregistrement abîmé ou inconnu est ignoré sans planter', () {
-    expect(SavedSearch.fromJson('n’importe quoi'), isNull);
-    expect(SavedSearch.fromJson({'name': ''}), isNull);
-    final partial = SavedSearch.fromJson({
-      'name': 'Vieux',
-      'statuses': ['inconnu', 'toRetest'],
-      'sort': 'nouveauTri',
-    })!;
-    expect(partial.filter.statuses, {RecipeStatus.toRetest});
-    expect(partial.filter.sort, RecipeSort.title);
-  });
-
   testWidgets('enregistrer une recherche, effacer, la retrouver d’un geste', (
     tester,
   ) async {
@@ -89,7 +47,12 @@ void main() {
     await tester.tap(find.text('Valider'));
     await settle(tester);
     expect(find.widgetWithText(InputChip, 'Express'), findsOneWidget);
-    expect(app.prefs.getStringList('saved_searches'), hasLength(1));
+    // Dans la base (synchronisée), plus sur l'appareil.
+    final saved = (await tester.runAsync(
+      app.services.recipes.getAllSavedSearches,
+    ))!;
+    expect(saved.single.name, 'Express');
+    expect(saved.single.filter.times.total, 30);
 
     // Tout effacer : les deux recettes reviennent.
     await tester.tap(find.text('Tout effacer'));

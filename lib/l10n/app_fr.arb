@@ -1151,5 +1151,21 @@
       "from": {"type": "String"},
       "to": {"type": "String"}
     }
+  },
+  "transferProducts": "Transférer des produits",
+  "transferTo": "Vers la liste",
+  "transferNothing": "Aucun produit à acheter dans cette liste.",
+  "transferConfirm": "{count, plural, =0{Transférer} =1{Transférer 1 produit} other{Transférer {count} produits}}",
+  "@transferConfirm": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "productsTransferred": "{count, plural, =1{1 produit transféré vers « {name} »} other{{count} produits transférés vers « {name} »}}",
+  "@productsTransferred": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "name": {"type": "String"}
+    }
   }
 }

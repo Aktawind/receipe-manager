@@ -10,6 +10,7 @@ import '../../domain/label.dart';
 import '../../domain/meal_planner.dart';
 import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
+import '../../domain/saved_search.dart';
 import '../../domain/shopping.dart';
 import '../equipment_repository.dart';
 import '../label_repository.dart';
@@ -47,9 +48,13 @@ class BackupContents {
     this.plannedMeals = const [],
     this.sideDishes = const [],
     this.plannerSetups = const [],
+    this.savedSearches = const [],
   });
 
   final List<Recipe> recipes;
+
+  /// Les recherches enregistrées.
+  final List<SavedSearch> savedSearches;
 
   /// Le planificateur : accompagnements et planifications enregistrées.
   final List<SideDish> sideDishes;
@@ -151,6 +156,7 @@ class BackupService {
         plannedMeals: await planning.getAllMeals(),
         sideDishes: await planning.getAllSides(),
         plannerSetups: await planning.getAllSetups(),
+        savedSearches: await repository.getAllSavedSearches(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -184,6 +190,7 @@ class BackupService {
         plannedMeals: await planning.getAllMeals(),
         sideDishes: await planning.getAllSides(),
         plannerSetups: await planning.getAllSetups(),
+        savedSearches: await repository.getAllSavedSearches(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -212,6 +219,7 @@ class BackupService {
       plannedMeals: decoded.plannedMeals,
       sideDishes: decoded.sideDishes,
       plannerSetups: decoded.plannerSetups,
+      savedSearches: decoded.savedSearches,
     );
   }
 
@@ -267,6 +275,7 @@ class BackupService {
       plannedMeals: decoded.plannedMeals,
       sideDishes: decoded.sideDishes,
       plannerSetups: decoded.plannerSetups,
+      savedSearches: decoded.savedSearches,
     );
   }
 
@@ -391,6 +400,14 @@ class BackupService {
       for (final setup in contents.plannerSetups) {
         if (newer(setup.updatedAt, existingSetups[setup.id]?.updatedAt)) {
           await planning.putSetup(setup);
+        }
+      }
+      final existingSearches = {
+        for (final s in await repository.getAllSavedSearches()) s.id: s,
+      };
+      for (final search in contents.savedSearches) {
+        if (newer(search.updatedAt, existingSearches[search.id]?.updatedAt)) {
+          await repository.putSavedSearch(search);
         }
       }
       for (final meal in contents.plannedMeals) {

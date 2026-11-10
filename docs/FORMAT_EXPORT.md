@@ -35,6 +35,9 @@ recettes-2026-10-27-1430.zip
 | 10 | 0.11.0 | Planning des repas : créneaux (`mealSlots`) et repas (`plannedMeals`), au niveau du document ; absents quand ils sont vides |
 | 11 | 0.11.0 | Planificateur : accompagnements (`sideDishes`) et planifications enregistrées (`plannerSetups`) |
 | 12 | 0.11.0 | Types de plat d'un créneau (`mealSlots[].categories`) ; temps d'une planification `null` = sans limite |
+| 13 | 0.11.0 | Recherches enregistrées (`savedSearches`), synchronisées ; avant, gardées sur l'appareil et absentes des sauvegardes |
+
+Lecture d'une version 12 (et avant) : pas de recherches enregistrées (celles de l'appareil restent).
 
 Lecture d'une version 11 (et avant) : les créneaux proposent tous les types de plat ; le temps
 des planifications est toujours un nombre.
@@ -73,7 +76,7 @@ Lecture d'une version 1 : `notes` et `tips` sont fusionnés (séparés par une l
 ```json
 {
   "format": "recettes-backup",
-  "version": 12,
+  "version": 13,
   "exportedAt": "2026-10-27T14:30:00.000Z",
   "appVersion": "0.1.0",
   "equipment": [
@@ -175,6 +178,25 @@ L'ordre des listes `ingredients` et `steps` est l'ordre d'affichage.
 | `plannerSetups[].slots[].weekday` | entier 1 à 7 | 1 = lundi |
 | `plannerSetups[].slots[].minutes` | entier ou `null` | temps disponible pour ce repas ; `null` = sans limite (v12) ; absent = 30 |
 | `plannerSetups[].slots[].collection` | `id` ou `null` | collection du classement à respecter |
+
+### Recherches enregistrées (version 13)
+
+```json
+{
+  "savedSearches": [
+    { "id": "<calculé à partir du nom>",
+      "search": { "name": "Express", "query": "", "favorites": false, "labels": [],
+                  "statuses": [], "total": 30, "prep": null, "cook": null, "equipment": [],
+                  "all": [], "any": [], "none": [], "sort": "duration" },
+      "createdAt": "…", "updatedAt": "…", "deletedAt": null }
+  ]
+}
+```
+
+| Champ | Type | Remarque |
+|---|---|---|
+| `savedSearches[].id` | texte | le même nom (à la casse près) donne le même identifiant sur tous les appareils |
+| `savedSearches[].search` | objet | texte cherché, filtres (`labels`, `statuses`, temps en minutes, `equipment`, ingrédients `all` / `any` / `none`) et tri ; un champ inconnu ou absent prend sa valeur neutre |
 
 ### Planning (version 10)
 
