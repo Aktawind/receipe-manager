@@ -477,6 +477,29 @@ abstract final class ShoppingProducts {
   /// (quantités additionnées, recettes réunies) quand c'est possible, sinon
   /// à la fin. Un produit déjà dans le panier n'est pas touché : l'ajout en
   /// redemande.
+  /// Déplace les produits [ids] de [from] vers [to] : ils y reviennent à
+  /// acheter et s'ajoutent à un produit identique déjà là (quantités et
+  /// recettes réunies). Renvoie les produits des deux listes.
+  static ({List<ShoppingItem> from, List<ShoppingItem> to}) transfer(
+    List<ShoppingItem> from,
+    List<ShoppingItem> to,
+    Set<String> ids,
+  ) {
+    var target = to;
+    for (final item in from) {
+      if (ids.contains(item.id)) {
+        target = merge(target, item.copyWith(checked: false));
+      }
+    }
+    return (
+      from: [
+        for (final item in from)
+          if (!ids.contains(item.id)) item,
+      ],
+      to: target,
+    );
+  }
+
   static List<ShoppingItem> merge(List<ShoppingItem> items, ShoppingItem item) {
     final key = keyOf(item.name);
     for (final (index, existing) in items.indexed) {

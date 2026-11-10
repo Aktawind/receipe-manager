@@ -396,4 +396,61 @@ void main() {
     expect(export.pdfName, 'Semaine');
     expect(String.fromCharCodes(export.pdf!.take(4)), '%PDF');
   });
+
+  testWidgets('transférer des produits vers une autre liste', (tester) async {
+    usePhoneSize(tester);
+    final app = (await tester.runAsync(TestApp.create))!;
+    final shopping = app.services.shopping;
+    final ids = await tester.runAsync(() async {
+      final market = await shopping.createList('Marché');
+      await shopping.save(
+        market.copyWith(
+          items: [
+            ShoppingProducts.parse('2 tranches de jambon', id: 'j1'),
+            ShoppingProducts.parse('pain', id: 'p'),
+          ],
+        ),
+      );
+      final store = await shopping.createList('Supermarché');
+      await shopping.save(
+        store.copyWith(
+          items: [ShoppingProducts.parse('4 tranches de jambon', id: 'j2')],
+        ),
+      );
+      return (market: market.id, store: store.id);
+    });
+    await app.pump(tester);
+    await tester.tap(find.text('Courses').last);
+    await settle(tester);
+    await tester.tap(find.text('Marché'));
+    await settle(tester);
+
+    await tester.tap(find.byKey(const ValueKey('shopping-list-menu')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('shopping-transfer')));
+    await settle(tester);
+    // L'autre liste est proposée ; rien n'est coché au départ.
+    expect(find.text('Supermarché'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const ValueKey('transfer-confirm')))
+          .onPressed,
+      isNull,
+    );
+    await tester.tap(find.byKey(const ValueKey('transfer-item-j1')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('transfer-confirm')));
+    await settle(tester);
+    expect(
+      find.text('1 produit transféré vers « Supermarché »'),
+      findsOneWidget,
+    );
+
+    final lists = {
+      for (final l in (await tester.runAsync(shopping.getAllLists))!) l.id: l,
+    };
+    expect([for (final i in lists[ids!.market]!.items) i.name], ['Pain']);
+    final ham = lists[ids.store]!.items.single;
+    expect((ham.name, ham.amount), ('Jambon', '6 tranches'));
+  });
 }

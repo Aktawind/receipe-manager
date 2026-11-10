@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -59,4 +60,46 @@ void main() {
     await services.database.close();
     expect(backups(), isEmpty);
   });
+
+  test(
+    'les recherches enregistrées sur l’appareil passent dans la base',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        AppServices.legacySavedSearchesKey: [
+          jsonEncode({'name': 'Express', 'total': 30, 'sort': 'duration'}),
+          'pas du JSON',
+          jsonEncode({
+            'name': 'Desserts',
+            'labels': ['desserts'],
+          }),
+        ],
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final services = await AppServices.open(
+        root: root,
+        cache: root,
+        prefs: prefs,
+        appVersion: 'test',
+      );
+      final searches = await services.recipes.watchSavedSearches().first;
+      expect([for (final s in searches) s.name], ['Express', 'Desserts']);
+      expect(searches.first.filter.times.total, 30);
+      expect(searches.last.filter.labelIds, {'desserts'});
+      expect(prefs.getStringList(AppServices.legacySavedSearchesKey), isNull);
+
+      // Une seconde fois (autre appareil) : rien n'est remplacé ni doublé.
+      await prefs.setStringList(AppServices.legacySavedSearchesKey, [
+        jsonEncode({'name': 'express', 'total': 15}),
+      ]);
+      await AppServices.moveSavedSearches(
+        prefs,
+        services.recipes,
+        DateTime.utc(2030),
+      );
+      final again = await services.recipes.watchSavedSearches().first;
+      expect(again, hasLength(2));
+      expect(again.first.filter.times.total, 30);
+      await services.database.close();
+    },
+  );
 }

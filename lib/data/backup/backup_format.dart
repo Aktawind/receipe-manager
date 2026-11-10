@@ -5,6 +5,7 @@ import '../../domain/meal_planner.dart';
 import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
 import '../../domain/recipe_links.dart';
+import '../../domain/saved_search.dart';
 import '../../domain/shopping.dart';
 import '../photo_store.dart';
 
@@ -35,9 +36,10 @@ import '../photo_store.dart';
 /// - v12 : types de plat d'un créneau pour le planificateur (`categories`
 ///   des `mealSlots`) ; le temps disponible d'une planification peut être
 ///   `null` (sans limite).
+/// - v13 : recherches enregistrées (`savedSearches`), synchronisées.
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 12;
+  static const currentVersion = 13;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 
@@ -52,6 +54,7 @@ abstract final class BackupFormat {
     List<PlannedMeal> plannedMeals = const [],
     List<SideDish> sideDishes = const [],
     List<PlannerSetup> plannerSetups = const [],
+    List<SavedSearch> savedSearches = const [],
     required DateTime exportedAt,
     required String appVersion,
   }) {
@@ -147,6 +150,17 @@ abstract final class BackupFormat {
               'createdAt': p.createdAt.toUtc().toIso8601String(),
               'updatedAt': p.updatedAt.toUtc().toIso8601String(),
               'deletedAt': p.deletedAt?.toUtc().toIso8601String(),
+            },
+        ],
+      if (savedSearches.isNotEmpty)
+        'savedSearches': [
+          for (final s in savedSearches)
+            {
+              'id': s.id,
+              'search': s.toJson(),
+              'createdAt': s.createdAt.toUtc().toIso8601String(),
+              'updatedAt': s.updatedAt.toUtc().toIso8601String(),
+              'deletedAt': s.deletedAt?.toUtc().toIso8601String(),
             },
         ],
       if (plannedMeals.isNotEmpty)
@@ -415,8 +429,33 @@ abstract final class BackupFormat {
       plannedMeals: version >= 10 ? _decodeMeals(root) : const [],
       sideDishes: version >= 11 ? _decodeSides(root) : const [],
       plannerSetups: version >= 11 ? _decodeSetups(root) : const [],
+      savedSearches: version >= 13 ? _decodeSearches(root) : const [],
     );
   }
+
+  static List<SavedSearch> _decodeSearches(Map<String, Object?> root) => [
+    for (final item in _list(root, 'savedSearches'))
+      () {
+        final m = _map(item, 'savedSearch');
+        final id = _string(m, 'id', required: true);
+        final updatedAt = _date(m, 'updatedAt')!;
+        final search = SavedSearch.fromJson(
+          m['search'],
+          id: id,
+          now: updatedAt,
+          createdAt: _date(m, 'createdAt')!,
+          updatedAt: updatedAt,
+          deletedAt: _date(m, 'deletedAt', required: false),
+        );
+        if (id.isEmpty || search == null) {
+          throw const BackupFormatException(
+            BackupError.invalid,
+            'savedSearches',
+          );
+        }
+        return search;
+      }(),
+  ];
 
   static List<SideDish> _decodeSides(Map<String, Object?> root) => [
     for (final item in _list(root, 'sideDishes'))
@@ -767,6 +806,7 @@ class BackupData {
     this.plannedMeals = const [],
     this.sideDishes = const [],
     this.plannerSetups = const [],
+    this.savedSearches = const [],
   });
 
   final List<Recipe> recipes;
@@ -779,6 +819,7 @@ class BackupData {
   final List<PlannedMeal> plannedMeals;
   final List<SideDish> sideDishes;
   final List<PlannerSetup> plannerSetups;
+  final List<SavedSearch> savedSearches;
 }
 
 enum BackupError { notABackup, newerVersion, invalid, missingPhoto }

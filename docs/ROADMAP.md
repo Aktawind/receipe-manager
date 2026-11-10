@@ -421,6 +421,8 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   **types de plat par créneau** dans Réglages → Créneaux (base v13, sauvegarde v12) ; « Changer la
   date ou le créneau » dans une seule fenêtre ; plus de « Copier sur d'autres jours » ; emoji des
   accompagnements, séparés des boutons « + ».
+  Retours du 2026-11-10 : transférer des produits d'une liste de courses à une autre ; recherches
+  enregistrées synchronisées (base v14, sauvegarde v13).
 
 ## 0.12 — Accueil, statistiques, partage et export
 

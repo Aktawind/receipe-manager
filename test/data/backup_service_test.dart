@@ -17,6 +17,7 @@ import 'package:recettes/data/shopping_repository.dart';
 import 'package:recettes/domain/label.dart';
 import 'package:recettes/domain/meal_planner.dart';
 import 'package:recettes/domain/recipe.dart';
+import 'package:recettes/domain/recipe_filter.dart';
 import 'package:recettes/domain/shopping.dart';
 
 class _Env {
@@ -222,15 +223,34 @@ void main() {
     expect((await target.repo.getRecipe('old-1'))!.notes, contains('Précuire'));
   });
 
-  test('l’export est en version 12, sans champ « tips »', () async {
+  test('l’export est en version 13, sans champ « tips »', () async {
     await addRecipe(source, 'Tarte');
     final archive = ZipDecoder().decodeBytes(await source.service.exportZip());
     final json = jsonDecode(
       utf8.decode(archive.findFile(BackupFormat.dataFile)!.content),
     ) as Map<String, Object?>;
-    expect(json['version'], 12);
+    expect(json['version'], 13);
     final recipe = (json['recipes'] as List).single as Map<String, Object?>;
     expect(recipe.containsKey('tips'), isFalse);
+  });
+
+  test('les recherches enregistrées font l’aller-retour (v13)', () async {
+    final saved = await source.repo.saveSearch(
+      name: 'Express',
+      query: 'poulet',
+      filter: const RecipeFilter(times: TimeLimits(total: 30)),
+    );
+    final gone = await source.repo.saveSearch(name: 'Ancienne');
+    await source.repo.deleteSavedSearch(gone);
+
+    final contents = target.service.readZip(await source.service.exportZip());
+    await target.service.import(contents, ImportMode.merge);
+    final all = await target.repo.getAllSavedSearches();
+    final copy = all.firstWhere((s) => s.id == saved.id);
+    expect((copy.name, copy.query), ('Express', 'poulet'));
+    expect(copy.filter.times.total, 30);
+    // Une suppression voyage aussi (pour la synchro).
+    expect(all.firstWhere((s) => s.name == 'Ancienne').isDeleted, isTrue);
   });
 
   test('types de plat des créneaux et temps « sans limite » (v12)', () async {

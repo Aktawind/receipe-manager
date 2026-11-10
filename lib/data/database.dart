@@ -333,6 +333,21 @@ class PlannerSetups extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+/// Les recherches enregistrées (v14) : le contenu en JSON (`SavedSearch`),
+/// l'identifiant vient du nom.
+@DataClassName('SavedSearchRow')
+class SavedSearches extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     Recipes,
@@ -353,6 +368,7 @@ class PlannerSetups extends Table {
     PlannedMeals,
     SideDishes,
     PlannerSetups,
+    SavedSearches,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -360,7 +376,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 13;
+  static const latestSchemaVersion = 14;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -496,6 +512,11 @@ UPDATE recipes SET
     // v13 : types de plat d'un créneau, pour le planificateur.
     from12To13: (m, schema) async {
       await m.addColumn(schema.mealSlots, schema.mealSlots.categoryIds);
+    },
+    // v14 : recherches enregistrées, synchronisées (avant : sur l'appareil ;
+    // reprises au démarrage, voir AppServices).
+    from13To14: (m, schema) async {
+      await m.createTable(schema.savedSearches);
     },
   );
 

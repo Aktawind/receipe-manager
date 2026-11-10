@@ -1,11 +1,14 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show QueryExecutor;
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/saved_search.dart';
 import 'backup/backup_service.dart';
 import 'database.dart';
 import 'equipment_repository.dart';
@@ -51,6 +54,41 @@ class AppServices {
   static const trashRetention = Duration(days: 30);
 
   static const _schemaVersionKey = 'db_schema_version';
+
+  /// Jusqu'à la 0.11 : les recherches enregistrées, sur l'appareil seulement.
+  static const legacySavedSearchesKey = 'saved_searches';
+
+  /// Les recherches enregistrées sur l'appareil passent dans la base (pour la
+  /// synchro) ; une recherche déjà en base (même nom) n'est pas remplacée.
+  @visibleForTesting
+  static Future<void> moveSavedSearches(
+    SharedPreferences prefs,
+    RecipeRepository recipes,
+    DateTime now,
+  ) async {
+    final stored = prefs.getStringList(legacySavedSearchesKey);
+    if (stored == null) return;
+    final existing = {
+      for (final s in await recipes.getAllSavedSearches()) s.id,
+    };
+    for (final (i, raw) in stored.indexed) {
+      Object? json;
+      try {
+        json = jsonDecode(raw);
+      } on FormatException {
+        continue;
+      }
+      // L'ordre est gardé : une milliseconde d'écart entre deux recherches.
+      final search = SavedSearch.fromJson(
+        json,
+        now: now.add(Duration(milliseconds: i)),
+      );
+      if (search == null || existing.contains(search.id)) continue;
+      await recipes.putSavedSearch(search);
+      existing.add(search.id);
+    }
+    await prefs.remove(legacySavedSearchesKey);
+  }
 
   /// La base attend une migration (nouvelle version de l'appli pas encore
   /// ouverte) : c'est à l'appli de la faire, pas à la synchro en arrière-plan.
@@ -136,6 +174,7 @@ class AppServices {
     // handling, rather than on the first screen.
     await database.customSelect('SELECT 1').get();
     await equipment.capitalizeNames();
+    await moveSavedSearches(prefs, recipes, clock.now());
     await prefs.setInt(_schemaVersionKey, AppDatabase.latestSchemaVersion);
     return services;
   }

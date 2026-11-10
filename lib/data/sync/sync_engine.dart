@@ -5,6 +5,7 @@ import '../../domain/label.dart';
 import '../../domain/meal_planner.dart';
 import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
+import '../../domain/saved_search.dart';
 import '../../domain/shopping.dart';
 import '../database.dart';
 import '../equipment_repository.dart';
@@ -236,6 +237,25 @@ class SyncEngine {
         encode: SyncCodec.plannerSetup,
         decode: SyncCodec.decodePlannerSetup,
         put: planning.putSetup,
+        titleOf: (s) => s.name,
+      ),
+      _Adapter.of<SavedSearch>(
+        kind: SyncKind.savedSearch,
+        stamps: () => _stamps(
+          _db.savedSearches,
+          _db.savedSearches.id,
+          _db.savedSearches.updatedAt,
+        ),
+        load: (id) async =>
+            {for (final s in await recipes.getAllSavedSearches()) s.id: s}[id],
+        loadAll: () async => {
+          for (final s in await recipes.getAllSavedSearches()) s.id: s,
+        },
+        idOf: (s) => s.id,
+        updatedAt: (s) => s.updatedAt,
+        encode: SyncCodec.savedSearch,
+        decode: SyncCodec.decodeSavedSearch,
+        put: recipes.putSavedSearch,
         titleOf: (s) => s.name,
       ),
       _Adapter.of<Recipe>(
