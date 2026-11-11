@@ -113,9 +113,10 @@ class SyncPage extends ConsumerWidget {
   Future<void> _syncNow(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context);
-    await ref.read(syncControllerProvider.notifier).syncNow();
+    final run = await ref.read(syncControllerProvider.notifier).syncNow();
     final result = ref.read(syncControllerProvider);
     final text = switch (result.phase) {
+      _ when run == SyncRun.busy => l10n.syncResultBusy,
       SyncPhase.idle when result.lastUploaded + result.lastDownloaded == 0 =>
         l10n.syncResultUpToDate,
       SyncPhase.idle => l10n.syncResultDone(

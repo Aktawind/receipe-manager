@@ -51,6 +51,11 @@ void main() {
     'aisles': 'f-aisles',
     'products': 'f-products',
     'shopping': 'f-shopping',
+    'slots': 'f-slots',
+    'meals': 'f-meals',
+    'sides': 'f-sides',
+    'setups': 'f-setups',
+    'searches': 'f-searches',
     'media': 'f-media',
     'history': 'f-history',
     'backups': 'f-backups',
@@ -200,8 +205,8 @@ void main() {
       await drive.changes('1');
       expect(
         created,
-        10,
-        reason: 'le dossier principal et ses neuf sous-dossiers',
+        15,
+        reason: 'le dossier principal et ses quatorze sous-dossiers',
       );
       final stored = jsonDecode(cache.values['drive_folders']!) as Map;
       expect(stored.keys, containsAll(['', 'recipes', 'media', 'history']));

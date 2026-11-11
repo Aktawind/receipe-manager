@@ -14,6 +14,7 @@ import 'shopping_item_sheet.dart';
 import 'shopping_page.dart';
 import 'shopping_pdf.dart';
 import 'shopping_providers.dart';
+import 'transfer_dialog.dart';
 
 /// Une liste de courses : les produits à acheter, dans l'ordre choisi, puis
 /// ceux du panier (cochés), et la saisie d'un produit en bas.
@@ -43,6 +44,10 @@ class ShoppingListPage extends ConsumerWidget {
           PopupMenuButton<String>(
             key: const ValueKey('shopping-list-menu'),
             onSelected: (action) async {
+              if (action == 'transfer') {
+                await transferShoppingItems(context, ref, list);
+                return;
+              }
               if (action == 'share' || action == 'print') {
                 await _export(context, ref, list, print: action == 'print');
                 return;
@@ -66,6 +71,11 @@ class ShoppingListPage extends ConsumerWidget {
                 ),
               ),
               const PopupMenuDivider(),
+              PopupMenuItem(
+                key: const ValueKey('shopping-transfer'),
+                value: 'transfer',
+                child: Text(l10n.transferProducts),
+              ),
               PopupMenuItem(
                 value: 'rename',
                 child: Text(l10n.renameShoppingList),
@@ -357,7 +367,8 @@ class _Items extends ConsumerWidget {
 }
 
 /// Une ligne de la liste, compacte : case, quantité et nom ; en petit
-/// dessous, le commentaire et les recettes.
+/// dessous, le commentaire et les recettes. Toucher la ligne coche le
+/// produit ; ✎ ouvre sa fiche (détail par recette, modifier).
 class _ItemTile extends StatelessWidget {
   const _ItemTile({
     required this.item,
@@ -391,7 +402,8 @@ class _ItemTile extends StatelessWidget {
     );
     return InkWell(
       key: ValueKey('shopping-item-${item.id}'),
-      onTap: onEdit,
+      onTap: onToggle,
+      onLongPress: onEdit,
       child: Padding(
         padding: const EdgeInsets.only(left: 4, right: 4),
         child: Row(
@@ -439,6 +451,17 @@ class _ItemTile extends StatelessWidget {
                       ),
                   ],
                 ),
+              ),
+            ),
+            IconButton(
+              key: ValueKey('shopping-item-edit-${item.id}'),
+              tooltip: l10n.editProduct,
+              visualDensity: VisualDensity.compact,
+              onPressed: onEdit,
+              icon: Icon(
+                Icons.edit_outlined,
+                size: 20,
+                color: scheme.onSurfaceVariant,
               ),
             ),
             if (index != null)

@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:path/path.dart' as p;
 import 'package:recettes/data/sync/drive_auth.dart';
+import 'package:recettes/data/sync/sync_gate.dart';
 import 'package:recettes/features/sync/sync_providers.dart';
 
 import '../helpers/memory_remote.dart';
@@ -291,4 +295,49 @@ void main() {
     expect(remote.count('write'), 0, reason: 'rien n’est renvoyé');
     await tester.pump(const Duration(seconds: 10));
   });
+
+  testWidgets(
+    'une synchro déjà en cours : on le dit, et la date de la dernière est gardée',
+    (tester) async {
+      usePhoneSize(tester);
+      final remote = MemoryRemote();
+      final app = (await tester.runAsync(
+        () => TestApp.create(
+          overrides: [
+            driveAuthProvider.overrideWithValue(_FakeAuth()),
+            syncRemoteFactoryProvider.overrideWithValue(
+              (auth, folder, cache) => remote,
+            ),
+          ],
+        ),
+      ))!;
+      await app.pump(tester);
+      await tester.tap(find.text('Réglages').last);
+      await settle(tester);
+      await scrollTo(tester, find.text('Synchronisation Google Drive'));
+      await tester.tap(find.text('Synchronisation Google Drive'));
+      await settle(tester);
+      await tester.tap(find.byKey(const ValueKey('sync-connect')));
+      await settle(tester);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await settle(tester);
+      // La date de la dernière synchro survit à un redémarrage.
+      expect(app.prefs.getString('sync_last'), isNotNull);
+
+      // La synchro d'arrière-plan tient le verrou.
+      File(p.join(app.services.root.path, SyncGate.fileName))
+          .writeAsStringSync('${DateTime.now().millisecondsSinceEpoch}');
+      remote.calls.clear();
+      await tester.tap(find.byKey(const ValueKey('sync-now')));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await settle(tester);
+      expect(find.textContaining('déjà en cours'), findsOneWidget);
+      expect(find.text('Tout est déjà à jour.'), findsNothing);
+      expect(remote.calls, isNot(contains('changes')));
+    },
+  );
 }

@@ -83,6 +83,28 @@ class ShoppingRepository {
     return list;
   }
 
+  /// Déplace les produits [ids] de [from] vers la liste [toId] (ou une
+  /// nouvelle liste nommée [newName]) ; renvoie la liste d'arrivée.
+  Future<ShoppingList?> transferItems(
+    ShoppingList from,
+    Set<String> ids, {
+    String? toId,
+    String newName = '',
+  }) => _db.transaction(() async {
+    final source = await getList(from.id);
+    final target = toId == null
+        ? await createList(newName)
+        : await getList(toId);
+    if (source == null || target == null || target.id == source.id) {
+      return null;
+    }
+    final moved = ShoppingProducts.transfer(source.items, target.items, ids);
+    await save(source.copyWith(items: moved.from));
+    final result = target.copyWith(items: moved.to);
+    await save(result);
+    return result;
+  });
+
   /// Change la liste : ses produits sont remplacés par [list.items], et sa
   /// date de modification avance (synchro).
   Future<void> save(ShoppingList list) =>

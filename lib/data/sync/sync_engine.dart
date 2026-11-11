@@ -2,12 +2,16 @@ import 'package:drift/drift.dart';
 
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
+import '../../domain/meal_planner.dart';
+import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
+import '../../domain/saved_search.dart';
 import '../../domain/shopping.dart';
 import '../database.dart';
 import '../equipment_repository.dart';
 import '../label_repository.dart';
 import '../photo_store.dart';
+import '../planning_repository.dart';
 import '../recipe_repository.dart';
 import '../shopping_repository.dart';
 import 'hybrid_clock.dart';
@@ -73,6 +77,7 @@ class SyncEngine {
     required LabelRepository labels,
     required EquipmentRepository equipment,
     required ShoppingRepository shopping,
+    required PlanningRepository planning,
     required this._photos,
     required this._remote,
     required this._clock,
@@ -161,6 +166,97 @@ class SyncEngine {
         decode: SyncCodec.decodeShoppingList,
         put: shopping.putList,
         titleOf: (l) => l.name,
+      ),
+      _Adapter.of<MealSlot>(
+        kind: SyncKind.mealSlot,
+        stamps: () =>
+            _stamps(_db.mealSlots, _db.mealSlots.id, _db.mealSlots.updatedAt),
+        load: (id) async =>
+            {for (final s in await planning.getAllSlots()) s.id: s}[id],
+        loadAll: () async => {
+          for (final s in await planning.getAllSlots()) s.id: s,
+        },
+        idOf: (s) => s.id,
+        updatedAt: (s) => s.updatedAt,
+        encode: SyncCodec.mealSlot,
+        decode: SyncCodec.decodeMealSlot,
+        put: planning.putSlot,
+        titleOf: (s) => s.name,
+      ),
+      _Adapter.of<PlannedMeal>(
+        kind: SyncKind.plannedMeal,
+        stamps: () => _stamps(
+          _db.plannedMeals,
+          _db.plannedMeals.id,
+          _db.plannedMeals.updatedAt,
+        ),
+        load: planning.getMeal,
+        loadAll: () async => {
+          for (final m in await planning.getAllMeals()) m.id: m,
+        },
+        idOf: (m) => m.id,
+        updatedAt: (m) => m.updatedAt,
+        encode: SyncCodec.plannedMeal,
+        decode: SyncCodec.decodePlannedMeal,
+        put: planning.putMeal,
+        titleOf: (m) => m.recipeTitle.isNotEmpty ? m.recipeTitle : m.note,
+      ),
+      _Adapter.of<SideDish>(
+        kind: SyncKind.sideDish,
+        stamps: () => _stamps(
+          _db.sideDishes,
+          _db.sideDishes.id,
+          _db.sideDishes.updatedAt,
+        ),
+        load: (id) async =>
+            {for (final s in await planning.getAllSides()) s.id: s}[id],
+        loadAll: () async => {
+          for (final s in await planning.getAllSides()) s.id: s,
+        },
+        idOf: (s) => s.id,
+        updatedAt: (s) => s.updatedAt,
+        encode: SyncCodec.sideDish,
+        decode: SyncCodec.decodeSideDish,
+        put: planning.putSide,
+        titleOf: (s) => s.name,
+      ),
+      _Adapter.of<PlannerSetup>(
+        kind: SyncKind.plannerSetup,
+        stamps: () => _stamps(
+          _db.plannerSetups,
+          _db.plannerSetups.id,
+          _db.plannerSetups.updatedAt,
+        ),
+        load: (id) async =>
+            {for (final s in await planning.getAllSetups()) s.id: s}[id],
+        loadAll: () async => {
+          for (final s in await planning.getAllSetups()) s.id: s,
+        },
+        idOf: (s) => s.id,
+        updatedAt: (s) => s.updatedAt,
+        encode: SyncCodec.plannerSetup,
+        decode: SyncCodec.decodePlannerSetup,
+        put: planning.putSetup,
+        titleOf: (s) => s.name,
+      ),
+      _Adapter.of<SavedSearch>(
+        kind: SyncKind.savedSearch,
+        stamps: () => _stamps(
+          _db.savedSearches,
+          _db.savedSearches.id,
+          _db.savedSearches.updatedAt,
+        ),
+        load: (id) async =>
+            {for (final s in await recipes.getAllSavedSearches()) s.id: s}[id],
+        loadAll: () async => {
+          for (final s in await recipes.getAllSavedSearches()) s.id: s,
+        },
+        idOf: (s) => s.id,
+        updatedAt: (s) => s.updatedAt,
+        encode: SyncCodec.savedSearch,
+        decode: SyncCodec.decodeSavedSearch,
+        put: recipes.putSavedSearch,
+        titleOf: (s) => s.name,
       ),
       _Adapter.of<Recipe>(
         kind: SyncKind.recipe,

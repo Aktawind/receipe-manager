@@ -18,6 +18,61 @@
   },
   "recipesEmptyTitle": "Aucune recette pour l'instant",
   "planningEmptyTitle": "Le planning des repas",
+  "today": "Aujourd'hui",
+  "dayView": "Vue jour",
+  "weekView": "Vue semaine",
+  "previousWeek": "Semaine précédente",
+  "nextWeek": "Semaine suivante",
+  "previousDay": "Jour précédent",
+  "nextDay": "Jour suivant",
+  "addMeal": "Ajouter au planning",
+  "addMealTo": "{slot}",
+  "@addMealTo": {
+    "placeholders": {
+      "slot": {"type": "String"}
+    }
+  },
+  "editMeal": "Modifier le repas",
+  "editMealQuantities": "Modifier les quantités",
+  "weekToShopping": "Les repas à mettre dans les courses",
+  "planningToShopping": "Ajouter les repas aux courses",
+  "planningNothingToShop": "Aucun repas cette semaine",
+  "planningNotes": "Notes du planning",
+  "checkAll": "Tout cocher",
+  "uncheckAll": "Tout décocher",
+  "continueLabel": "Continuer",
+  "editMealNote": "Modifier la note",
+  "dragMealHint": "Appui long puis glisser pour changer de créneau ou de jour",
+  "mealRecipe": "Recette",
+  "mealNote": "Note",
+  "mealNoteHint": "Restaurant, pizza, chez mamie…",
+  "leftoversTomorrow": "Restes pour le lendemain",
+  "leftoversAdded": "Restes ajoutés au {slot} de demain",
+  "@leftoversAdded": {
+    "placeholders": {
+      "slot": {"type": "String"}
+    }
+  },
+  "leftovers": "Restes",
+  "removeMeal": "Retirer du planning",
+  "mealRemoved": "« {title} » retiré du planning",
+  "@mealRemoved": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "mealSlotsTitle": "Créneaux de repas",
+  "mealSlotsSubtitle": "Les repas du planning : petit-déjeuner, déjeuner…",
+  "mealSlotsHint": "Glisse ☰ pour changer l'ordre ; un créneau désactivé n'est plus proposé dans le planning.",
+  "addMealSlot": "Ajouter un créneau",
+  "mealSlotName": "Nom du créneau",
+  "renameMealSlot": "Renommer le créneau",
+  "deleteMealSlotConfirm": "Supprimer le créneau « {name} » ? Ses repas resteront dans le planning tant qu'il en a.",
+  "@deleteMealSlotConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
   "shoppingEmptyTitle": "Les listes de courses",
   "settingsAppearance": "Apparence",
   "settingsTheme": "Thème",
@@ -576,6 +631,7 @@
     }
   },
   "syncResultUpToDate": "Tout est déjà à jour.",
+  "syncResultBusy": "Une synchronisation est déjà en cours (en arrière-plan) : la tienne suivra dans un instant.",
   "syncResultDone": "Synchronisé : {sent} envoyés, {received} reçus.",
   "@syncResultDone": {
     "placeholders": {
@@ -939,7 +995,7 @@
   "addRecipesToShopping": "Ajouter des recettes",
   "chooseRecipes": "Choisir les recettes",
   "searchRecipes": "Rechercher une recette",
-  "shoppingListChoice": "Liste",
+  "shoppingListChoice": "Ajouter à la liste",
   "newShoppingListNamed": "Nouvelle liste « {name} »",
   "@newShoppingListNamed": {
     "placeholders": {
@@ -1010,5 +1066,113 @@
   "aislesHint": "Glisse ☰ pour changer l'ordre. Un produit rangé à la main dans un rayon y retourne ensuite.",
   "removeProduct": "Retirer de la liste",
   "save": "Enregistrer",
-  "moveProduct": "Déplacer"
+  "moveProduct": "Déplacer",
+  "seasonSpring": "Printemps",
+  "seasonSummer": "Été",
+  "seasonAutumn": "Automne",
+  "seasonWinter": "Hiver",
+  "sideStarches": "Féculents",
+  "sideProteins": "Protéines",
+  "sideVegetables": "Légumes",
+  "sideStarch": "Féculent",
+  "sideProtein": "Protéine",
+  "sideVegetable": "Légume",
+  "sideDishesTitle": "Accompagnements",
+  "sideDishesSubtitle": "Les féculents, protéines et légumes que le planificateur propose",
+  "addSideDish": "Ajouter",
+  "renameSideDish": "Renommer",
+  "sideDishesHint": "Touche un nom pour le modifier. Coche les saisons où il est proposé ; sans saison cochée, il l'est toute l'année.",
+  "plannerTitle": "Planificateur",
+  "plannerOpen": "Proposer des repas",
+  "plannerSetups": "Planifications enregistrées",
+  "plannerSaveSetup": "Enregistrer cette planification",
+  "plannerSetupName": "Nom de la planification",
+  "plannerSetupSaved": "Planification « {name} » enregistrée",
+  "@plannerSetupSaved": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "plannerMeals": "Repas à prévoir",
+  "plannerNoMeals": "Ajoute les repas à prévoir : le jour, le créneau et le temps dont tu disposes.",
+  "plannerAddMeals": "Ajouter des repas",
+  "plannerDays": "Jours",
+  "plannerSlot": "Créneau",
+  "plannerMinutes": "{minutes} min",
+  "@plannerMinutes": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "plannerCollection": "Collection",
+  "plannerAnyCollection": "Toutes les recettes",
+  "plannerSeason": "Saison",
+  "plannerUseUp": "Ingrédients à écouler",
+  "plannerUseUpHint": "courgettes, crème, jambon…",
+  "plannerPropose": "Proposer",
+  "plannerProposeAgain": "Tout reproposer",
+  "plannerAlreadyPlanned": "Déjà prévu",
+  "plannerNoRecipe": "Aucune recette ne convient",
+  "plannerKeep": "Garder",
+  "plannerReplace": "Remplacer",
+  "plannerNoSide": "La liste des accompagnements est vide (Réglages → Accompagnements).",
+  "plannerApply": "{count, plural, =0{Ajouter au planning} =1{Ajouter 1 repas au planning} other{Ajouter {count} repas au planning}}",
+  "@plannerApply": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "plannerAdded": "{count, plural, =1{1 repas ajouté au planning} other{{count} repas ajoutés au planning}}",
+  "@plannerAdded": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "moveMeal": "Changer la date ou le créneau",
+  "mealDate": "Date",
+  "plannerNoLimit": "Sans limite",
+  "plannerTime": "Temps disponible",
+  "plannerFewerWeeks": "Une semaine de moins",
+  "plannerMoreWeeks": "Une semaine de plus",
+  "plannerPreviousWeek": "Semaine précédente",
+  "plannerNextWeek": "Semaine suivante",
+  "plannerPartlyPlanned": "Déjà prévu certaines semaines",
+  "mealSlotCategories": "Types de plat proposés",
+  "mealSlotAllCategories": "Tous les types de plat",
+  "mealSlotCategoriesHint": "Le planificateur ne propose que des recettes de ces catégories pour ce créneau. Rien de coché : toutes.",
+  "productRecipes": "Pour les recettes",
+  "backToToday": "Revenir à aujourd'hui",
+  "plannerPeriod": "Période",
+  "plannerFirstWeek": "À partir de la semaine du",
+  "plannerWeekCount": "Nombre de semaines",
+  "plannerRange": "Du {from} au {to}",
+  "@plannerRange": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"}
+    }
+  },
+  "transferProducts": "Transférer des produits",
+  "transferTo": "Vers la liste",
+  "transferNothing": "Aucun produit à acheter dans cette liste.",
+  "transferConfirm": "{count, plural, =0{Transférer} =1{Transférer 1 produit} other{Transférer {count} produits}}",
+  "@transferConfirm": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "productsTransferred": "{count, plural, =1{1 produit transféré vers « {name} »} other{{count} produits transférés vers « {name} »}}",
+  "@productsTransferred": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "name": {"type": "String"}
+    }
+  },
+  "addProductsToList": "{count, plural, =1{Ajouter 1 produit à « {name} »} other{Ajouter {count} produits à « {name} »}}",
+  "@addProductsToList": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "name": {"type": "String"}
+    }
+  }
 }

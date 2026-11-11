@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../domain/recipe.dart';
+import '../domain/recipe_filter.dart';
+import '../domain/saved_search.dart';
 import 'database.dart';
 
 /// Accès aux recettes. Une recette est toujours lue et écrite d'un bloc, avec
@@ -421,4 +425,78 @@ class RecipeRepository {
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
   );
+
+  // --- Recherches enregistrées (synchronisées) ---
+
+  /// Les recherches enregistrées, dans l'ordre où elles ont été créées.
+  Stream<List<SavedSearch>> watchSavedSearches() {
+    final query = _db.select(_db.savedSearches)
+      ..where((s) => s.deletedAt.isNull())
+      ..orderBy([(s) => OrderingTerm.asc(s.createdAt)]);
+    return query.watch().map((rows) => [for (final r in rows) ?_search(r)]);
+  }
+
+  /// Toutes, supprimées comprises (sauvegarde, synchro).
+  Future<List<SavedSearch>> getAllSavedSearches() async => [
+    for (final r in await _db.select(_db.savedSearches).get()) ?_search(r),
+  ];
+
+  /// Enregistre une recherche ; une recherche du même nom (à la casse près)
+  /// est remplacée.
+  Future<SavedSearch> saveSearch({
+    required String name,
+    String query = '',
+    RecipeFilter filter = const RecipeFilter(),
+  }) async {
+    final now = _clock();
+    final id = SavedSearch.idFor(name);
+    final existing = await (_db.select(
+      _db.savedSearches,
+    )..where((s) => s.id.equals(id))).getSingleOrNull();
+    final search = SavedSearch.create(
+      name: name,
+      query: query,
+      filter: filter,
+      now: now,
+    ).copyWith(createdAt: existing?.createdAt);
+    await putSavedSearch(search);
+    return search;
+  }
+
+  Future<void> deleteSavedSearch(SavedSearch search) {
+    final now = _clock();
+    return putSavedSearch(
+      search.copyWith(updatedAt: now, deletedAt: () => now),
+    );
+  }
+
+  Future<void> putSavedSearch(SavedSearch search) => _db
+      .into(_db.savedSearches)
+      .insertOnConflictUpdate(
+        SavedSearchesCompanion.insert(
+          id: search.id,
+          name: search.name,
+          data: Value(jsonEncode(search.toJson())),
+          createdAt: search.createdAt,
+          updatedAt: search.updatedAt,
+          deletedAt: Value(search.deletedAt),
+        ),
+      );
+
+  static SavedSearch? _search(SavedSearchRow r) {
+    Object? json;
+    try {
+      json = jsonDecode(r.data);
+    } on FormatException {
+      json = null;
+    }
+    return SavedSearch.fromJson(
+      json is Map ? {...json, 'name': r.name} : {'name': r.name},
+      id: r.id,
+      now: r.updatedAt,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      deletedAt: r.deletedAt,
+    );
+  }
 }

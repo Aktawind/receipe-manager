@@ -7,11 +7,15 @@ import 'package:path/path.dart' as p;
 import '../../core/format/text_search.dart';
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
+import '../../domain/meal_planner.dart';
+import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
+import '../../domain/saved_search.dart';
 import '../../domain/shopping.dart';
 import '../equipment_repository.dart';
 import '../label_repository.dart';
 import '../photo_store.dart';
+import '../planning_repository.dart';
 import '../recipe_repository.dart';
 import '../shopping_repository.dart';
 import 'backup_format.dart';
@@ -40,9 +44,25 @@ class BackupContents {
     this.shoppingLists = const [],
     this.aisles = const [],
     this.productAisles = const [],
+    this.mealSlots = const [],
+    this.plannedMeals = const [],
+    this.sideDishes = const [],
+    this.plannerSetups = const [],
+    this.savedSearches = const [],
   });
 
   final List<Recipe> recipes;
+
+  /// Les recherches enregistrées.
+  final List<SavedSearch> savedSearches;
+
+  /// Le planificateur : accompagnements et planifications enregistrées.
+  final List<SideDish> sideDishes;
+  final List<PlannerSetup> plannerSetups;
+
+  /// Le planning : créneaux et repas.
+  final List<MealSlot> mealSlots;
+  final List<PlannedMeal> plannedMeals;
 
   /// Les listes de courses, les rayons et le rayon retenu pour les produits.
   final List<ShoppingList> shoppingLists;
@@ -100,6 +120,7 @@ class BackupService {
     required this.equipment,
     required this.labels,
     required this.shopping,
+    required this.planning,
     required this.photos,
     required this.backupsDirectory,
     required this.appVersion,
@@ -110,6 +131,7 @@ class BackupService {
   final EquipmentRepository equipment;
   final LabelRepository labels;
   final ShoppingRepository shopping;
+  final PlanningRepository planning;
   final PhotoStore photos;
   final Directory backupsDirectory;
   final String appVersion;
@@ -130,6 +152,11 @@ class BackupService {
         shoppingLists: await shopping.getAllLists(),
         aisles: await shopping.getAllAisles(),
         productAisles: await shopping.getAllProductAisles(),
+        mealSlots: await planning.getAllSlots(),
+        plannedMeals: await planning.getAllMeals(),
+        sideDishes: await planning.getAllSides(),
+        plannerSetups: await planning.getAllSetups(),
+        savedSearches: await repository.getAllSavedSearches(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -159,6 +186,11 @@ class BackupService {
         shoppingLists: await shopping.getAllLists(),
         aisles: await shopping.getAllAisles(),
         productAisles: await shopping.getAllProductAisles(),
+        mealSlots: await planning.getAllSlots(),
+        plannedMeals: await planning.getAllMeals(),
+        sideDishes: await planning.getAllSides(),
+        plannerSetups: await planning.getAllSetups(),
+        savedSearches: await repository.getAllSavedSearches(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -183,6 +215,11 @@ class BackupService {
       shoppingLists: decoded.shoppingLists,
       aisles: decoded.aisles,
       productAisles: decoded.productAisles,
+      mealSlots: decoded.mealSlots,
+      plannedMeals: decoded.plannedMeals,
+      sideDishes: decoded.sideDishes,
+      plannerSetups: decoded.plannerSetups,
+      savedSearches: decoded.savedSearches,
     );
   }
 
@@ -234,6 +271,11 @@ class BackupService {
       shoppingLists: decoded.shoppingLists,
       aisles: decoded.aisles,
       productAisles: decoded.productAisles,
+      mealSlots: decoded.mealSlots,
+      plannedMeals: decoded.plannedMeals,
+      sideDishes: decoded.sideDishes,
+      plannerSetups: decoded.plannerSetups,
+      savedSearches: decoded.savedSearches,
     );
   }
 
@@ -331,6 +373,46 @@ class BackupService {
           existingProducts[product.key]?.updatedAt,
         )) {
           await shopping.putProductAisle(product);
+        }
+      }
+      final existingSlots = {
+        for (final s in await planning.getAllSlots()) s.id: s,
+      };
+      final existingMeals = {
+        for (final m in await planning.getAllMeals()) m.id: m,
+      };
+      for (final slot in contents.mealSlots) {
+        if (newer(slot.updatedAt, existingSlots[slot.id]?.updatedAt)) {
+          await planning.putSlot(slot);
+        }
+      }
+      final existingSides = {
+        for (final d in await planning.getAllSides()) d.id: d,
+      };
+      final existingSetups = {
+        for (final p in await planning.getAllSetups()) p.id: p,
+      };
+      for (final side in contents.sideDishes) {
+        if (newer(side.updatedAt, existingSides[side.id]?.updatedAt)) {
+          await planning.putSide(side);
+        }
+      }
+      for (final setup in contents.plannerSetups) {
+        if (newer(setup.updatedAt, existingSetups[setup.id]?.updatedAt)) {
+          await planning.putSetup(setup);
+        }
+      }
+      final existingSearches = {
+        for (final s in await repository.getAllSavedSearches()) s.id: s,
+      };
+      for (final search in contents.savedSearches) {
+        if (newer(search.updatedAt, existingSearches[search.id]?.updatedAt)) {
+          await repository.putSavedSearch(search);
+        }
+      }
+      for (final meal in contents.plannedMeals) {
+        if (newer(meal.updatedAt, existingMeals[meal.id]?.updatedAt)) {
+          await planning.putMeal(meal);
         }
       }
       for (final list in contents.shoppingLists) {

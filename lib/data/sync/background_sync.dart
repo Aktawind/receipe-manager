@@ -92,6 +92,9 @@ void backgroundDispatcher() {
 Future<bool> runBackgroundSync() async {
   final prefs = await SharedPreferences.getInstance();
   if (prefs.getBool(SyncPrefs.enabled) != true) return true;
+  // Nouvelle version installée : la migration se fera à l'ouverture de
+  // l'appli (deux migrations en même temps se bloquent).
+  if (AppServices.migrationPending(prefs)) return true;
 
   final root = await getApplicationDocumentsDirectory();
   final gate = SyncGate(File(p.join(root.path, SyncGate.fileName)));
@@ -120,6 +123,7 @@ Future<bool> runBackgroundSync() async {
       labels: services.labels,
       equipment: services.equipment,
       shopping: services.shopping,
+      planning: services.planning,
       photos: services.photos,
       clock: services.clock,
       remote: folder,
@@ -129,6 +133,10 @@ Future<bool> runBackgroundSync() async {
       // Connexion à refaire : inutile d'insister depuis l'arrière-plan.
       return report.errors.any((e) => e.contains('DriveSignInRequired'));
     }
+    await prefs.setString(
+      SyncPrefs.lastSync,
+      DateTime.now().toUtc().toIso8601String(),
+    );
 
     final frequency = BackupFrequency.fromName(
       prefs.getString(SyncPrefs.backupFrequency),

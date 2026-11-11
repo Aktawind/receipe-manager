@@ -3,7 +3,10 @@ import 'dart:typed_data';
 
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
+import '../../domain/meal_planner.dart';
+import '../../domain/planning.dart';
 import '../../domain/recipe.dart';
+import '../../domain/saved_search.dart';
 import '../../domain/shopping.dart';
 import '../backup/backup_format.dart';
 
@@ -15,6 +18,11 @@ enum SyncKind {
   aisle('aisles'),
   product('products'),
   shoppingList('shopping'),
+  mealSlot('slots'),
+  plannedMeal('meals'),
+  sideDish('sides'),
+  plannerSetup('setups'),
+  savedSearch('searches'),
   media('media');
 
   const SyncKind(this.folder);
@@ -101,6 +109,66 @@ abstract final class SyncCodec {
     ),
   );
 
+  static Uint8List mealSlot(MealSlot slot) => _bytes(
+    BackupFormat.encode(
+      const [],
+      mealSlots: [slot],
+      exportedAt: slot.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static Uint8List plannedMeal(PlannedMeal meal) => _bytes(
+    BackupFormat.encode(
+      const [],
+      plannedMeals: [meal],
+      exportedAt: meal.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static MealSlot decodeMealSlot(Uint8List bytes) =>
+      _single(_decode(bytes).mealSlots, 'mealSlots');
+
+  static PlannedMeal decodePlannedMeal(Uint8List bytes) =>
+      _single(_decode(bytes).plannedMeals, 'plannedMeals');
+
+  static Uint8List sideDish(SideDish side) => _bytes(
+    BackupFormat.encode(
+      const [],
+      sideDishes: [side],
+      exportedAt: side.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static Uint8List plannerSetup(PlannerSetup setup) => _bytes(
+    BackupFormat.encode(
+      const [],
+      plannerSetups: [setup],
+      exportedAt: setup.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static Uint8List savedSearch(SavedSearch search) => _bytes(
+    BackupFormat.encode(
+      const [],
+      savedSearches: [search],
+      exportedAt: search.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static SavedSearch decodeSavedSearch(Uint8List bytes) =>
+      _single(_decode(bytes).savedSearches, 'savedSearches');
+
+  static SideDish decodeSideDish(Uint8List bytes) =>
+      _single(_decode(bytes).sideDishes, 'sideDishes');
+
+  static PlannerSetup decodePlannerSetup(Uint8List bytes) =>
+      _single(_decode(bytes).plannerSetups, 'plannerSetups');
+
   static Aisle decodeAisle(Uint8List bytes) =>
       _single(_decode(bytes).aisles, 'aisles');
 
@@ -156,6 +224,11 @@ abstract final class SyncCodec {
       'aisles',
       'productAisles',
       'shoppingLists',
+      'mealSlots',
+      'plannedMeals',
+      'sideDishes',
+      'plannerSetups',
+      'savedSearches',
     ]) {
       for (final item in (root[key] as List? ?? const [])) {
         (item as Map<String, Object?>)

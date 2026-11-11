@@ -11,4 +11,7 @@ abstract final class SyncPrefs {
   static const account = 'sync_account';
   static const backupFrequency = 'backup_frequency';
   static const lastBackup = 'backup_last';
+
+  /// La dernière synchro réussie (application ou arrière-plan).
+  static const lastSync = 'sync_last';
 }
