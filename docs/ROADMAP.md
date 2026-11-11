@@ -18,7 +18,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.8](#08--import-depuis-internet-et-depuis-du-texte) | Import depuis Internet et depuis du texte | ✅ |
 | [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ✅ |
 | [0.10](#010--listes-de-courses) | Listes de courses | ✅ |
-| [0.11](#011--planning-des-repas) | Planning des repas | 🟨 |
+| [0.11](#011--planning-des-repas) | Planning des repas | ✅ |
 | [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ⬜ |
 | [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ⬜ |
 | [1.1 → 1.6](#après-la-10--fonctions-différenciantes) | Fonctions différenciantes et foyer partagé | ⬜ |
@@ -411,7 +411,7 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
   cocher » (sans les restes) → la feuille « Ajouter aux courses », une entrée par repas avec ses
   personnes ; les notes vont telles quelles dans la liste. « Changer de créneau » est revenu dans le
   menu d'un repas (retour du 2026-11-07), en plus du glisser-déposer.
-- **Étape 3 (à tester)** : le planificateur (✨ en haut du planning) : repas à prévoir (jour,
+- **Étape 3 (validée le 2026-11-11)** : le planificateur (✨ en haut du planning) : repas à prévoir (jour,
   créneau, temps, collection), saison, ingrédients à écouler, propositions à garder ou remplacer,
   « + Féculent / Protéine / Légume » ; planifications enregistrées ; Réglages → Accompagnements
   (base v12, sauvegarde v11). Retour du 2026-11-08 : l'appli ne démarrait pas (« database is
