@@ -19,7 +19,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ✅ |
 | [0.10](#010--listes-de-courses) | Listes de courses | ✅ |
 | [0.11](#011--planning-des-repas) | Planning des repas | ✅ |
-| [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ⬜ |
+| [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | 🟨 |
 | [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ⬜ |
 | [1.1 → 1.6](#après-la-10--fonctions-différenciantes) | Fonctions différenciantes et foyer partagé | ⬜ |
 
@@ -437,6 +437,21 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
 - Import de fichiers JSON et CSV
 - Widgets « recette du jour » et « repas du jour », raccourcis de l'écran d'accueil
 - Profil : nom, langue
+
+*Décisions du 2026-11-11* :
+- l'accueil montre d'abord **les repas du jour** ;
+- statistiques : « les plus réalisées » et « fréquence de réalisation » deviennent **les plus
+  planifiées** (on ne compte plus les recettes faites) ;
+- partage d'une recette en **texte** et en **PDF** (et impression) ; pas de lien Drive, pas de
+  fichier importable, pas de Markdown ;
+- pas de widgets, pas de réglage de langue (français seulement), pas d'import CSV.
+
+*Avancement* : trois étapes.
+- **Étape 1 (à tester)** : l'onglet **Accueil** (premier onglet, ouvert au démarrage) :
+  aujourd'hui (repas du jour, par créneau), raccourcis, favoris, consultées récemment, idées de
+  saison, à tester ; rubriques à réordonner ou cacher (☰, sur l'appareil).
+- **Étape 2** : partager une recette en texte, en PDF, l'imprimer.
+- **Étape 3** : les statistiques.
 
 ## 1.0 — Stabilisation : remplace Recipe Keeper
 

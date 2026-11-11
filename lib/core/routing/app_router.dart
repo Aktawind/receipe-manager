@@ -5,6 +5,8 @@ import '../../domain/label.dart';
 import '../../features/classification/collection_order_page.dart';
 import '../../features/classification/labels_page.dart';
 import '../../features/equipment/equipment_page.dart';
+import '../../features/home/home_customize_page.dart';
+import '../../features/home/home_page.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/planning/meal_slots_page.dart';
 import '../../features/planning/planner_page.dart';
@@ -24,13 +26,29 @@ import '../../features/sync/sync_page.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
 
-GoRouter buildRouter() => GoRouter(
+/// [initialLocation] : l'accueil ; les tests partent de la liste des recettes.
+GoRouter buildRouter({String initialLocation = '/accueil'}) => GoRouter(
   navigatorKey: _rootKey,
-  initialLocation: '/recettes',
+  initialLocation: initialLocation,
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => HomeShell(navigationShell: shell),
       branches: [
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/accueil',
+              builder: (context, state) => const HomePage(),
+              routes: [
+                GoRoute(
+                  path: 'personnaliser',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const HomeCustomizePage(),
+                ),
+              ],
+            ),
+          ],
+        ),
         StatefulShellBranch(
           routes: [
             GoRoute(

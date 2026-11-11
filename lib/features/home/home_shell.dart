@@ -22,6 +22,7 @@ class HomeShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final destinations = [
+      (Icons.home_outlined, Icons.home, l10n.navHome),
       (Icons.menu_book_outlined, Icons.menu_book, l10n.navRecipes),
       (Icons.calendar_month_outlined, Icons.calendar_month, l10n.navPlanning),
       (Icons.shopping_basket_outlined, Icons.shopping_basket, l10n.navShopping),
