@@ -15,7 +15,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Une app complète sur une base en mémoire, pour les tests de widgets.
 class TestApp {
-  TestApp._(this.prefs, this.services, this.root, this.overrides);
+  TestApp._(
+    this.prefs,
+    this.services,
+    this.root,
+    this.overrides,
+    this.initialLocation,
+  );
+
+  /// Le premier écran : la liste des recettes, sauf pour les tests de
+  /// l'accueil.
+  final String initialLocation;
 
   final SharedPreferences prefs;
   final AppServices services;
@@ -27,6 +37,7 @@ class TestApp {
   static Future<TestApp> create({
     Map<String, Object> prefs = const {},
     List<Override> overrides = const [],
+    String initialLocation = '/recettes',
   }) async {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     SharedPreferences.setMockInitialValues(prefs);
@@ -45,7 +56,7 @@ class TestApp {
     // The in-memory database is dropped with the test; closing it from the
     // fake-async teardown zone would hang.
     addTearDown(() => root.deleteSync(recursive: true));
-    return TestApp._(preferences, services, root, overrides);
+    return TestApp._(preferences, services, root, overrides, initialLocation);
   }
 
   Widget get widget => ProviderScope(
@@ -57,7 +68,7 @@ class TestApp {
       ),
       ...overrides,
     ],
-    child: const RecettesApp(),
+    child: RecettesApp(initialLocation: initialLocation),
   );
 
   Future<void> pump(WidgetTester tester) async {

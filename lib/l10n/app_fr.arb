@@ -4,6 +4,7 @@
   "@appTitle": {
     "description": "Nom provisoire de l'application"
   },
+  "navHome": "Accueil",
   "navRecipes": "Recettes",
   "navPlanning": "Planning",
   "navShopping": "Courses",
@@ -1174,5 +1175,21 @@
       "count": {"type": "int"},
       "name": {"type": "String"}
     }
-  }
+  },
+  "homeToday": "Aujourd'hui",
+  "homeOpenPlanning": "Planning",
+  "homeNothingToday": "Rien de prévu aujourd'hui.",
+  "homeShortcuts": "Raccourcis",
+  "homeImport": "Importer",
+  "homeShoppingLists": "Listes de courses",
+  "homeFavorites": "Favoris",
+  "homeFavoritesEmpty": "Touche ♡ sur une recette pour la retrouver ici.",
+  "homeRecent": "Consultées récemment",
+  "homeRecentEmpty": "Les recettes ouvertes dernièrement apparaîtront ici.",
+  "homeSeasonal": "Idées de saison",
+  "homeSeasonalEmpty": "Pas encore de recette de saison.",
+  "homeToTest": "À tester",
+  "homeCustomize": "Personnaliser l'accueil",
+  "homeCustomizeHint": "Glisse ☰ pour changer l'ordre des rubriques ; l'interrupteur les affiche ou les cache.",
+  "homeReset": "Par défaut"
 }
