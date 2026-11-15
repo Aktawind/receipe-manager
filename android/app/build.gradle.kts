@@ -86,4 +86,6 @@ dependencies {
     // Scanner de pages de Google Play (MainActivity / PageScanner.kt) : appelé directement, sans
     // plugin, pour télécharger le module à la demande et remonter les vraies erreurs.
     implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
+    // FileProvider (ExportActions.kt) : partager un PDF de recette avec une autre app.
+    implementation("androidx.core:core:1.16.0")
 }

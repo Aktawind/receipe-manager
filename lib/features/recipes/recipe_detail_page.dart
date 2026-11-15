@@ -11,6 +11,7 @@ import 'detail/detail_sections.dart';
 import 'recipe_photo.dart';
 import 'recipe_providers.dart';
 import 'recipe_scale.dart';
+import 'recipe_share.dart';
 
 /// Largeur à partir de laquelle la fiche passe sur deux colonnes (tablette).
 const _wideBreakpoint = 840.0;
@@ -55,7 +56,7 @@ class _RecipeDetailPageState extends ConsumerState<RecipeDetailPage> {
   }
 }
 
-enum _MenuAction { duplicate, delete }
+enum _MenuAction { shareText, sharePdf, print, duplicate, delete }
 
 /// Marge du bas : de quoi faire défiler le contenu au-dessus du bouton du
 /// mode cuisine.
@@ -82,6 +83,12 @@ class _RecipeDetail extends ConsumerWidget {
     final repository = ref.read(recipeRepositoryProvider);
     final messenger = ScaffoldMessenger.of(context);
     switch (action) {
+      case _MenuAction.shareText:
+        await shareRecipe(context, ref, recipe, RecipeShare.text);
+      case _MenuAction.sharePdf:
+        await shareRecipe(context, ref, recipe, RecipeShare.pdf);
+      case _MenuAction.print:
+        await shareRecipe(context, ref, recipe, RecipeShare.print);
       case _MenuAction.duplicate:
         final copy = await repository.duplicate(
           recipe.id,
@@ -146,9 +153,35 @@ class _RecipeDetail extends ConsumerWidget {
         ),
         const SizedBox(width: 8),
         PopupMenuButton<_MenuAction>(
+          key: const ValueKey('recipe-menu'),
           tooltip: MaterialLocalizations.of(context).showMenuTooltip,
           onSelected: (action) => _onMenu(context, ref, action),
           itemBuilder: (context) => [
+            PopupMenuItem(
+              key: const ValueKey('recipe-share-text'),
+              value: _MenuAction.shareText,
+              child: ListTile(
+                leading: const Icon(Icons.share_outlined),
+                title: Text(l10n.shareRecipeText),
+              ),
+            ),
+            PopupMenuItem(
+              key: const ValueKey('recipe-share-pdf'),
+              value: _MenuAction.sharePdf,
+              child: ListTile(
+                leading: const Icon(Icons.picture_as_pdf_outlined),
+                title: Text(l10n.shareRecipePdf),
+              ),
+            ),
+            PopupMenuItem(
+              key: const ValueKey('recipe-print'),
+              value: _MenuAction.print,
+              child: ListTile(
+                leading: const Icon(Icons.print_outlined),
+                title: Text(l10n.printRecipe),
+              ),
+            ),
+            const PopupMenuDivider(),
             PopupMenuItem(
               value: _MenuAction.duplicate,
               child: ListTile(

@@ -447,10 +447,11 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
 - pas de widgets, pas de réglage de langue (français seulement), pas d'import CSV.
 
 *Avancement* : trois étapes.
-- **Étape 1 (à tester)** : l'onglet **Accueil** (premier onglet, ouvert au démarrage) :
+- **Étape 1 (validée le 2026-11-15)** : l'onglet **Accueil** (premier onglet, ouvert au démarrage) :
   aujourd'hui (repas du jour, par créneau), raccourcis, favoris, consultées récemment, idées de
   saison, à tester ; rubriques à réordonner ou cacher (☰, sur l'appareil).
-- **Étape 2** : partager une recette en texte, en PDF, l'imprimer.
+- **Étape 2 (à tester)** : partager une recette en texte, l'envoyer en PDF (fichier), l'imprimer ;
+  pour les portions choisies sur la fiche.
 - **Étape 3** : les statistiques.
 
 ## 1.0 — Stabilisation : remplace Recipe Keeper

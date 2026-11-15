@@ -44,6 +44,16 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Les PDF partagés (recettes) : fichiers du cache, lus par l'app choisie. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.exports"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/export_paths" />
+        </provider>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
