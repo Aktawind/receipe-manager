@@ -48,6 +48,24 @@ Future<void> shareRecipe(
   RecipeShare how,
 ) async {
   final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  try {
+    await _share(l10n, ref, recipe, how);
+  } on Object catch (error) {
+    // Rien ne doit échouer en silence : on dit ce qui s'est passé.
+    debugPrint('Partage de la recette : $error');
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(l10n.shareFailed)));
+  }
+}
+
+Future<void> _share(
+  AppLocalizations l10n,
+  WidgetRef ref,
+  Recipe recipe,
+  RecipeShare how,
+) async {
   final export = ref.read(exportActionsProvider);
   final factor = ref.read(recipeScaleProvider(recipe.id));
   final title = recipeTitle(l10n, recipe);

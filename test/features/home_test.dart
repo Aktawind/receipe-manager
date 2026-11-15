@@ -87,4 +87,52 @@ void main() {
     expect(find.byKey(const ValueKey('home-shortcut-new')), findsNothing);
     expect(app.prefs.getStringList('home_sections'), contains('shortcuts:0'));
   });
+
+  testWidgets('les statistiques, depuis l’accueil', (tester) async {
+    await open(
+      tester,
+      seed: (app) async {
+        final repo = app.services.recipes;
+        for (final title in ['Quiche', 'Crêpes']) {
+          final r = await repo.create();
+          await repo.save(r.copyWith(title: title));
+          if (title == 'Quiche') {
+            await app.services.planning.add(
+              day: today,
+              slotId: dinner,
+              recipeId: r.id,
+              recipeTitle: title,
+            );
+          }
+        }
+      },
+    );
+    await tester.tap(find.byKey(const ValueKey('home-stats')));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
+    await settle(tester);
+    expect(find.text('Statistiques'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('stats-total')),
+        matching: find.text('2'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('stats-planned')),
+        matching: find.text('1'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('stats-most-planned')),
+        matching: find.text('Quiche'),
+      ),
+      findsOneWidget,
+    );
+  });
 }

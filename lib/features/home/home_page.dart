@@ -70,6 +70,12 @@ class HomePage extends ConsumerWidget {
         title: Text(l10n.navHome),
         actions: [
           IconButton(
+            key: const ValueKey('home-stats'),
+            tooltip: l10n.statsTitle,
+            icon: const Icon(Icons.insights_outlined),
+            onPressed: () => context.push('/accueil/statistiques'),
+          ),
+          IconButton(
             key: const ValueKey('home-customize'),
             tooltip: l10n.homeCustomize,
             icon: const Icon(Icons.tune),
@@ -279,6 +285,12 @@ class _Shortcuts extends ConsumerWidget {
                 Icons.auto_awesome_outlined,
                 l10n.plannerOpen,
                 () => context.push('/planning/planificateur'),
+              ),
+              shortcut(
+                'stats',
+                Icons.insights_outlined,
+                l10n.statsTitle,
+                () => context.push('/accueil/statistiques'),
               ),
               shortcut(
                 'shopping',
