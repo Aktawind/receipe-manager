@@ -379,6 +379,16 @@ abstract final class MealPlanner {
     return own.contains(season.labelId);
   }
 
+  /// Une recette de classement [labelIds] convient-elle à [season] ? Sans
+  /// saison, ou « Toute saison » : oui.
+  static bool fitsSeason(Iterable<String> labelIds, Season season) {
+    final seasons = {for (final s in Season.values) s.labelId};
+    final own = labelIds.where(seasons.contains).toSet();
+    final all = Label.idFor(LabelKind.season, DefaultLabels.allSeasons);
+    if (own.isEmpty || labelIds.contains(all)) return true;
+    return own.contains(season.labelId);
+  }
+
   /// Une recette par repas à prévoir, sans en prendre deux fois la même
   /// (sauf s'il n'y en a pas assez) ; `null` quand aucune ne convient.
   /// [categories] : les types de plat de chaque créneau (par identifiant).

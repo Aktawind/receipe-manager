@@ -11,7 +11,10 @@ import 'features/sync/sync_providers.dart';
 import 'l10n/app_localizations.dart';
 
 class RecettesApp extends ConsumerStatefulWidget {
-  const RecettesApp({super.key});
+  const RecettesApp({super.key, this.initialLocation = '/accueil'});
+
+  /// Le premier écran (l'accueil ; les tests partent des recettes).
+  final String initialLocation;
 
   @override
   ConsumerState<RecettesApp> createState() => _RecettesAppState();
@@ -19,7 +22,9 @@ class RecettesApp extends ConsumerStatefulWidget {
 
 class _RecettesAppState extends ConsumerState<RecettesApp>
     with WidgetsBindingObserver {
-  late final GoRouter _router = buildRouter();
+  late final GoRouter _router = buildRouter(
+    initialLocation: widget.initialLocation,
+  );
 
   @override
   void initState() {
