@@ -19,7 +19,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.9](#09--import-depuis-photos-et-documents) | Import depuis photos et documents | ✅ |
 | [0.10](#010--listes-de-courses) | Listes de courses | ✅ |
 | [0.11](#011--planning-des-repas) | Planning des repas | ✅ |
-| [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | 🟨 |
+| [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ✅ |
 | [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ⬜ |
 | [1.1 → 1.6](#après-la-10--fonctions-différenciantes) | Fonctions différenciantes et foyer partagé | ⬜ |
 
@@ -450,9 +450,9 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
 - **Étape 1 (validée le 2026-11-15)** : l'onglet **Accueil** (premier onglet, ouvert au démarrage) :
   aujourd'hui (repas du jour, par créneau), raccourcis, favoris, consultées récemment, idées de
   saison, à tester ; rubriques à réordonner ou cacher (☰, sur l'appareil).
-- **Étape 2 (validée le 2026-11-15, sauf l'envoi en PDF)** : partager une recette en texte, l'envoyer en PDF (fichier), l'imprimer ;
+- **Étape 2 (validée le 2026-11-15)** : partager une recette en texte, l'envoyer en PDF (fichier), l'imprimer ;
   pour les portions choisies sur la fiche.
-- **Étape 3 (à tester)** : les statistiques (chiffres clés, les plus planifiées, par catégorie,
+- **Étape 3 (validée le 2026-11-15)** : les statistiques (chiffres clés, les plus planifiées, par catégorie,
   saison et statut, ingrédients les plus utilisés, les mieux notées), depuis l'accueil.
   Correctif de l'étape 2 (retour du 2026-11-15) : « Envoyer en PDF » ne faisait rien (fichier
   dans `code_cache`, refusé par le FileProvider).
