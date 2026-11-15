@@ -8,6 +8,7 @@ import '../../features/equipment/equipment_page.dart';
 import '../../features/home/home_customize_page.dart';
 import '../../features/home/home_page.dart';
 import '../../features/home/home_shell.dart';
+import '../../features/home/stats_page.dart';
 import '../../features/planning/meal_slots_page.dart';
 import '../../features/planning/planner_page.dart';
 import '../../features/planning/planning_page.dart';
@@ -44,6 +45,11 @@ GoRouter buildRouter({String initialLocation = '/accueil'}) => GoRouter(
                   path: 'personnaliser',
                   parentNavigatorKey: _rootKey,
                   builder: (context, state) => const HomeCustomizePage(),
+                ),
+                GoRoute(
+                  path: 'statistiques',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const StatsPage(),
                 ),
               ],
             ),

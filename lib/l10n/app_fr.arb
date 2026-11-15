@@ -1195,5 +1195,27 @@
   "shareRecipeText": "Partager le texte",
   "shareRecipePdf": "Envoyer en PDF",
   "printRecipe": "Imprimer",
-  "shareSource": "Source"
+  "shareSource": "Source",
+  "shareFailed": "Le partage n'a pas pu se faire. Réessaie, ou utilise « Imprimer » puis « Enregistrer au format PDF ».",
+  "statsTitle": "Statistiques",
+  "statsEmpty": "Les statistiques apparaîtront avec tes premières recettes.",
+  "statsRecipes": "recettes",
+  "statsAverageTime": "temps moyen",
+  "statsPlannedLast30": "repas prévus en 30 jours",
+  "statsNeverPlanned": "jamais planifiées",
+  "statsMostPlanned": "Les plus planifiées",
+  "statsByCategory": "Par catégorie",
+  "statsNoCategory": "Sans catégorie",
+  "statsBySeason": "Par saison",
+  "statsNoSeason": "Sans saison",
+  "statsByStatus": "Par statut",
+  "statsIngredients": "Ingrédients les plus utilisés",
+  "statsInRecipes": "Nombre de recettes qui en contiennent (sel, poivre et basiques à part)",
+  "statsBestRated": "Les mieux notées",
+  "statsRating": "{count, plural, =1{1 étoile} other{{count} étoiles}}",
+  "@statsRating": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
 }

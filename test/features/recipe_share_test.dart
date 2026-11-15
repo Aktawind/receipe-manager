@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recettes/core/platform/export_actions.dart';
 import 'package:recettes/domain/ingredient_text.dart';
@@ -10,6 +10,9 @@ import 'package:recettes/domain/step_text.dart';
 import '../helpers/test_app.dart';
 
 class _FakeExport implements ExportActions {
+  /// Fait échouer l'envoi du PDF (comme le FileProvider qui refusait le
+  /// fichier).
+  bool failPdf = false;
   String? text;
   String? subject;
   Uint8List? shared;
@@ -24,6 +27,7 @@ class _FakeExport implements ExportActions {
 
   @override
   Future<void> sharePdf(Uint8List pdf, {required String name}) async {
+    if (failPdf) throw PlatformException(code: 'export');
     shared = pdf;
     sharedName = name;
   }
@@ -89,5 +93,13 @@ void main() {
 
     await menu('recipe-print');
     expect(utf8.decode(export.printed!.sublist(0, 5)), '%PDF-');
+
+    // Un échec ne passe plus inaperçu.
+    export.failPdf = true;
+    await menu('recipe-share-pdf');
+    expect(
+      find.textContaining('Le partage n\'a pas pu se faire'),
+      findsOneWidget,
+    );
   });
 }

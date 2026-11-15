@@ -30,12 +30,24 @@ object ExportActions {
         activity.startActivity(Intent.createChooser(send, subject.ifEmpty { null }))
     }
 
-    /** Envoie un PDF (dans le cache de l'app) à une autre app, par le FileProvider. */
+    /**
+     * Envoie un PDF à une autre app, par le FileProvider. Le fichier est d'abord
+     * copié dans `cache/exports` (le seul dossier que le FileProvider partage) :
+     * le dossier temporaire de Flutter est `code_cache`, que le FileProvider
+     * refuse.
+     */
     fun sharePdf(activity: Activity, path: String, name: String) {
+        val source = File(path)
+        val folder = File(activity.cacheDir, "exports").apply { mkdirs() }
+        val shared = File(folder, source.name)
+        if (source.canonicalPath != shared.canonicalPath) {
+            source.copyTo(shared, overwrite = true)
+            source.delete()
+        }
         val uri = FileProvider.getUriForFile(
             activity,
             "${activity.packageName}.exports",
-            File(path),
+            shared,
         )
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "application/pdf"
