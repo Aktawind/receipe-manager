@@ -1191,5 +1191,9 @@
   "homeToTest": "À tester",
   "homeCustomize": "Personnaliser l'accueil",
   "homeCustomizeHint": "Glisse ☰ pour changer l'ordre des rubriques ; l'interrupteur les affiche ou les cache.",
-  "homeReset": "Par défaut"
+  "homeReset": "Par défaut",
+  "shareRecipeText": "Partager le texte",
+  "shareRecipePdf": "Envoyer en PDF",
+  "printRecipe": "Imprimer",
+  "shareSource": "Source"
 }

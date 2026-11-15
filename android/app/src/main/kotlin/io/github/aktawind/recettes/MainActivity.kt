@@ -97,6 +97,14 @@ class MainActivity : FlutterActivity() {
                         )
                         result.success(null)
                     }
+                    "sharePdf" -> {
+                        ExportActions.sharePdf(
+                            this,
+                            call.argument<String>("path")!!,
+                            call.argument<String>("name") ?: "Recette",
+                        )
+                        result.success(null)
+                    }
                     "printPdf" -> {
                         ExportActions.printPdf(
                             this,

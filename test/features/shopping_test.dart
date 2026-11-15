@@ -56,6 +56,9 @@ class _FakeExport implements ExportActions {
     this.pdf = pdf;
     pdfName = name;
   }
+
+  @override
+  Future<void> sharePdf(Uint8List pdf, {required String name}) async {}
 }
 
 Future<void> _openNewList(WidgetTester tester, String name) async {
