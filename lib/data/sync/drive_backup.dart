@@ -75,11 +75,32 @@ class DriveBackupService {
         '-${two(m.hour)}${two(m.minute)}.json';
   }
 
-  /// Sauvegarde maintenant, puis fait le tri des plus anciennes.
+  /// Sauvegarde maintenant, la **relit** depuis Drive pour s'assurer qu'elle
+  /// est restaurable, puis seulement fait le tri des plus anciennes : une
+  /// sauvegarde abîmée ne remplace jamais une bonne.
   Future<void> backupNow() async {
     final data = Uint8List.fromList(await backups.exportJson());
-    await remote.uploadBackup(fileName(_now()), data);
+    final expected = backups.readJson(data);
+    final name = fileName(_now());
+    await remote.uploadBackup(name, data);
     final all = await remote.listBackups();
+    final sent = all.where((b) => b.name == name).firstOrNull;
+    if (sent == null) {
+      throw const BackupCheckException('introuvable après l\'envoi');
+    }
+    try {
+      final back = backups.readJson(await remote.downloadBackup(sent.id));
+      if (back.recipes.length != expected.recipes.length ||
+          back.labels.length != expected.labels.length ||
+          back.shoppingLists.length != expected.shoppingLists.length ||
+          back.plannedMeals.length != expected.plannedMeals.length) {
+        throw const BackupCheckException('contenu différent');
+      }
+    } on BackupCheckException {
+      rethrow;
+    } on Object catch (error) {
+      throw BackupCheckException('illisible ($error)');
+    }
     for (final old in all.skip(keep)) {
       await remote.deleteBackup(old.id);
     }
@@ -146,4 +167,15 @@ class DriveBackupService {
       missingPhotos: missing,
     );
   }
+}
+
+/// La sauvegarde envoyée sur Drive n'a pas pu être relue telle quelle.
+class BackupCheckException implements Exception {
+  const BackupCheckException(this.detail);
+
+  final String detail;
+
+  @override
+  String toString() =>
+      'La sauvegarde envoyée sur Drive n\'a pas pu être vérifiée : $detail';
 }

@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
+import '../../core/logging/error_log.dart';
 import '../app_services.dart';
 import 'drive_auth.dart';
 import 'drive_backup.dart';
@@ -58,7 +59,7 @@ class WorkmanagerScheduler implements BackgroundScheduler {
       );
     } on Object catch (error) {
       // La synchro à l'ouverture et après modification reste là.
-      debugPrint('Synchro en arrière-plan indisponible : $error');
+      ErrorLog.current.add('Synchro en arrière-plan', error);
     }
   }
 
@@ -80,7 +81,7 @@ void backgroundDispatcher() {
     try {
       return await runBackgroundSync();
     } on Object catch (error, stack) {
-      debugPrint('Synchro en arrière-plan : $error\n$stack');
+      ErrorLog.current.add('Synchro en arrière-plan', error, stack);
       return false; // Android réessaiera plus tard
     }
   });
@@ -97,6 +98,7 @@ Future<bool> runBackgroundSync() async {
   if (AppServices.migrationPending(prefs)) return true;
 
   final root = await getApplicationDocumentsDirectory();
+  ErrorLog.current = ErrorLog(File(p.join(root.path, ErrorLog.fileName)));
   final gate = SyncGate(File(p.join(root.path, SyncGate.fileName)));
   // L'application, ou une autre tâche, est déjà en train de synchroniser.
   if (!gate.tryAcquire()) return true;

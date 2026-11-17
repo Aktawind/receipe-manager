@@ -166,6 +166,20 @@ class SettingsPage extends ConsumerWidget {
                 ? null
                 : Text(l10n.aboutVersion(info.version, info.buildNumber)),
           ),
+          ListTile(
+            key: const ValueKey('settings-privacy'),
+            leading: const Icon(Icons.shield_outlined),
+            title: Text(l10n.privacyTitle),
+            subtitle: Text(l10n.privacySubtitle),
+            onTap: () => context.push('/reglages/confidentialite'),
+          ),
+          ListTile(
+            key: const ValueKey('settings-error-log'),
+            leading: const Icon(Icons.bug_report_outlined),
+            title: Text(l10n.errorLogTitle),
+            subtitle: Text(l10n.errorLogSubtitle),
+            onTap: () => context.push('/reglages/journal'),
+          ),
         ],
       ),
     );

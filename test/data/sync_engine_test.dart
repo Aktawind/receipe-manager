@@ -16,6 +16,7 @@ import 'package:recettes/data/sync/drive_backup.dart';
 import 'package:recettes/data/sync/hybrid_clock.dart';
 import 'package:recettes/data/sync/sync_codec.dart';
 import 'package:recettes/data/sync/sync_engine.dart';
+import 'package:recettes/data/sync/sync_remote.dart';
 import 'package:recettes/domain/label.dart';
 import 'package:recettes/domain/recipe.dart';
 import 'package:recettes/domain/shopping.dart';
@@ -550,6 +551,34 @@ void main() {
   );
 
   test(
+    'une sauvegarde qui revient abîmée n’efface pas les anciennes',
+    () async {
+      await a.addRecipe('Quiche');
+      final service = backupOf(a);
+      for (var i = 0; i < DriveBackupService.keep; i++) {
+        a.at(t(i));
+        await service.backupNow();
+      }
+      // Drive rend un fichier abîmé : la sauvegarde est refusée.
+      final broken = _BrokenRemote(remote);
+      a.at(t(50));
+      await expectLater(
+        DriveBackupService(
+          remote: broken,
+          sync: broken,
+          backups: a.backups,
+          photos: a.photos,
+          clock: a.clock,
+          now: () => a._time.value,
+        ).backupNow(),
+        throwsA(isA<BackupCheckException>()),
+      );
+      // Les dix bonnes sauvegardes sont toujours là (plus la mauvaise).
+      expect(remote.calls.where((c) => c.startsWith('deleteBackup')), isEmpty);
+    },
+  );
+
+  test(
     'restaurer une sauvegarde : tout revient, ici et sur l’autre appareil',
     () async {
       await a.photos.write('tarte.jpg', [1, 2]);
@@ -646,4 +675,25 @@ void main() {
     expect(SyncKind.parse('recipes/a/b.json'), isNull);
     expect(SyncKind.parse('recipes/abc.txt'), isNull);
   });
+}
+
+/// Un Drive qui rend les sauvegardes abîmées.
+class _BrokenRemote extends MemoryRemote {
+  _BrokenRemote(this.inner);
+
+  final MemoryRemote inner;
+
+  @override
+  Future<void> uploadBackup(String name, Uint8List bytes) =>
+      inner.uploadBackup(name, bytes);
+
+  @override
+  Future<List<RemoteBackup>> listBackups() => inner.listBackups();
+
+  @override
+  Future<Uint8List> downloadBackup(String id) async =>
+      Uint8List.fromList([123, 34]);
+
+  @override
+  Future<void> deleteBackup(String id) => inner.deleteBackup(id);
 }

@@ -83,6 +83,8 @@ class EquipmentPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.equipmentTitle)),
       floatingActionButton: FloatingActionButton.extended(
+        // Pas d'animation partagée : les onglets gardent chacun leur bouton.
+        heroTag: null,
         onPressed: () => _add(context, ref),
         icon: const Icon(Icons.add),
         label: Text(l10n.addEquipment),

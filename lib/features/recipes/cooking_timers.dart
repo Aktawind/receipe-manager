@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/logging/error_log.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Ce qui fait sonner un minuteur à l'heure dite, même app fermée : une
@@ -35,7 +36,7 @@ class AndroidTimerAlarms implements TimerAlarmScheduler {
     } on MissingPluginException {
       // Pas d'Android (tests, autres plateformes) : le minuteur reste à l'écran.
     } on PlatformException catch (error) {
-      debugPrint('TimerAlarms.$method: $error');
+      ErrorLog.current.add('Minuteurs ($method)', error);
     }
   }
 

@@ -1217,5 +1217,37 @@
     "placeholders": {
       "count": {"type": "int"}
     }
-  }
+  },
+  "errorLogTitle": "Journal des erreurs",
+  "errorLogSubtitle": "Ce qui n'a pas marché, pour me le signaler",
+  "errorLogEmpty": "Aucune erreur enregistrée. Tant mieux !",
+  "errorLogHint": "Les erreurs restent sur cet appareil. Pour signaler un problème, envoie le journal avec le bouton Partager.",
+  "errorLogShare": "Envoyer le journal",
+  "errorLogClear": "Effacer le journal",
+  "errorLogClearConfirm": "Effacer toutes les erreurs du journal ?",
+  "privacyTitle": "Confidentialité",
+  "privacySubtitle": "Où sont tes données, les exporter ou les supprimer",
+  "privacyDeviceTitle": "Sur cet appareil",
+  "privacyDeviceText": "Tes recettes, photos, listes de courses et ton planning sont enregistrés sur le téléphone (et sur la tablette), dans l'espace réservé à l'application.",
+  "privacyDriveTitle": "Dans ton Google Drive",
+  "privacyDriveText": "Si la synchronisation est activée, une copie est rangée dans le dossier « Recettes » de ton propre Google Drive, avec les sauvegardes. Personne d'autre n'y a accès, sauf si tu le partages.",
+  "privacyInternetTitle": "Ce qui passe par Internet",
+  "privacyInternetText": "Seulement : la page d'un site de recettes que tu choisis d'importer, la connexion à Google et la synchronisation avec ton Drive. La dictée utilise la reconnaissance vocale d'Android, qui peut passer par les serveurs de Google selon ton téléphone.",
+  "privacyPermissionsTitle": "Autorisations",
+  "privacyPermissionsText": "Le micro, pour la dictée des courses ; les notifications et alarmes, pour les minuteurs du mode cuisine. Rien d'autre.",
+  "privacyNeverTitle": "Jamais",
+  "privacyNeverText": "Pas de compte à créer, pas de publicité, pas de suivi ni de statistiques envoyées, pas d'intelligence artificielle.",
+  "privacyExport": "Exporter toutes mes données",
+  "privacyExportText": "Un fichier ZIP avec tes recettes, photos, listes et planning",
+  "deleteAllTitle": "Supprimer toutes mes données",
+  "deleteAllSubtitle": "Recettes, photos, listes, planning et réglages de cet appareil",
+  "deleteAllText": "Tout ce que contient l'application sur cet appareil sera effacé : recettes, photos, listes de courses, planning, sauvegardes locales et réglages. Pense à exporter tes données avant, si tu veux les garder.",
+  "deleteAllDrive": "Supprimer aussi le dossier « Recettes » de Google Drive",
+  "deleteAllDriveHint": "Il part dans la corbeille de Drive (récupérable 30 jours), avec les sauvegardes. Sinon, la synchronisation est simplement arrêtée.",
+  "deleteAllNext": "Continuer",
+  "deleteAllLastTitle": "Dernière confirmation",
+  "deleteAllLastText": "Tout effacer maintenant ? On ne pourra pas revenir en arrière.",
+  "deleteAllConfirm": "Tout supprimer",
+  "deleteAllDone": "Toutes tes données ont été supprimées.",
+  "deleteAllDoneDriveFailed": "Les données de l'appareil sont supprimées, mais le dossier Drive n'a pas pu l'être : supprime-le depuis Google Drive."
 }

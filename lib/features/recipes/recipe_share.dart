@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format/durations.dart';
+import '../../core/logging/error_log.dart';
 import '../../core/platform/export_actions.dart';
 import '../../data/app_services.dart';
 import '../../domain/recipe.dart';
@@ -51,9 +52,9 @@ Future<void> shareRecipe(
   final messenger = ScaffoldMessenger.of(context);
   try {
     await _share(l10n, ref, recipe, how);
-  } on Object catch (error) {
+  } on Object catch (error, stack) {
     // Rien ne doit échouer en silence : on dit ce qui s'est passé.
-    debugPrint('Partage de la recette : $error');
+    ErrorLog.current.add('Partage de la recette', error, stack);
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(l10n.shareFailed)));

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:path/path.dart' as p;
 
+import '../../core/logging/error_log.dart';
 import '../../core/settings/theme_mode_controller.dart';
 import '../../data/app_services.dart';
 import '../../data/sync/background_sync.dart';
@@ -334,12 +335,16 @@ class SyncController extends Notifier<SyncState> {
         final signIn = report.errors.any(
           (e) => e.contains('DriveSignInRequired'),
         );
+        for (final e in report.errors.take(5)) {
+          ErrorLog.current.add('Synchro', e);
+        }
         state = state.copyWith(
           phase: signIn ? SyncPhase.signInRequired : SyncPhase.error,
           error: report.errors.first,
         );
       }
-    } on Object catch (error) {
+    } on Object catch (error, stack) {
+      ErrorLog.current.add('Synchro', error, stack);
       if (run == _runId) {
         state = state.copyWith(phase: SyncPhase.error, error: '$error');
       }
@@ -467,7 +472,8 @@ class SyncController extends Notifier<SyncState> {
           .setString(SyncPrefs.lastBackup, now.toUtc().toIso8601String());
       state = state.copyWith(backupBusy: false, lastBackup: now);
       return true;
-    } on Object catch (error) {
+    } on Object catch (error, stack) {
+      ErrorLog.current.add('Sauvegarde Drive', error, stack);
       state = state.copyWith(backupBusy: false, backupError: '$error');
       return false;
     }
