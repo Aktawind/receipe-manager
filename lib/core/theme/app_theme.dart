@@ -12,11 +12,11 @@ abstract final class AppTheme {
         onPrimaryContainer: Colors.white,
         secondary: AppPalette.teal,
         onSecondary: Colors.white,
-        tertiary: AppPalette.caramel,
+        tertiary: AppPalette.peach,
         onTertiary: AppPalette.ink,
-        tertiaryContainer: AppPalette.butter,
+        tertiaryContainer: AppPalette.lightPeach,
         onTertiaryContainer: AppPalette.ink,
-        surface: AppPalette.mint,
+        surface: AppPalette.cream,
         onSurface: AppPalette.ink,
       );
 
@@ -31,12 +31,12 @@ abstract final class AppTheme {
         onPrimaryContainer: Colors.white,
         secondary: AppPalette.lightTeal,
         onSecondary: AppPalette.nightTeal,
-        tertiary: AppPalette.caramel,
+        tertiary: AppPalette.peach,
         onTertiary: AppPalette.ink,
-        tertiaryContainer: AppPalette.butter,
+        tertiaryContainer: AppPalette.lightPeach,
         onTertiaryContainer: AppPalette.ink,
         surface: AppPalette.nightTeal,
-        onSurface: AppPalette.mint,
+        onSurface: AppPalette.cream,
       );
 
   static ThemeData get light => _build(lightScheme);
@@ -56,7 +56,7 @@ abstract final class AppTheme {
         backgroundColor: scheme.tertiary,
         foregroundColor: scheme.onTertiary,
       ),
-      // The selected tab sits on a butter-yellow indicator in both themes, so
+      // The selected tab sits on a light-peach indicator in both themes, so
       // its icon must use the dark "on" color, not the theme's default.
       navigationBarTheme: NavigationBarThemeData(
         indicatorColor: scheme.tertiaryContainer,

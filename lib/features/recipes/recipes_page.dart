@@ -123,6 +123,8 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        // Pas d'animation partagée : les onglets gardent chacun leur bouton.
+        heroTag: null,
         onPressed: _createRecipe,
         icon: const Icon(Icons.add),
         label: Text(l10n.newRecipe),

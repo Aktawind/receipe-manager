@@ -213,7 +213,7 @@ class DetailServingsRow extends ConsumerWidget {
               if (chosen != null) scale.set(chosen);
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               child: Text(
                 servingsText(l10n, recipe, wanted),
                 style: theme.textTheme.titleSmall?.copyWith(
@@ -323,12 +323,13 @@ class DetailStarRating extends StatelessWidget {
       children: [
         for (var star = 1; star <= 5; star++)
           InkResponse(
-            radius: 20,
+            radius: 22,
             onTap: () => onChanged(rating == star ? null : star),
             child: Tooltip(
               message: rating == star ? l10n.clearRating : l10n.rateStars(star),
+              // 26 + 2 × 11 = 48 : une zone facile à toucher.
               child: Padding(
-                padding: const EdgeInsets.all(2),
+                padding: const EdgeInsets.all(11),
                 child: Icon(
                   star <= (rating ?? 0) ? Icons.star : Icons.star_border,
                   size: 26,

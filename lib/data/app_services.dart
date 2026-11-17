@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/logging/error_log.dart';
 import '../domain/saved_search.dart';
 import 'backup/backup_service.dart';
 import 'database.dart';
@@ -177,6 +178,24 @@ class AppServices {
     await moveSavedSearches(prefs, recipes, clock.now());
     await prefs.setInt(_schemaVersionKey, AppDatabase.latestSchemaVersion);
     return services;
+  }
+
+  /// « Supprimer toutes mes données » sur l'appareil : la base (remise comme
+  /// à la première ouverture), les photos, les sauvegardes locales, le journal
+  /// des erreurs et les réglages. Le dossier Drive se supprime à part.
+  Future<void> wipeAll(SharedPreferences prefs) async {
+    await database.resetAll();
+    for (final dir in [
+      photos.directory,
+      Directory(p.join(root.path, 'sauvegardes')),
+    ]) {
+      if (await dir.exists()) await dir.delete(recursive: true);
+    }
+    ErrorLog.current.clear();
+    for (final key in prefs.getKeys().toList()) {
+      // La version du schéma reste : la base est à jour.
+      if (key != _schemaVersionKey) await prefs.remove(key);
+    }
   }
 
   /// Vide la corbeille des recettes supprimées depuis plus de 30 jours.

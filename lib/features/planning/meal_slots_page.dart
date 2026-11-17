@@ -119,6 +119,8 @@ class MealSlotsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.mealSlotsTitle)),
       floatingActionButton: FloatingActionButton.extended(
+        // Pas d'animation partagée : les onglets gardent chacun leur bouton.
+        heroTag: null,
         key: const ValueKey('slot-add'),
         onPressed: () => _add(context, ref),
         icon: const Icon(Icons.add),

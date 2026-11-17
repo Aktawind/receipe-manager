@@ -20,7 +20,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.10](#010--listes-de-courses) | Listes de courses | ✅ |
 | [0.11](#011--planning-des-repas) | Planning des repas | ✅ |
 | [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ✅ |
-| [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ⬜ |
+| [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ✅ |
 | [1.1 → 1.6](#après-la-10--fonctions-différenciantes) | Fonctions différenciantes et foyer partagé | ⬜ |
 
 Roadmap validée le 2026-10-21. L'ordre est pensé pour que tu puisses **utiliser l'app au quotidien le
@@ -468,6 +468,23 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
 - Confidentialité : écran explicatif, consentements, export et suppression des données
 - Nom et icône définitifs
 - Tes derniers retours
+
+*Décisions du 2026-11-17* :
+- tout en une fois (pas d'étapes : ces changements se voient peu) ;
+- nom : « Recettes » pour l'instant (le changer plus tard est simple : c'est le nom affiché,
+  l'identifiant de l'application ne bouge pas) ;
+- **nouvelle palette** : bleu canard et pêche, tons doux (l'ancienne « faisait Noël ») ;
+  **icône** : une toque de chef ;
+- bibliothèque visée : 500 recettes au plus (328 aujourd'hui) ;
+- accessibilité : le minimum (texte système normal, pas de clavier physique) ;
+- « Supprimer toutes mes données » : l'appareil et, au choix, le dossier Drive ;
+- formats régionaux retirés (tout est en français) ; rien ne manque par rapport à Recipe Keeper.
+
+*Avancement* : **validée le 2026-11-17** — palette et icône ; journal des erreurs (Réglages → À propos) ;
+sauvegardes Drive relues avant de trier les anciennes ; Réglages → Confidentialité (ce que l'app
+garde, export, suppression de toutes les données) ; 500 recettes vérifiées (lecture, recherche,
+statistiques, planificateur) ; zones à toucher, libellés et contrastes vérifiés sur les écrans
+principaux.
 
 ## Après la 1.0 — Fonctions différenciantes
 

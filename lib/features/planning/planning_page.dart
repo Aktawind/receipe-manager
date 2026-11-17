@@ -244,11 +244,19 @@ class _DayCard extends ConsumerWidget {
                   : () {
                       ref.read(plannedDayProvider.notifier).show(day);
                     },
-              child: Text(
-                title[0].toUpperCase() + title.substring(1),
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: today ? scheme.primary : null,
-                  fontWeight: FontWeight.w600,
+              // Au moins 48 de haut : une zone facile à toucher.
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: 1,
+                  child: Text(
+                    title[0].toUpperCase() + title.substring(1),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: today ? scheme.primary : null,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -309,7 +317,9 @@ class _DayCard extends ConsumerWidget {
                           key: ValueKey(
                             'planning-add-${PlannedMeal.dayKey(day)}-${slot.id}',
                           ),
-                          visualDensity: VisualDensity.compact,
+                          // Zone à toucher de 48 (accessibilité), même si la
+                          // puce paraît plus petite.
+                          materialTapTargetSize: MaterialTapTargetSize.padded,
                           avatar: const Icon(Icons.add, size: 16),
                           label: Text(slot.name),
                           onPressed: () =>

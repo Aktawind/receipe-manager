@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/logging/error_log.dart';
 import '../../domain/ocr_layout.dart';
 
 /// Pourquoi une page n'a pas pu être lue.
@@ -115,7 +116,7 @@ class MlKitPageScanner implements PageScanner {
       }
       return text;
     } on PlatformException catch (e) {
-      debugPrint('TextRecognizer: $e');
+      ErrorLog.current.add('Lecture de photo', e);
       throw PageScanException(PageScanError.unavailable, e.message ?? e.code);
     } finally {
       unawaited(recognizer.close().catchError((Object _) {}));
