@@ -20,7 +20,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.10](#010--listes-de-courses) | Listes de courses | ✅ |
 | [0.11](#011--planning-des-repas) | Planning des repas | ✅ |
 | [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ✅ |
-| [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | 🟨 |
+| [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ✅ |
 | [1.1 → 1.6](#après-la-10--fonctions-différenciantes) | Fonctions différenciantes et foyer partagé | ⬜ |
 
 Roadmap validée le 2026-10-21. L'ordre est pensé pour que tu puisses **utiliser l'app au quotidien le
@@ -480,7 +480,7 @@ photos des livres rendent mal) ; l'étape 2 est abandonnée.
 - « Supprimer toutes mes données » : l'appareil et, au choix, le dossier Drive ;
 - formats régionaux retirés (tout est en français) ; rien ne manque par rapport à Recipe Keeper.
 
-*Avancement* : **à tester** — palette et icône ; journal des erreurs (Réglages → À propos) ;
+*Avancement* : **validée le 2026-11-17** — palette et icône ; journal des erreurs (Réglages → À propos) ;
 sauvegardes Drive relues avant de trier les anciennes ; Réglages → Confidentialité (ce que l'app
 garde, export, suppression de toutes les données) ; 500 recettes vérifiées (lecture, recherche,
 statistiques, planificateur) ; zones à toucher, libellés et contrastes vérifiés sur les écrans
