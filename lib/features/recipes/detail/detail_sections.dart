@@ -539,20 +539,29 @@ class DetailStatusRow extends StatelessWidget {
               child: Text(l10n.statusNone),
             ),
           ],
-          child: Chip(
-            avatar: Icon(
-              status == null ? Icons.flag_outlined : Icons.flag,
-              size: 18,
-              color: theme.colorScheme.primary,
+          // La puce paraît compacte, mais la zone à toucher fait 48 de haut.
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Center(
+              widthFactor: 1,
+              child: Chip(
+                avatar: Icon(
+                  status == null ? Icons.flag_outlined : Icons.flag,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      status == null ? l10n.statusLabel : statusLabel(status),
+                    ),
+                    const Icon(Icons.arrow_drop_down, size: 20),
+                  ],
+                ),
+                visualDensity: VisualDensity.compact,
+              ),
             ),
-            label: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(status == null ? l10n.statusLabel : statusLabel(status)),
-                const Icon(Icons.arrow_drop_down, size: 20),
-              ],
-            ),
-            visualDensity: VisualDensity.compact,
           ),
         ),
       ],

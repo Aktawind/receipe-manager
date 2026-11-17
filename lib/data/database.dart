@@ -520,6 +520,21 @@ UPDATE recipes SET
     },
   );
 
+  /// Efface toutes les données (« Supprimer toutes mes données ») et remet
+  /// ce qui est fourni au départ (classement, rayons, créneaux,
+  /// accompagnements), comme à la première ouverture.
+  Future<void> resetAll() => transaction(() async {
+    // Les tables liées d'abord (clés étrangères).
+    for (final table in allTables.toList().reversed) {
+      await delete(table).go();
+    }
+    final now = DateTime.now();
+    await _seedDefaultLabels(now);
+    await _seedDefaultAisles(now);
+    await _seedDefaultMealSlots(now);
+    await _seedDefaultSideDishes(now);
+  });
+
   /// Matériel saisi en texte (un par ligne, v5) → liste commune. Un même nom,
   /// à la casse et aux accents près, donne un seul matériel.
   Future<void> _equipmentTextToCatalog() async {

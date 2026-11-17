@@ -50,6 +50,9 @@ téléphone et tablette. Nom provisoire : « Recettes ».
 - `android.builtInKotlin=true` (Kotlin intégré d'AGP 9) : après l'ajout d'un plugin, vérifier
   qu'il n'applique pas lui-même `kotlin-android`. La CI vérifie que chaque plugin enregistré est
   présent dans l'APK (`tools/check_apk_plugins.sh`).
+- Une erreur rattrapée qui compte (synchro, sauvegarde, partage, plateforme) est notée avec
+  `ErrorLog.current.add(où, erreur, pile)` (`lib/core/logging/error_log.dart`) : elle apparaît dans
+  Réglages → Journal des erreurs. Jamais d'erreur avalée en silence.
 - Rien d'asynchrone qui puisse échouer avant `runApp` sans être rattrapé : une erreur à ce
   moment-là laisse l'app figée sur l'écran de lancement (voir `lib/main.dart`).
 - R8 (mode complet, AGP 9) supprime les méthodes appelées seulement par JNI (plugins à bindings

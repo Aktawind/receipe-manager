@@ -18,6 +18,8 @@ import '../../features/recipes/recipe_detail_page.dart';
 import '../../features/recipes/recipe_editor_page.dart';
 import '../../features/recipes/recipes_page.dart';
 import '../../features/recipes/web_import_page.dart';
+import '../../features/settings/error_log_page.dart';
+import '../../features/settings/privacy_page.dart';
 import '../../features/settings/settings_page.dart';
 import '../../features/settings/trash_page.dart';
 import '../../features/shopping/aisles_page.dart';
@@ -183,6 +185,16 @@ GoRouter buildRouter({String initialLocation = '/accueil'}) => GoRouter(
                   path: 'materiel',
                   parentNavigatorKey: _rootKey,
                   builder: (context, state) => const EquipmentPage(),
+                ),
+                GoRoute(
+                  path: 'journal',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const ErrorLogPage(),
+                ),
+                GoRoute(
+                  path: 'confidentialite',
+                  parentNavigatorKey: _rootKey,
+                  builder: (context, state) => const PrivacyPage(),
                 ),
                 GoRoute(
                   path: 'corbeille',

@@ -1,6 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/logging/error_log.dart';
 
 /// Pourquoi la dictée s'est arrêtée.
 enum SpeechStop {
@@ -68,7 +69,7 @@ class AndroidSpeechInput implements SpeechInput {
     } on MissingPluginException {
       onStop(SpeechStop.unavailable);
     } on PlatformException catch (error) {
-      debugPrint('SpeechInput: $error');
+      ErrorLog.current.add('Dictée', error);
       onStop(SpeechStop.error);
     }
   }
@@ -80,7 +81,7 @@ class AndroidSpeechInput implements SpeechInput {
     } on MissingPluginException {
       // Pas d'Android : rien à arrêter.
     } on PlatformException catch (error) {
-      debugPrint('SpeechInput: $error');
+      ErrorLog.current.add('Dictée', error);
     }
   }
 }

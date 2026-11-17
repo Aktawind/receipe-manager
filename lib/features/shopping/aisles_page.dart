@@ -68,6 +68,8 @@ class AislesPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.aislesTitle)),
       floatingActionButton: FloatingActionButton.extended(
+        // Pas d'animation partagée : les onglets gardent chacun leur bouton.
+        heroTag: null,
         key: const ValueKey('aisle-add'),
         onPressed: () => _add(context, ref),
         icon: const Icon(Icons.add),

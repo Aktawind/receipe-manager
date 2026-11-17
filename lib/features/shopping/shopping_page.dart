@@ -35,6 +35,8 @@ class ShoppingPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.navShopping)),
       floatingActionButton: FloatingActionButton.extended(
+        // Pas d'animation partagée : les onglets gardent chacun leur bouton.
+        heroTag: null,
         key: const ValueKey('shopping-new-list'),
         onPressed: () => _create(context, ref),
         icon: const Icon(Icons.add),

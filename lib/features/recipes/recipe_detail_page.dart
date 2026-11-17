@@ -197,7 +197,11 @@ class _RecipeDetail extends ConsumerWidget {
               ),
             ),
           ],
-          child: const DetailCircleIcon(icon: Icons.more_vert),
+          // Même zone à toucher (48) que les boutons ronds voisins.
+          child: const SizedBox.square(
+            dimension: 48,
+            child: Center(child: DetailCircleIcon(icon: Icons.more_vert)),
+          ),
         ),
       ],
     );
