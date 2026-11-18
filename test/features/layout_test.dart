@@ -81,6 +81,29 @@ void main() {
     },
   );
 
+  testWidgets('la fiche d’un livre : « Enregistrer » au-dessus de la barre', (
+    tester,
+  ) async {
+    useSystemBar(tester, const Size(1080, 2340), 3);
+    final app = (await tester.runAsync(TestApp.create))!;
+    final book = (await tester.runAsync(
+      () => app.services.recipes.createBook(title: 'Simplissime'),
+    ))!;
+    await app.pump(tester);
+    await tester.tap(find.text('Livres').last);
+    await settle(tester);
+    await tester.tap(find.byKey(ValueKey('book-${book.id}')));
+    await settle(tester);
+    // Depuis la page du livre : la fiche couvre tout l'écran, barre comprise.
+    await tester.tap(find.byKey(const ValueKey('book-edit')));
+    await settle(tester);
+    final save = find.byKey(const ValueKey('book-save'));
+    expect(
+      tester.getBottomLeft(save).dy,
+      lessThanOrEqualTo(2340 / 3 - inset - 8),
+    );
+  });
+
   testWidgets('tablette : le menu latéral est au-dessus de la barre Android', (
     tester,
   ) async {

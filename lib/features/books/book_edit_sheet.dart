@@ -159,7 +159,10 @@ class _BookEditSheetState extends ConsumerState<_BookEditSheet> {
         16,
         0,
         16,
-        16 + MediaQuery.viewInsetsOf(context).bottom,
+        // Clavier ouvert, ou barre de navigation Android (bord à bord).
+        16 +
+            MediaQuery.viewInsetsOf(context).bottom +
+            MediaQuery.paddingOf(context).bottom,
       ),
       child: SingleChildScrollView(
         child: Column(

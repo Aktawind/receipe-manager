@@ -21,7 +21,7 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.11](#011--planning-des-repas) | Planning des repas | ✅ |
 | [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ✅ |
 | [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ✅ |
-| [1.1](#11--mes-livres-de-cuisine) | Mes livres de cuisine | 🟦 |
+| [1.1](#11--mes-livres-de-cuisine) | Mes livres de cuisine | ✅ |
 | [Plus tard](#plus-tard-si-besoin) | Fonctions différenciantes et foyer partagé | ⬜ |
 
 Roadmap validée le 2026-10-21. L'ordre est pensé pour que tu puisses **utiliser l'app au quotidien le
@@ -511,7 +511,7 @@ t'intéresse pour l'instant.
 « Source » est un plus (tu referas les liens à la main sinon) ; le scan du code-barres seulement
 s'il remplit tout ; pas d'emplacement ni de prêt.
 
-*Avancement* : **à tester** (develop).
+*Avancement* : **validée le 2026-11-18**.
 
 ## Plus tard, si besoin
 
