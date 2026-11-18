@@ -67,7 +67,7 @@ void main() {
     await oldDb.close();
 
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 12);
+    await verifier.migrateAndValidate(db, AppDatabase.latestSchemaVersion);
 
     final recipe = (await RecipeRepository(db).getRecipe('a'))!;
     expect(recipe.title, 'Bûche');
@@ -117,7 +117,7 @@ void main() {
     await oldDb.close();
 
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 12);
+    await verifier.migrateAndValidate(db, AppDatabase.latestSchemaVersion);
     final sides = await PlanningRepository(db).getAllSides();
     expect(sides, hasLength(DefaultSideDishes.build(now).length));
     await db.close();

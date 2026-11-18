@@ -493,6 +493,35 @@ void main() {
     },
   );
 
+  test('un livre et sa couverture passent sur l’autre appareil', () async {
+    await a.photos.write('couverture.jpg', [9, 9]);
+    final book = await a.recipes.createBook(
+      title: 'Le grand livre de la pâtisserie',
+      authors: 'Christophe Felder',
+      year: 2014,
+      cover: 'couverture.jpg',
+    );
+    final recipe = await a.addRecipe('Tarte au citron');
+    await a.recipes.save(
+      (await a.recipes.getRecipe(recipe.id))!
+          .copyWith(bookId: () => book.id, bookPage: '42'),
+    );
+    final sent = await a.engine.sync();
+    expect(sent.ok, isTrue, reason: '${sent.errors}');
+    expect(remote.files.keys, contains('books/${book.id}.json'));
+
+    final received = await b.engine.sync();
+    expect(received.ok, isTrue, reason: '${received.errors}');
+    final copy = (await b.recipes.getBook(book.id))!;
+    expect(
+      (copy.title, copy.authors, copy.year),
+      ('Le grand livre de la pâtisserie', 'Christophe Felder', 2014),
+    );
+    expect(await b.photos.file('couverture.jpg').readAsBytes(), [9, 9]);
+    final linked = (await b.recipes.getRecipe(recipe.id))!;
+    expect((linked.bookId, linked.bookPage), (book.id, '42'));
+  });
+
   test('beaucoup de recettes : envoyées en parallèle, une photo partagée une fois, progression', () async {
     await a.photos.write('commune.jpg', [7]);
     for (var i = 0; i < 40; i++) {

@@ -48,6 +48,8 @@ class Recipe {
     this.lastViewedAt,
     this.equipmentIds = const [],
     this.videoLinks = const [],
+    this.bookId,
+    this.bookPage = '',
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -94,6 +96,10 @@ class Recipe {
 
   /// Liens vers des vidéos de la recette, un par ligne.
   final List<String> videoLinks;
+
+  /// Le livre d'où vient la recette (1.1), et la page (« 42 », « 42-43 »).
+  final String? bookId;
+  final String bookPage;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -156,6 +162,8 @@ class Recipe {
     DateTime? Function()? lastViewedAt,
     List<String>? equipmentIds,
     List<String>? videoLinks,
+    String? Function()? bookId,
+    String? bookPage,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? Function()? deletedAt,
@@ -183,6 +191,8 @@ class Recipe {
       lastViewedAt: lastViewedAt != null ? lastViewedAt() : this.lastViewedAt,
       equipmentIds: equipmentIds ?? this.equipmentIds,
       videoLinks: videoLinks ?? this.videoLinks,
+      bookId: bookId != null ? bookId() : this.bookId,
+      bookPage: bookPage ?? this.bookPage,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt != null ? deletedAt() : this.deletedAt,

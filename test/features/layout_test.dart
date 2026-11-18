@@ -71,10 +71,11 @@ void main() {
       await settle(tester);
       await scrollToEnd(tester);
 
-      final source = find.byKey(const ValueKey('field-source'));
+      // Le dernier champ : le classement (« Choisir »).
+      final last = find.text('Choisir').last;
       // Au moins 24 dp libres entre le champ et la barre de navigation.
       expect(
-        tester.getBottomLeft(source).dy,
+        tester.getBottomLeft(last).dy,
         lessThanOrEqualTo(2340 / 3 - inset - 24),
       );
     },

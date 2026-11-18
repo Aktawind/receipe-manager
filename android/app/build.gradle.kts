@@ -86,6 +86,8 @@ dependencies {
     // Scanner de pages de Google Play (MainActivity / PageScanner.kt) : appelé directement, sans
     // plugin, pour télécharger le module à la demande et remonter les vraies erreurs.
     implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
+    // Lecteur de code-barres de Google Play (BarcodeScanner.kt) : l'ISBN d'un livre.
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     // FileProvider (ExportActions.kt) : partager un PDF de recette avec une autre app.
     implementation("androidx.core:core:1.16.0")
 }

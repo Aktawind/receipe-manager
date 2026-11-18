@@ -12,7 +12,7 @@ recettes-2026-10-27-1430.zip
 
 ## Règles de compatibilité
 
-- Le champ `version` indique la version du format (actuellement **8**).
+- Le champ `version` indique la version du format (actuellement **14**).
 - Toute version de l'application sait lire **toutes les versions précédentes** du format.
 - Une sauvegarde d'une version **plus récente** que l'application est refusée, sans rien
   modifier (message : « Mets l'application à jour »).
@@ -36,6 +36,10 @@ recettes-2026-10-27-1430.zip
 | 11 | 0.11.0 | Planificateur : accompagnements (`sideDishes`) et planifications enregistrées (`plannerSetups`) |
 | 12 | 0.11.0 | Types de plat d'un créneau (`mealSlots[].categories`) ; temps d'une planification `null` = sans limite |
 | 13 | 0.11.0 | Recherches enregistrées (`savedSearches`), synchronisées ; avant, gardées sur l'appareil et absentes des sauvegardes |
+| 14 | 1.1.0 | Livres de cuisine (`books`, avec leur couverture dans `photos/`) ; livre et page d'une recette (`book`, `bookPage`), écrits seulement quand ils sont renseignés |
+
+Lecture d'une version 13 (et avant) : pas de livres ; aucune recette n'est reliée à un livre (la
+source reste telle quelle).
 
 Lecture d'une version 12 (et avant) : pas de recherches enregistrées (celles de l'appareil restent).
 
@@ -178,6 +182,32 @@ L'ordre des listes `ingredients` et `steps` est l'ordre d'affichage.
 | `plannerSetups[].slots[].weekday` | entier 1 à 7 | 1 = lundi |
 | `plannerSetups[].slots[].minutes` | entier ou `null` | temps disponible pour ce repas ; `null` = sans limite (v12) ; absent = 30 |
 | `plannerSetups[].slots[].collection` | `id` ou `null` | collection du classement à respecter |
+
+### Livres de cuisine (version 14)
+
+```json
+{
+  "books": [
+    { "id": "…", "title": "Le grand livre de la pâtisserie", "authors": "Christophe Felder",
+      "publisher": "Hachette Pratique", "year": 2014, "isbn": "9782012386716",
+      "cover": "<uuid>.jpg", "notes": "",
+      "createdAt": "…", "updatedAt": "…", "deletedAt": null }
+  ],
+  "recipes": [
+    { "…": "…", "book": "<id du livre>", "bookPage": "42" }
+  ]
+}
+```
+
+| Champ | Type | Remarque |
+|---|---|---|
+| `books[].year` | entier ou `null` | |
+| `books[].isbn` | texte | ISBN-13 (chiffres seuls) ou vide |
+| `books[].cover` | texte ou `null` | nom d'un fichier de `photos/` ; ignoré s'il manque dans l'archive |
+| `recipes[].book` | texte | absent : la recette n'est reliée à aucun livre |
+| `recipes[].bookPage` | texte | « 42 », « 120-121 » ; absent : pas de page |
+
+À l'import, un livre plus récent l'emporte (même règle que les recettes, `updatedAt`).
 
 ### Recherches enregistrées (version 13)
 

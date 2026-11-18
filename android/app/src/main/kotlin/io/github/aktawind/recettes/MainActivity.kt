@@ -14,6 +14,7 @@ class MainActivity : FlutterActivity() {
     private var sharedText: String? = null
     private var shareChannel: MethodChannel? = null
     private val pageScanner = PageScanner(this)
+    private val barcodeScanner = BarcodeScanner(this)
 
     /** La dictée continue des courses (SpeechListener). */
     private var speech: SpeechListener? = null
@@ -58,6 +59,14 @@ class MainActivity : FlutterActivity() {
         scannerChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "scan" -> pageScanner.scan(call.argument<Int>("pageLimit") ?: 5, result)
+                else -> result.notImplemented()
+            }
+        }
+
+        // Code-barres d'un livre (ISBN) : le lecteur de Google Play.
+        MethodChannel(messenger, "recettes/barcode").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "scan" -> barcodeScanner.scan(result)
                 else -> result.notImplemented()
             }
         }

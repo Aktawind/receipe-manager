@@ -9,11 +9,13 @@ import '../../core/format/text_search.dart';
 import '../../data/app_services.dart';
 import '../../data/photo_store.dart';
 import '../../data/recipe_repository.dart';
+import '../../domain/book.dart';
 import '../../domain/ingredient_text.dart';
 import '../../domain/label.dart';
 import '../../domain/recipe.dart';
 import '../../domain/step_text.dart';
 import '../../l10n/app_localizations.dart';
+import '../books/book_providers.dart';
 import '../classification/label_picker.dart';
 import '../equipment/equipment_page.dart';
 import 'editor/editor_fields.dart';
@@ -57,6 +59,8 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
   final _ingredients = TextEditingController();
   final _steps = TextEditingController();
   final _videos = TextEditingController();
+  final _bookPage = TextEditingController();
+  String? _bookId;
   String? _photo;
   var _extraPhotos = <String>[];
   var _equipmentIds = <String>[];
@@ -84,6 +88,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _ingredients,
     _steps,
     _videos,
+    _bookPage,
   ];
 
   @override
@@ -107,6 +112,8 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
     _cook.text = number(recipe.cookMinutes);
     _rest.text = number(recipe.restMinutes);
     _source.text = recipe.source;
+    _bookId = recipe.bookId;
+    _bookPage.text = recipe.bookPage;
     _notes.text = recipe.notes;
     _photo = recipe.mainPhoto;
     _ingredients.text = IngredientText.formatList(
@@ -179,6 +186,8 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
       cookMinutes: () => number(_cook),
       restMinutes: () => number(_rest),
       source: _source.text.trim(),
+      bookId: () => _bookId,
+      bookPage: _bookId == null ? '' : _bookPage.text.trim(),
       notes: _notes.text.trim(),
       mainPhoto: () => _photo,
       extraPhotos: _extraPhotos,
@@ -437,6 +446,7 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final books = ref.watch(booksProvider).value ?? const <Book>[];
     final theme = Theme.of(context);
     final recipe = _recipe;
     _known = ref.watch(recipesProvider).value ?? _known;
@@ -607,6 +617,58 @@ class _RecipeEditorPageState extends ConsumerState<RecipeEditorPage> {
                   minLines: 3,
                 ),
                 EditorHeading(l10n.sectionAbout),
+                // Le livre d'où vient la recette, et la page.
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: KeyedSubtree(
+                        key: ValueKey(books.length),
+                        child: DropdownButtonFormField<String?>(
+                          key: const ValueKey('field-book'),
+                          initialValue: books.any((b) => b.id == _bookId)
+                              ? _bookId
+                              : null,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: l10n.fieldBook,
+                            prefixIcon: const Icon(Icons.menu_book_outlined),
+                          ),
+                          items: [
+                            DropdownMenuItem(child: Text(l10n.fieldNoBook)),
+                            for (final b in books)
+                              DropdownMenuItem(
+                                value: b.id,
+                                child: Text(
+                                  b.title,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                          ],
+                          onChanged: (id) {
+                            setState(() => _bookId = id);
+                            _scheduleSave();
+                          },
+                        ),
+                      ),
+                    ),
+                    if (_bookId != null) ...[
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 96,
+                        child: TextField(
+                          key: const ValueKey('field-book-page'),
+                          controller: _bookPage,
+                          keyboardType: TextInputType.text,
+                          decoration: InputDecoration(
+                            labelText: l10n.fieldBookPage,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   key: const ValueKey('field-source'),
                   controller: _source,

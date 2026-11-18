@@ -29,6 +29,8 @@ void main() {
         recipeId: r.id,
         recipeTitle: 'Quiche',
       );
+      final book = await repo.createBook(title: 'Simplissime');
+      await repo.linkToBook(book.id, {r.id: '12'});
       final list = await app.services.shopping.createList('Semaine');
       await app.services.shopping.save(list);
     });
@@ -53,12 +55,18 @@ void main() {
     handle.dispose();
   }
 
-  testWidgets('accueil, recettes, fiche, planning, courses, réglages', (
+  testWidgets('accueil, recettes, fiche, livres, planning, courses, réglages', (
     tester,
   ) async {
     await open(tester);
     await check(tester, 'Accueil');
-    for (final tab in ['Recettes', 'Planning', 'Courses', 'Réglages']) {
+    for (final tab in [
+      'Recettes',
+      'Livres',
+      'Planning',
+      'Courses',
+      'Réglages',
+    ]) {
       await tester.tap(find.text(tab).last);
       await settle(tester);
       await check(tester, tab);
@@ -68,5 +76,13 @@ void main() {
     await tester.tap(find.text('Quiche').first);
     await settle(tester);
     await check(tester, 'Fiche recette');
+    // Retour système (la fiche n'a pas de BackButton classique).
+    await tester.binding.handlePopRoute();
+    await settle(tester);
+    await tester.tap(find.text('Livres').last);
+    await settle(tester);
+    await tester.tap(find.text('Simplissime'));
+    await settle(tester);
+    await check(tester, 'Fiche livre');
   });
 }

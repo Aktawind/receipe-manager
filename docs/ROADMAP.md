@@ -21,7 +21,8 @@ que tu peux installer et tester toi-même. On ne passe à la version suivante qu
 | [0.11](#011--planning-des-repas) | Planning des repas | ✅ |
 | [0.12](#012--accueil-statistiques-partage-et-export) | Accueil, statistiques, partage et export | ✅ |
 | [1.0](#10--stabilisation--remplace-recipe-keeper) | Stabilisation : remplace Recipe Keeper | ✅ |
-| [1.1 → 1.6](#après-la-10--fonctions-différenciantes) | Fonctions différenciantes et foyer partagé | ⬜ |
+| [1.1](#11--mes-livres-de-cuisine) | Mes livres de cuisine | 🟦 |
+| [Plus tard](#plus-tard-si-besoin) | Fonctions différenciantes et foyer partagé | ⬜ |
 
 Roadmap validée le 2026-10-21. L'ordre est pensé pour que tu puisses **utiliser l'app au quotidien le
 plus tôt possible** (dès la 0.2 avec tes recettes Recipe Keeper) et ne jamais risquer tes données
@@ -486,16 +487,42 @@ garde, export, suppression de toutes les données) ; 500 recettes vérifiées (l
 statistiques, planificateur) ; zones à toucher, libellés et contrastes vérifiés sur les écrans
 principaux.
 
-## Après la 1.0 — Fonctions différenciantes
+## 1.1 — Mes livres de cuisine
+
+Avancée depuis l'ancienne 1.5 « Mode collectionneur » : c'est la seule fonction d'après la 1.0 qui
+t'intéresse pour l'instant.
+
+- Un **onglet « Livres »** (le 6ᵉ, après Recettes) : la bibliothèque en couvertures, recherche
+  (titre, auteur), tri (titre, auteur, nombre de recettes)
+- La **fiche d'un livre** : couverture, auteurs, éditeur, année, ISBN, notes ; ses recettes dans
+  l'ordre des pages ; « Recette repérée » (juste un titre et une page, notée « à tester ») ;
+  « Relier des recettes »
+- Une recette se relie à un livre, avec la page (éditeur → À propos) ; la fiche de la recette
+  montre son livre
+- **Scanner le code-barres** au dos du livre : la fiche se remplit (titre, auteurs, éditeur,
+  année, couverture) depuis Google Books et Open Library ; seul l'ISBN est envoyé
+- **Retrouver mes livres** : les livres cités dans le champ « Source » des recettes deviennent des
+  livres, et leurs recettes y sont reliées (avec la page quand elle est écrite)
+- Livres et couvertures dans les sauvegardes (format 14) et la synchro
+
+*Décisions du 2026-11-18* : une vingtaine de livres ; un onglet dédié ; le lien automatique depuis
+« Source » est un plus (tu referas les liens à la main sinon) ; le scan du code-barres seulement
+s'il remplit tout ; pas d'emplacement ni de prêt.
+
+*Avancement* : **à tester** (develop).
+
+## Plus tard, si besoin
+
+Après la 1.0, seule la collection de livres t'intéresse (1.1). Le reste attend que tu en aies
+besoin ; rien n'est commencé.
 
 | Version | Contenu |
 |---|---|
-| 1.1 Cuisine de saison | Calendrier des fruits et légumes de saison (France), suggestions du mois, filtre par produit de saison, collections saisonnières, calendrier annuel des recettes, recettes traditionnelles des fêtes |
-| 1.2 Recommandations et assistant (règles, sans IA) | Recettes appréciées, variété des menus, recettes oubliées, recettes de saison ; substitutions (table de substitutions courantes + les tiennes) ; accompagnements (associations par catégorie/étiquette + celles que tu définis) ; aide pour les restes ; **mode improvisation** (ingrédients disponibles, exclusions, suggestions) |
-| 1.3 Modes réception et pâtisserie | Quantités pour beaucoup de personnes, rétroplanning d'un repas ; ratios, pourcentages du boulanger, rendement |
-| 1.4 Batch cooking | Programme de préparation groupée, ordre optimal et cuissons simultanées (four, plaques), réutilisation des ingrédients entre recettes, stockage des préparations, liste de tâches et planning. Le regroupement des étapes communes sera **semi-automatique** (je propose, tu valides) |
-| 1.5 Mode collectionneur | Livres de cuisine, auteurs, éditions, recettes associées à leur livre source |
-| 1.6 Foyer partagé | Dossier Drive partagé avec d'autres comptes Google ; droits lecture/modification et révocation via le partage Drive ; recettes, listes et planning partagés ; commentaires ; résolution des conflits |
+| Cuisine de saison | Calendrier des fruits et légumes de saison (France), suggestions du mois, filtre par produit de saison, collections saisonnières, calendrier annuel des recettes, recettes traditionnelles des fêtes |
+| Recommandations et assistant (règles, sans IA) | Recettes appréciées, variété des menus, recettes oubliées, recettes de saison ; substitutions (table de substitutions courantes + les tiennes) ; accompagnements (associations par catégorie/étiquette + celles que tu définis) ; aide pour les restes ; **mode improvisation** (ingrédients disponibles, exclusions, suggestions) |
+| Modes réception et pâtisserie | Quantités pour beaucoup de personnes, rétroplanning d'un repas ; ratios, pourcentages du boulanger, rendement |
+| Batch cooking | Programme de préparation groupée, ordre optimal et cuissons simultanées (four, plaques), réutilisation des ingrédients entre recettes, stockage des préparations, liste de tâches et planning. Le regroupement des étapes communes sera **semi-automatique** (je propose, tu valides) |
+| Foyer partagé | Dossier Drive partagé avec d'autres comptes Google ; droits lecture/modification et révocation via le partage Drive ; recettes, listes et planning partagés ; commentaires ; résolution des conflits |
 
 Plus tard, si besoin : version tablette iPad / ordinateur, traduction anglaise, publication sur le
 Play Store.

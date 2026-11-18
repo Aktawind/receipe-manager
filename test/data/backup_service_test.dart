@@ -223,15 +223,43 @@ void main() {
     expect((await target.repo.getRecipe('old-1'))!.notes, contains('Précuire'));
   });
 
-  test('l’export est en version 13, sans champ « tips »', () async {
+  test('l’export est en version 14, sans champ « tips »', () async {
     await addRecipe(source, 'Tarte');
     final archive = ZipDecoder().decodeBytes(await source.service.exportZip());
     final json = jsonDecode(
       utf8.decode(archive.findFile(BackupFormat.dataFile)!.content),
     ) as Map<String, Object?>;
-    expect(json['version'], 13);
+    expect(json['version'], 14);
     final recipe = (json['recipes'] as List).single as Map<String, Object?>;
     expect(recipe.containsKey('tips'), isFalse);
+  });
+
+  test('les livres, leur couverture et le lien des recettes (v14)', () async {
+    final photos = source.photos.directory;
+    await photos.create(recursive: true);
+    await File('${photos.path}/cover.jpg').writeAsBytes([1, 2, 3]);
+    final book = await source.repo.createBook(
+      title: 'Mon livre',
+      authors: 'Moi',
+      year: 2020,
+      isbn: '9782012345678',
+      cover: 'cover.jpg',
+    );
+    final created = await source.repo.create();
+    await source.repo.save(
+      created.copyWith(title: 'Tarte', bookId: () => book.id, bookPage: '12'),
+    );
+
+    final contents = target.service.readZip(await source.service.exportZip());
+    await target.service.import(contents, ImportMode.merge);
+    final copy = (await target.repo.getBook(book.id))!;
+    expect(
+      (copy.title, copy.isbn, copy.cover),
+      ('Mon livre', '9782012345678', 'cover.jpg'),
+    );
+    expect(await target.photos.file('cover.jpg').readAsBytes(), [1, 2, 3]);
+    final recipe = (await target.repo.getRecipe(created.id))!;
+    expect((recipe.bookId, recipe.bookPage), (book.id, '12'));
   });
 
   test('les recherches enregistrées font l’aller-retour (v13)', () async {
