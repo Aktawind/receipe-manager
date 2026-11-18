@@ -9,6 +9,7 @@ import '../../domain/recipe_stats.dart';
 import '../../l10n/app_localizations.dart';
 import '../classification/labels_providers.dart';
 import '../recipes/list/recipe_views.dart';
+import '../recipes/rating_stars.dart';
 import '../recipes/recipe_providers.dart';
 
 /// Tout le planning (pour compter les recettes planifiées).
@@ -168,13 +169,7 @@ class StatsPage extends ConsumerWidget {
                       contentPadding: EdgeInsets.zero,
                       dense: true,
                       title: Text(recipeTitle(l10n, r)),
-                      trailing: Text(
-                        '★' * (r.rating ?? 0),
-                        semanticsLabel: l10n.statsRating(r.rating ?? 0),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
+                      trailing: RatingStars(rating: r.rating ?? 0),
                       onTap: () => openRecipe(context, r),
                     ),
                 ],

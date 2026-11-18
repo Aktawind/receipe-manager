@@ -400,7 +400,7 @@ void main() {
     expect(String.fromCharCodes(export.pdf!.take(4)), '%PDF');
   });
 
-  testWidgets('transférer des produits vers une autre liste', (tester) async {
+  testWidgets('copier des produits dans une autre liste', (tester) async {
     usePhoneSize(tester);
     final app = (await tester.runAsync(TestApp.create))!;
     final shopping = app.services.shopping;
@@ -430,29 +430,30 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('shopping-list-menu')));
     await settle(tester);
-    await tester.tap(find.byKey(const ValueKey('shopping-transfer')));
+    await tester.tap(find.byKey(const ValueKey('shopping-copy')));
     await settle(tester);
     // L'autre liste est proposée ; rien n'est coché au départ.
     expect(find.text('Supermarché'), findsOneWidget);
     expect(
       tester
-          .widget<FilledButton>(find.byKey(const ValueKey('transfer-confirm')))
+          .widget<FilledButton>(find.byKey(const ValueKey('copy-confirm')))
           .onPressed,
       isNull,
     );
-    await tester.tap(find.byKey(const ValueKey('transfer-item-j1')));
+    await tester.tap(find.byKey(const ValueKey('copy-item-j1')));
     await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('transfer-confirm')));
+    await tester.tap(find.byKey(const ValueKey('copy-confirm')));
     await settle(tester);
-    expect(
-      find.text('1 produit transféré vers « Supermarché »'),
-      findsOneWidget,
-    );
+    expect(find.text('1 produit copié dans « Supermarché »'), findsOneWidget);
 
     final lists = {
       for (final l in (await tester.runAsync(shopping.getAllLists))!) l.id: l,
     };
-    expect([for (final i in lists[ids!.market]!.items) i.name], ['Pain']);
+    // La liste de départ ne change pas.
+    expect(
+      [for (final i in lists[ids!.market]!.items) i.name],
+      ['Jambon', 'Pain'],
+    );
     final ham = lists[ids.store]!.items.single;
     expect((ham.name, ham.amount), ('Jambon', '6 tranches'));
   });

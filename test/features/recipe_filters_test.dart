@@ -16,7 +16,7 @@ Future<TestApp> library(WidgetTester tester) async {
       String title, {
       int? prep,
       int? cook,
-      int? rating,
+      double? rating,
       List<String> ingredients = const [],
       List<String> equipment = const [],
     }) async {

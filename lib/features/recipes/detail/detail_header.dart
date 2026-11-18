@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/format/durations.dart';
 import '../../../domain/recipe.dart';
 import '../../../l10n/app_localizations.dart';
+import '../rating_stars.dart';
 import '../recipe_photo.dart';
 import '../recipe_scale.dart';
 import 'detail_sections.dart';
@@ -100,7 +101,7 @@ class DetailHeader extends StatelessWidget {
 
   final Recipe recipe;
   final ValueChanged<RecipeStatus?> onStatus;
-  final ValueChanged<int?> onRating;
+  final ValueChanged<double?> onRating;
 
   @override
   Widget build(BuildContext context) {
@@ -302,36 +303,58 @@ void showRecipePhoto(BuildContext context, String name) {
   );
 }
 
-/// Cinq étoiles : un appui note de 1 à 5, un appui sur l'étoile déjà choisie
-/// retire la note.
-class DetailStarRating extends StatelessWidget {
+/// Cinq étoiles : un appui sur la moitié gauche d'une étoile donne la
+/// demi-étoile (4,5), sur la moitié droite l'étoile entière ; un appui qui
+/// redonne la note déjà choisie la retire.
+class DetailStarRating extends StatefulWidget {
   const DetailStarRating({
     super.key,
     required this.rating,
     required this.onChanged,
   });
 
-  final int? rating;
-  final ValueChanged<int?> onChanged;
+  final double? rating;
+  final ValueChanged<double?> onChanged;
+
+  @override
+  State<DetailStarRating> createState() => _DetailStarRatingState();
+}
+
+class _DetailStarRatingState extends State<DetailStarRating> {
+  /// L'appui en cours tombe sur la moitié gauche de l'étoile. Sans position
+  /// (lecteur d'écran) : l'étoile entière.
+  var _leftHalf = false;
+
+  static const _size = 48.0;
+
+  void _tap(int star) {
+    final value = _leftHalf ? star - 0.5 : star.toDouble();
+    _leftHalf = false;
+    widget.onChanged(widget.rating == value ? null : value);
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final rating = widget.rating;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         for (var star = 1; star <= 5; star++)
           InkResponse(
             radius: 22,
-            onTap: () => onChanged(rating == star ? null : star),
+            onTapDown: (details) =>
+                _leftHalf = details.localPosition.dx < _size / 2,
+            onTapCancel: () => _leftHalf = false,
+            onTap: () => _tap(star),
             child: Tooltip(
               message: rating == star ? l10n.clearRating : l10n.rateStars(star),
               // 26 + 2 × 11 = 48 : une zone facile à toucher.
               child: Padding(
                 padding: const EdgeInsets.all(11),
                 child: Icon(
-                  star <= (rating ?? 0) ? Icons.star : Icons.star_border,
+                  starIcon(star, rating),
                   size: 26,
                   color: scheme.tertiary,
                 ),

@@ -40,9 +40,10 @@ import '../photo_store.dart';
 /// - v13 : recherches enregistrées (`savedSearches`), synchronisées.
 /// - v14 : livres de cuisine (`books`) ; le livre et la page de chaque
 ///   recette (`book`, `bookPage`).
+/// - v15 : note par demi-étoile (`rating` : 4.5) ; avant, un entier de 1 à 5.
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 14;
+  static const currentVersion = 15;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 
@@ -251,7 +252,11 @@ abstract final class BackupFormat {
     'mainPhoto': r.mainPhoto,
     'extraPhotos': r.extraPhotos,
     'favorite': r.isFavorite,
-    'rating': r.rating,
+    // Entier quand la note est ronde (4), sinon la demi-étoile (4.5).
+    'rating': switch (r.rating) {
+      final rating? when rating == rating.roundToDouble() => rating.round(),
+      final rating => rating,
+    },
     'status': r.status?.code,
     'labels': r.labelIds,
     'equipment': r.equipmentIds,
@@ -716,8 +721,10 @@ abstract final class BackupFormat {
     if (!extraPhotos.every(PhotoStore.isValidName)) {
       throw BackupFormatException(BackupError.invalid, 'extraPhotos $id');
     }
-    final rating = _int(m, 'rating');
-    if (rating != null && (rating < 1 || rating > 5)) {
+    final rating = _double(m, 'rating');
+    // De ½ à 5 étoiles, par demi-étoile (avant la v15 : un entier de 1 à 5).
+    if (rating != null &&
+        (rating < 0.5 || rating > 5 || rating * 2 != (rating * 2).round())) {
       throw BackupFormatException(BackupError.invalid, 'rating $id');
     }
     return Recipe(

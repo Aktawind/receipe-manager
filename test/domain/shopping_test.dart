@@ -115,7 +115,7 @@ void main() {
     expect(items.single.quantity, 1);
   });
 
-  test('transférer des produits vers une autre liste', () {
+  test('copier des produits dans une autre liste', () {
     final from = [
       ShoppingProducts.parse('2 tranches de jambon', id: 'j1').copyWith(
         sources: const [
@@ -131,14 +131,15 @@ void main() {
       ShoppingProducts.parse('beurre', id: 'b').copyWith(checked: true),
     ];
     final to = [ShoppingProducts.parse('4 tranches de jambon', id: 'j2')];
-    final moved = ShoppingProducts.transfer(from, to, {'j1', 'b'});
-    expect([for (final i in moved.from) i.id], ['p']);
-    // Le jambon rejoint celui de l'autre liste ; le beurre revient à acheter.
-    final ham = moved.to.firstWhere((i) => i.name == 'Jambon');
+    final copied = ShoppingProducts.copy(from, to, {'j1', 'b'});
+    // Le jambon rejoint celui de l'autre liste ; le beurre y est à acheter.
+    final ham = copied.firstWhere((i) => i.name == 'Jambon');
     expect(ham.amount, '6 tranches');
     expect(ham.sources.single.recipeTitle, 'Quiche');
-    final butter = moved.to.firstWhere((i) => i.name == 'Beurre');
+    final butter = copied.firstWhere((i) => i.name == 'Beurre');
     expect(butter.checked, isFalse);
-    expect(moved.to, hasLength(2));
+    // Une copie : un autre identifiant que dans la liste de départ.
+    expect(butter.id, isNot('b'));
+    expect(copied, hasLength(2));
   });
 }
