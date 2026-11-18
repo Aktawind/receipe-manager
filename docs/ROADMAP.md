@@ -501,7 +501,7 @@ t'intéresse pour l'instant.
 - Une recette se relie à un livre, avec la page (éditeur → À propos) ; la fiche de la recette
   montre son livre
 - **Scanner le code-barres** au dos du livre : la fiche se remplit (titre, auteurs, éditeur,
-  année, couverture) depuis Google Books et Open Library ; seul l'ISBN est envoyé
+  année, couverture) depuis Google Books, la BnF et Open Library ; seul l'ISBN est envoyé
 - ~~Retrouver mes livres~~ (les livres cités dans « Source ») : utilisé une fois sur la version de
   test, puis retiré (retour du 2026-11-18 : plus besoin)
 - Livres et couvertures dans les sauvegardes (format 14) et la synchro
@@ -512,6 +512,8 @@ t'intéresse pour l'instant.
 s'il remplit tout ; pas d'emplacement ni de prêt.
 
 *Avancement* : **validée le 2026-11-18**.
+1.1.1 : scan du code-barres réparé (catalogue de la BnF en plus de Google Books, souvent refusé
+sans clé, et d'Open Library).
 
 ## Plus tard, si besoin
 

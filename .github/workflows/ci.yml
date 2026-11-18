@@ -1,7 +1,8 @@
 name: CI
 
-# Vérifie chaque PR et chaque envoi sur develop, puis publie l'APK de test
-# dans la pré-version « develop-latest » (lien de téléchargement fixe).
+# Vérifie chaque PR et chaque envoi sur develop : analyse, tests, compilation et
+# démarrage sur émulateur. Plus de version de test publiée depuis le 2026-11-18
+# (docs/decisions/0005) : chaque correction validée part directement en release.
 on:
   pull_request:
     paths-ignore: ["docs/**", "**.md"]
@@ -93,33 +94,3 @@ jobs:
         with:
           apk: recettes-test-x86_64.apk
           package: io.github.aktawind.recettes.dev
-
-  publish:
-    name: Publier la version de test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-    needs: [check, apk, smoke]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
-        with:
-          name: recettes-test-${{ github.run_number }}
-      - name: Mettre à jour la pré-version develop-latest
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          git tag -f develop-latest
-          git push -f origin develop-latest
-          notes="Dernière version de test (develop), compilation n°${{ github.run_number }}, commit ${GITHUB_SHA::7}.
-
-          Installe « Recettes (test) » à côté de l'application principale, sans toucher à tes données.
-
-          Changements : https://github.com/${{ github.repository }}/commits/develop"
-          if gh release view develop-latest >/dev/null 2>&1; then
-            gh release edit develop-latest --prerelease --title "Version de test (develop)" --notes "$notes"
-          else
-            gh release create develop-latest --prerelease --title "Version de test (develop)" --notes "$notes" --verify-tag
-          fi
-          gh release upload develop-latest recettes-test.apk --clobber

@@ -1,6 +1,6 @@
 # 0003 — Workflow Git, versions, signature et variantes
 
-*Date : 2026-10-20 · Statut : acceptée*
+*Date : 2026-10-20 · Statut : acceptée ; versions de test abandonnées le 2026-11-18 (voir 0005)*
 
 ## Branches
 - `main` : uniquement les versions validées, chacune taguée `vX.Y.Z`.
