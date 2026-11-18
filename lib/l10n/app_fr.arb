@@ -1154,21 +1154,16 @@
       "to": {"type": "String"}
     }
   },
-  "transferProducts": "Transférer des produits",
-  "transferTo": "Vers la liste",
-  "transferNothing": "Aucun produit à acheter dans cette liste.",
-  "transferConfirm": "{count, plural, =0{Transférer} =1{Transférer 1 produit} other{Transférer {count} produits}}",
-  "@transferConfirm": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
+  "copyProducts": "Copier des produits",
+  "copyTo": "Vers la liste",
+  "copyNothing": "Aucun produit dans cette liste.",
+  "copyConfirm": "{count, plural, =0{Copier} =1{Copier 1 produit} other{Copier {count} produits}}",
+  "@copyConfirm": {
+    "placeholders": {"count": {"type": "int"}}
   },
-  "productsTransferred": "{count, plural, =1{1 produit transféré vers « {name} »} other{{count} produits transférés vers « {name} »}}",
-  "@productsTransferred": {
-    "placeholders": {
-      "count": {"type": "int"},
-      "name": {"type": "String"}
-    }
+  "productsCopied": "{count, plural, =1{1 produit copié dans « {name} »} other{{count} produits copiés dans « {name} »}}",
+  "@productsCopied": {
+    "placeholders": {"count": {"type": "int"}, "name": {"type": "String"}}
   },
   "addProductsToList": "{count, plural, =1{Ajouter 1 produit à « {name} »} other{Ajouter {count} produits à « {name} »}}",
   "@addProductsToList": {

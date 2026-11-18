@@ -77,6 +77,7 @@ class ShoppingItem {
   );
 
   ShoppingItem copyWith({
+    String? id,
     String? name,
     double? Function()? quantity,
     String? unit,
@@ -87,7 +88,7 @@ class ShoppingItem {
     bool? checked,
     List<ShoppingSource>? sources,
   }) => ShoppingItem(
-    id: id,
+    id: id ?? this.id,
     name: name ?? this.name,
     quantity: quantity != null ? quantity() : this.quantity,
     unit: unit ?? this.unit,
@@ -477,10 +478,10 @@ abstract final class ShoppingProducts {
   /// (quantités additionnées, recettes réunies) quand c'est possible, sinon
   /// à la fin. Un produit déjà dans le panier n'est pas touché : l'ajout en
   /// redemande.
-  /// Déplace les produits [ids] de [from] vers [to] : ils y reviennent à
-  /// acheter et s'ajoutent à un produit identique déjà là (quantités et
-  /// recettes réunies). Renvoie les produits des deux listes.
-  static ({List<ShoppingItem> from, List<ShoppingItem> to}) transfer(
+  /// Copie les produits [ids] de [from] dans [to] (la liste de départ ne
+  /// change pas) : ils y sont à acheter et s'ajoutent à un produit identique
+  /// déjà là (quantités et recettes réunies). Renvoie les produits de [to].
+  static List<ShoppingItem> copy(
     List<ShoppingItem> from,
     List<ShoppingItem> to,
     Set<String> ids,
@@ -488,16 +489,11 @@ abstract final class ShoppingProducts {
     var target = to;
     for (final item in from) {
       if (ids.contains(item.id)) {
-        target = merge(target, item.copyWith(checked: false));
+        // Un nouvel identifiant : le même produit vit dans deux listes.
+        target = merge(target, item.copyWith(id: _uuid.v4(), checked: false));
       }
     }
-    return (
-      from: [
-        for (final item in from)
-          if (!ids.contains(item.id)) item,
-      ],
-      to: target,
-    );
+    return target;
   }
 
   static List<ShoppingItem> merge(List<ShoppingItem> items, ShoppingItem item) {
