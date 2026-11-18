@@ -178,8 +178,7 @@ void main() {
 
   testWidgets('Réglages → Créneaux : masquer, ajouter', (tester) async {
     final app = await open(tester);
-    await tester.tap(find.text('Réglages').last);
-    await settle(tester);
+    await openSettings(tester);
     await scrollTo(tester, find.byKey(const ValueKey('settings-meal-slots')));
     await tester.tap(find.byKey(const ValueKey('settings-meal-slots')));
     await settle(tester);
@@ -199,6 +198,8 @@ void main() {
     );
     expect(slots.map((s) => s.name), contains('Brunch'));
 
+    await goBack(tester);
+    // Les réglages sont au-dessus des onglets.
     await goBack(tester);
     await tester.tap(find.text('Planning').last);
     await settle(tester);

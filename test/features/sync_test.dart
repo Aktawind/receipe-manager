@@ -42,8 +42,7 @@ void main() {
         ),
       ))!;
       await app.pump(tester);
-      await tester.tap(find.text('Réglages').last);
-      await settle(tester);
+      await openSettings(tester);
       await scrollTo(tester, find.text('Synchronisation Google Drive'));
       await tester.tap(find.text('Synchronisation Google Drive'));
       await settle(tester);
@@ -80,8 +79,7 @@ void main() {
       });
       await app.pump(tester);
 
-      await tester.tap(find.text('Réglages').last);
-      await settle(tester);
+      await openSettings(tester);
       await scrollTo(tester, find.text('Synchronisation Google Drive'));
       await tester.tap(find.text('Synchronisation Google Drive'));
       await settle(tester);
@@ -194,8 +192,7 @@ void main() {
         await app.services.recipes.save(recipe.copyWith(title: 'Quiche'));
       });
       await app.pump(tester);
-      await tester.tap(find.text('Réglages').last);
-      await settle(tester);
+      await openSettings(tester);
       await scrollTo(tester, find.text('Synchronisation Google Drive'));
       await tester.tap(find.text('Synchronisation Google Drive'));
       await settle(tester);
@@ -257,8 +254,7 @@ void main() {
       }
     });
     await app.pump(tester);
-    await tester.tap(find.text('Réglages').last);
-    await settle(tester);
+    await openSettings(tester);
     await scrollTo(tester, find.text('Synchronisation Google Drive'));
     await tester.tap(find.text('Synchronisation Google Drive'));
     await settle(tester);
@@ -312,8 +308,7 @@ void main() {
         ),
       ))!;
       await app.pump(tester);
-      await tester.tap(find.text('Réglages').last);
-      await settle(tester);
+      await openSettings(tester);
       await scrollTo(tester, find.text('Synchronisation Google Drive'));
       await tester.tap(find.text('Synchronisation Google Drive'));
       await settle(tester);

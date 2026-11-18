@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../../domain/book.dart';
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
 import '../../domain/meal_planner.dart';
@@ -23,6 +24,7 @@ enum SyncKind {
   sideDish('sides'),
   plannerSetup('setups'),
   savedSearch('searches'),
+  book('books'),
   media('media');
 
   const SyncKind(this.folder);
@@ -160,6 +162,18 @@ abstract final class SyncCodec {
     ),
   );
 
+  static Uint8List book(Book book) => _bytes(
+    BackupFormat.encode(
+      const [],
+      books: [book],
+      exportedAt: book.updatedAt,
+      appVersion: 'sync',
+    ),
+  );
+
+  static Book decodeBook(Uint8List bytes) =>
+      _single(_decode(bytes).books, 'books');
+
   static SavedSearch decodeSavedSearch(Uint8List bytes) =>
       _single(_decode(bytes).savedSearches, 'savedSearches');
 
@@ -229,6 +243,7 @@ abstract final class SyncCodec {
       'sideDishes',
       'plannerSetups',
       'savedSearches',
+      'books',
     ]) {
       for (final item in (root[key] as List? ?? const [])) {
         (item as Map<String, Object?>)

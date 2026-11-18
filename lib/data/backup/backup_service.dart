@@ -5,6 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/format/text_search.dart';
+import '../../domain/book.dart';
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
 import '../../domain/meal_planner.dart';
@@ -49,12 +50,16 @@ class BackupContents {
     this.sideDishes = const [],
     this.plannerSetups = const [],
     this.savedSearches = const [],
+    this.books = const [],
   });
 
   final List<Recipe> recipes;
 
   /// Les recherches enregistrées.
   final List<SavedSearch> savedSearches;
+
+  /// Les livres de cuisine.
+  final List<Book> books;
 
   /// Le planificateur : accompagnements et planifications enregistrées.
   final List<SideDish> sideDishes;
@@ -143,6 +148,7 @@ class BackupService {
   /// Sauvegarde complète, corbeille comprise, au format ZIP.
   Future<List<int>> exportZip() async {
     final recipes = await repository.getAllWithDetails();
+    final books = await repository.getAllBooks();
     final archive = Archive();
     final json = const JsonEncoder.withIndent('  ').convert(
       BackupFormat.encode(
@@ -157,12 +163,16 @@ class BackupService {
         sideDishes: await planning.getAllSides(),
         plannerSetups: await planning.getAllSetups(),
         savedSearches: await repository.getAllSavedSearches(),
+        books: books,
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
     );
     archive.addFile(ArchiveFile.string(BackupFormat.dataFile, json));
-    for (final name in recipes.expand((r) => r.allPhotos).toSet()) {
+    for (final name in {
+      ...recipes.expand((r) => r.allPhotos),
+      for (final b in books) ?b.cover,
+    }) {
       final file = photos.file(name);
       if (await file.exists()) {
         final bytes = await file.readAsBytes();
@@ -191,6 +201,7 @@ class BackupService {
         sideDishes: await planning.getAllSides(),
         plannerSetups: await planning.getAllSetups(),
         savedSearches: await repository.getAllSavedSearches(),
+        books: await repository.getAllBooks(),
         exportedAt: _clock(),
         appVersion: appVersion,
       ),
@@ -220,6 +231,7 @@ class BackupService {
       sideDishes: decoded.sideDishes,
       plannerSetups: decoded.plannerSetups,
       savedSearches: decoded.savedSearches,
+      books: decoded.books,
     );
   }
 
@@ -276,6 +288,7 @@ class BackupService {
       sideDishes: decoded.sideDishes,
       plannerSetups: decoded.plannerSetups,
       savedSearches: decoded.savedSearches,
+      books: decoded.books,
     );
   }
 
@@ -408,6 +421,22 @@ class BackupService {
       for (final search in contents.savedSearches) {
         if (newer(search.updatedAt, existingSearches[search.id]?.updatedAt)) {
           await repository.putSavedSearch(search);
+        }
+      }
+      final existingBooks = {
+        for (final b in await repository.getAllBooks()) b.id: b,
+      };
+      for (final book in contents.books) {
+        if (newer(book.updatedAt, existingBooks[book.id]?.updatedAt)) {
+          // Une couverture absente (sauvegarde sans photos) : le livre reste.
+          final cover = book.cover;
+          await repository.putBook(
+            cover == null ||
+                    contents.photos.containsKey(cover) ||
+                    photos.file(cover).existsSync()
+                ? book
+                : book.copyWith(cover: () => null),
+          );
         }
       }
       for (final meal in contents.plannedMeals) {

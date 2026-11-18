@@ -250,6 +250,27 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeRow> {
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _bookIdMeta = const VerificationMeta('bookId');
+  @override
+  late final GeneratedColumn<String> bookId = GeneratedColumn<String>(
+    'book_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bookPageMeta = const VerificationMeta(
+    'bookPage',
+  );
+  @override
+  late final GeneratedColumn<String> bookPage = GeneratedColumn<String>(
+    'book_page',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -307,6 +328,8 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeRow> {
     lastViewedAt,
     equipment,
     videoLinks,
+    bookId,
+    bookPage,
     createdAt,
     updatedAt,
     deletedAt,
@@ -478,6 +501,18 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeRow> {
         videoLinks.isAcceptableOrUnknown(data['video_links']!, _videoLinksMeta),
       );
     }
+    if (data.containsKey('book_id')) {
+      context.handle(
+        _bookIdMeta,
+        bookId.isAcceptableOrUnknown(data['book_id']!, _bookIdMeta),
+      );
+    }
+    if (data.containsKey('book_page')) {
+      context.handle(
+        _bookPageMeta,
+        bookPage.isAcceptableOrUnknown(data['book_page']!, _bookPageMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -597,6 +632,14 @@ class $RecipesTable extends Recipes with TableInfo<$RecipesTable, RecipeRow> {
         DriftSqlType.string,
         data['${effectivePrefix}video_links'],
       )!,
+      bookId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}book_id'],
+      ),
+      bookPage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}book_page'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -662,6 +705,10 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
   /// v5) est vidé par la migration v6 : le matériel est dans [RecipeEquipment].
   final String equipment;
   final String videoLinks;
+
+  /// Le livre de la recette et la page ; ajoutés en v15.
+  final String? bookId;
+  final String bookPage;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -688,6 +735,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     this.lastViewedAt,
     required this.equipment,
     required this.videoLinks,
+    this.bookId,
+    required this.bookPage,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -733,6 +782,10 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     }
     map['equipment'] = Variable<String>(equipment);
     map['video_links'] = Variable<String>(videoLinks);
+    if (!nullToAbsent || bookId != null) {
+      map['book_id'] = Variable<String>(bookId);
+    }
+    map['book_page'] = Variable<String>(bookPage);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
@@ -781,6 +834,10 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
           : Value(lastViewedAt),
       equipment: Value(equipment),
       videoLinks: Value(videoLinks),
+      bookId: bookId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bookId),
+      bookPage: Value(bookPage),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
@@ -817,6 +874,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
       lastViewedAt: serializer.fromJson<DateTime?>(json['lastViewedAt']),
       equipment: serializer.fromJson<String>(json['equipment']),
       videoLinks: serializer.fromJson<String>(json['videoLinks']),
+      bookId: serializer.fromJson<String?>(json['bookId']),
+      bookPage: serializer.fromJson<String>(json['bookPage']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
@@ -848,6 +907,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
       'lastViewedAt': serializer.toJson<DateTime?>(lastViewedAt),
       'equipment': serializer.toJson<String>(equipment),
       'videoLinks': serializer.toJson<String>(videoLinks),
+      'bookId': serializer.toJson<String?>(bookId),
+      'bookPage': serializer.toJson<String>(bookPage),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
@@ -877,6 +938,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     Value<DateTime?> lastViewedAt = const Value.absent(),
     String? equipment,
     String? videoLinks,
+    Value<String?> bookId = const Value.absent(),
+    String? bookPage,
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
@@ -903,6 +966,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     lastViewedAt: lastViewedAt.present ? lastViewedAt.value : this.lastViewedAt,
     equipment: equipment ?? this.equipment,
     videoLinks: videoLinks ?? this.videoLinks,
+    bookId: bookId.present ? bookId.value : this.bookId,
+    bookPage: bookPage ?? this.bookPage,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
@@ -951,6 +1016,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
       videoLinks: data.videoLinks.present
           ? data.videoLinks.value
           : this.videoLinks,
+      bookId: data.bookId.present ? data.bookId.value : this.bookId,
+      bookPage: data.bookPage.present ? data.bookPage.value : this.bookPage,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
@@ -982,6 +1049,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
           ..write('lastViewedAt: $lastViewedAt, ')
           ..write('equipment: $equipment, ')
           ..write('videoLinks: $videoLinks, ')
+          ..write('bookId: $bookId, ')
+          ..write('bookPage: $bookPage, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt')
@@ -1013,6 +1082,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
     lastViewedAt,
     equipment,
     videoLinks,
+    bookId,
+    bookPage,
     createdAt,
     updatedAt,
     deletedAt,
@@ -1043,6 +1114,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
           other.lastViewedAt == this.lastViewedAt &&
           other.equipment == this.equipment &&
           other.videoLinks == this.videoLinks &&
+          other.bookId == this.bookId &&
+          other.bookPage == this.bookPage &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt);
@@ -1071,6 +1144,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
   final Value<DateTime?> lastViewedAt;
   final Value<String> equipment;
   final Value<String> videoLinks;
+  final Value<String?> bookId;
+  final Value<String> bookPage;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
@@ -1098,6 +1173,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     this.lastViewedAt = const Value.absent(),
     this.equipment = const Value.absent(),
     this.videoLinks = const Value.absent(),
+    this.bookId = const Value.absent(),
+    this.bookPage = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -1126,6 +1203,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     this.lastViewedAt = const Value.absent(),
     this.equipment = const Value.absent(),
     this.videoLinks = const Value.absent(),
+    this.bookId = const Value.absent(),
+    this.bookPage = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
@@ -1156,6 +1235,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     Expression<DateTime>? lastViewedAt,
     Expression<String>? equipment,
     Expression<String>? videoLinks,
+    Expression<String>? bookId,
+    Expression<String>? bookPage,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
@@ -1184,6 +1265,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
       if (lastViewedAt != null) 'last_viewed_at': lastViewedAt,
       if (equipment != null) 'equipment': equipment,
       if (videoLinks != null) 'video_links': videoLinks,
+      if (bookId != null) 'book_id': bookId,
+      if (bookPage != null) 'book_page': bookPage,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
@@ -1214,6 +1297,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     Value<DateTime?>? lastViewedAt,
     Value<String>? equipment,
     Value<String>? videoLinks,
+    Value<String?>? bookId,
+    Value<String>? bookPage,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
@@ -1242,6 +1327,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
       lastViewedAt: lastViewedAt ?? this.lastViewedAt,
       equipment: equipment ?? this.equipment,
       videoLinks: videoLinks ?? this.videoLinks,
+      bookId: bookId ?? this.bookId,
+      bookPage: bookPage ?? this.bookPage,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -1318,6 +1405,12 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
     if (videoLinks.present) {
       map['video_links'] = Variable<String>(videoLinks.value);
     }
+    if (bookId.present) {
+      map['book_id'] = Variable<String>(bookId.value);
+    }
+    if (bookPage.present) {
+      map['book_page'] = Variable<String>(bookPage.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1358,6 +1451,8 @@ class RecipesCompanion extends UpdateCompanion<RecipeRow> {
           ..write('lastViewedAt: $lastViewedAt, ')
           ..write('equipment: $equipment, ')
           ..write('videoLinks: $videoLinks, ')
+          ..write('bookId: $bookId, ')
+          ..write('bookPage: $bookPage, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -8889,6 +8984,644 @@ class SavedSearchesCompanion extends UpdateCompanion<SavedSearchRow> {
   }
 }
 
+class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BooksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _authorsMeta = const VerificationMeta(
+    'authors',
+  );
+  @override
+  late final GeneratedColumn<String> authors = GeneratedColumn<String>(
+    'authors',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _publisherMeta = const VerificationMeta(
+    'publisher',
+  );
+  @override
+  late final GeneratedColumn<String> publisher = GeneratedColumn<String>(
+    'publisher',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _yearMeta = const VerificationMeta('year');
+  @override
+  late final GeneratedColumn<int> year = GeneratedColumn<int>(
+    'year',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isbnMeta = const VerificationMeta('isbn');
+  @override
+  late final GeneratedColumn<String> isbn = GeneratedColumn<String>(
+    'isbn',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _coverMeta = const VerificationMeta('cover');
+  @override
+  late final GeneratedColumn<String> cover = GeneratedColumn<String>(
+    'cover',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    authors,
+    publisher,
+    year,
+    isbn,
+    cover,
+    notes,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'books';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BookRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('authors')) {
+      context.handle(
+        _authorsMeta,
+        authors.isAcceptableOrUnknown(data['authors']!, _authorsMeta),
+      );
+    }
+    if (data.containsKey('publisher')) {
+      context.handle(
+        _publisherMeta,
+        publisher.isAcceptableOrUnknown(data['publisher']!, _publisherMeta),
+      );
+    }
+    if (data.containsKey('year')) {
+      context.handle(
+        _yearMeta,
+        year.isAcceptableOrUnknown(data['year']!, _yearMeta),
+      );
+    }
+    if (data.containsKey('isbn')) {
+      context.handle(
+        _isbnMeta,
+        isbn.isAcceptableOrUnknown(data['isbn']!, _isbnMeta),
+      );
+    }
+    if (data.containsKey('cover')) {
+      context.handle(
+        _coverMeta,
+        cover.isAcceptableOrUnknown(data['cover']!, _coverMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BookRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BookRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      authors: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}authors'],
+      )!,
+      publisher: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}publisher'],
+      )!,
+      year: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}year'],
+      ),
+      isbn: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}isbn'],
+      )!,
+      cover: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cover'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+    );
+  }
+
+  @override
+  $BooksTable createAlias(String alias) {
+    return $BooksTable(attachedDatabase, alias);
+  }
+}
+
+class BookRow extends DataClass implements Insertable<BookRow> {
+  final String id;
+  final String title;
+  final String authors;
+  final String publisher;
+  final int? year;
+  final String isbn;
+  final String? cover;
+  final String notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  const BookRow({
+    required this.id,
+    required this.title,
+    required this.authors,
+    required this.publisher,
+    this.year,
+    required this.isbn,
+    this.cover,
+    required this.notes,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    map['authors'] = Variable<String>(authors);
+    map['publisher'] = Variable<String>(publisher);
+    if (!nullToAbsent || year != null) {
+      map['year'] = Variable<int>(year);
+    }
+    map['isbn'] = Variable<String>(isbn);
+    if (!nullToAbsent || cover != null) {
+      map['cover'] = Variable<String>(cover);
+    }
+    map['notes'] = Variable<String>(notes);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    return map;
+  }
+
+  BooksCompanion toCompanion(bool nullToAbsent) {
+    return BooksCompanion(
+      id: Value(id),
+      title: Value(title),
+      authors: Value(authors),
+      publisher: Value(publisher),
+      year: year == null && nullToAbsent ? const Value.absent() : Value(year),
+      isbn: Value(isbn),
+      cover: cover == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cover),
+      notes: Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory BookRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BookRow(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      authors: serializer.fromJson<String>(json['authors']),
+      publisher: serializer.fromJson<String>(json['publisher']),
+      year: serializer.fromJson<int?>(json['year']),
+      isbn: serializer.fromJson<String>(json['isbn']),
+      cover: serializer.fromJson<String?>(json['cover']),
+      notes: serializer.fromJson<String>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'authors': serializer.toJson<String>(authors),
+      'publisher': serializer.toJson<String>(publisher),
+      'year': serializer.toJson<int?>(year),
+      'isbn': serializer.toJson<String>(isbn),
+      'cover': serializer.toJson<String?>(cover),
+      'notes': serializer.toJson<String>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+    };
+  }
+
+  BookRow copyWith({
+    String? id,
+    String? title,
+    String? authors,
+    String? publisher,
+    Value<int?> year = const Value.absent(),
+    String? isbn,
+    Value<String?> cover = const Value.absent(),
+    String? notes,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+  }) => BookRow(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    authors: authors ?? this.authors,
+    publisher: publisher ?? this.publisher,
+    year: year.present ? year.value : this.year,
+    isbn: isbn ?? this.isbn,
+    cover: cover.present ? cover.value : this.cover,
+    notes: notes ?? this.notes,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+  );
+  BookRow copyWithCompanion(BooksCompanion data) {
+    return BookRow(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      authors: data.authors.present ? data.authors.value : this.authors,
+      publisher: data.publisher.present ? data.publisher.value : this.publisher,
+      year: data.year.present ? data.year.value : this.year,
+      isbn: data.isbn.present ? data.isbn.value : this.isbn,
+      cover: data.cover.present ? data.cover.value : this.cover,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BookRow(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('authors: $authors, ')
+          ..write('publisher: $publisher, ')
+          ..write('year: $year, ')
+          ..write('isbn: $isbn, ')
+          ..write('cover: $cover, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    authors,
+    publisher,
+    year,
+    isbn,
+    cover,
+    notes,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BookRow &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.authors == this.authors &&
+          other.publisher == this.publisher &&
+          other.year == this.year &&
+          other.isbn == this.isbn &&
+          other.cover == this.cover &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class BooksCompanion extends UpdateCompanion<BookRow> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String> authors;
+  final Value<String> publisher;
+  final Value<int?> year;
+  final Value<String> isbn;
+  final Value<String?> cover;
+  final Value<String> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<int> rowid;
+  const BooksCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.authors = const Value.absent(),
+    this.publisher = const Value.absent(),
+    this.year = const Value.absent(),
+    this.isbn = const Value.absent(),
+    this.cover = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BooksCompanion.insert({
+    required String id,
+    required String title,
+    this.authors = const Value.absent(),
+    this.publisher = const Value.absent(),
+    this.year = const Value.absent(),
+    this.isbn = const Value.absent(),
+    this.cover = const Value.absent(),
+    this.notes = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<BookRow> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? authors,
+    Expression<String>? publisher,
+    Expression<int>? year,
+    Expression<String>? isbn,
+    Expression<String>? cover,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (authors != null) 'authors': authors,
+      if (publisher != null) 'publisher': publisher,
+      if (year != null) 'year': year,
+      if (isbn != null) 'isbn': isbn,
+      if (cover != null) 'cover': cover,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BooksCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String>? authors,
+    Value<String>? publisher,
+    Value<int?>? year,
+    Value<String>? isbn,
+    Value<String?>? cover,
+    Value<String>? notes,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return BooksCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      authors: authors ?? this.authors,
+      publisher: publisher ?? this.publisher,
+      year: year ?? this.year,
+      isbn: isbn ?? this.isbn,
+      cover: cover ?? this.cover,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (authors.present) {
+      map['authors'] = Variable<String>(authors.value);
+    }
+    if (publisher.present) {
+      map['publisher'] = Variable<String>(publisher.value);
+    }
+    if (year.present) {
+      map['year'] = Variable<int>(year.value);
+    }
+    if (isbn.present) {
+      map['isbn'] = Variable<String>(isbn.value);
+    }
+    if (cover.present) {
+      map['cover'] = Variable<String>(cover.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BooksCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('authors: $authors, ')
+          ..write('publisher: $publisher, ')
+          ..write('year: $year, ')
+          ..write('isbn: $isbn, ')
+          ..write('cover: $cover, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -8913,6 +9646,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SideDishesTable sideDishes = $SideDishesTable(this);
   late final $PlannerSetupsTable plannerSetups = $PlannerSetupsTable(this);
   late final $SavedSearchesTable savedSearches = $SavedSearchesTable(this);
+  late final $BooksTable books = $BooksTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8937,6 +9671,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sideDishes,
     plannerSetups,
     savedSearches,
+    books,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -9011,6 +9746,8 @@ typedef $$RecipesTableCreateCompanionBuilder = RecipesCompanion Function({
   Value<DateTime?> lastViewedAt,
   Value<String> equipment,
   Value<String> videoLinks,
+  Value<String?> bookId,
+  Value<String> bookPage,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<DateTime?> deletedAt,
@@ -9039,6 +9776,8 @@ typedef $$RecipesTableUpdateCompanionBuilder = RecipesCompanion Function({
   Value<DateTime?> lastViewedAt,
   Value<String> equipment,
   Value<String> videoLinks,
+  Value<String?> bookId,
+  Value<String> bookPage,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<DateTime?> deletedAt,
@@ -9258,6 +9997,16 @@ class $$RecipesTableFilterComposer
 
   ColumnFilters<String> get videoLinks => $composableBuilder(
     column: $table.videoLinks,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bookId => $composableBuilder(
+    column: $table.bookId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bookPage => $composableBuilder(
+    column: $table.bookPage,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9521,6 +10270,16 @@ class $$RecipesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get bookId => $composableBuilder(
+    column: $table.bookId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bookPage => $composableBuilder(
+    column: $table.bookPage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -9631,6 +10390,12 @@ class $$RecipesTableAnnotationComposer
     column: $table.videoLinks,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get bookId =>
+      $composableBuilder(column: $table.bookId, builder: (column) => column);
+
+  GeneratedColumn<String> get bookPage =>
+      $composableBuilder(column: $table.bookPage, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -9823,6 +10588,8 @@ class $$RecipesTableTableManager
                 Value<DateTime?> lastViewedAt = const Value.absent(),
                 Value<String> equipment = const Value.absent(),
                 Value<String> videoLinks = const Value.absent(),
+                Value<String?> bookId = const Value.absent(),
+                Value<String> bookPage = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -9850,6 +10617,8 @@ class $$RecipesTableTableManager
                 lastViewedAt: lastViewedAt,
                 equipment: equipment,
                 videoLinks: videoLinks,
+                bookId: bookId,
+                bookPage: bookPage,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -9879,6 +10648,8 @@ class $$RecipesTableTableManager
                 Value<DateTime?> lastViewedAt = const Value.absent(),
                 Value<String> equipment = const Value.absent(),
                 Value<String> videoLinks = const Value.absent(),
+                Value<String?> bookId = const Value.absent(),
+                Value<String> bookPage = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -9906,6 +10677,8 @@ class $$RecipesTableTableManager
                 lastViewedAt: lastViewedAt,
                 equipment: equipment,
                 videoLinks: videoLinks,
+                bookId: bookId,
+                bookPage: bookPage,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -14971,6 +15744,320 @@ typedef $$SavedSearchesTableProcessedTableManager =
       SavedSearchRow,
       PrefetchHooks Function()
     >;
+typedef $$BooksTableCreateCompanionBuilder = BooksCompanion Function({
+  required String id,
+  required String title,
+  Value<String> authors,
+  Value<String> publisher,
+  Value<int?> year,
+  Value<String> isbn,
+  Value<String?> cover,
+  Value<String> notes,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<DateTime?> deletedAt,
+  Value<int> rowid,
+});
+typedef $$BooksTableUpdateCompanionBuilder = BooksCompanion Function({
+  Value<String> id,
+  Value<String> title,
+  Value<String> authors,
+  Value<String> publisher,
+  Value<int?> year,
+  Value<String> isbn,
+  Value<String?> cover,
+  Value<String> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<DateTime?> deletedAt,
+  Value<int> rowid,
+});
+
+class $$BooksTableFilterComposer extends Composer<_$AppDatabase, $BooksTable> {
+  $$BooksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authors => $composableBuilder(
+    column: $table.authors,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get publisher => $composableBuilder(
+    column: $table.publisher,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get year => $composableBuilder(
+    column: $table.year,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get isbn => $composableBuilder(
+    column: $table.isbn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cover => $composableBuilder(
+    column: $table.cover,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BooksTableOrderingComposer
+    extends Composer<_$AppDatabase, $BooksTable> {
+  $$BooksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get authors => $composableBuilder(
+    column: $table.authors,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get publisher => $composableBuilder(
+    column: $table.publisher,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get year => $composableBuilder(
+    column: $table.year,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get isbn => $composableBuilder(
+    column: $table.isbn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cover => $composableBuilder(
+    column: $table.cover,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BooksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BooksTable> {
+  $$BooksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get authors =>
+      $composableBuilder(column: $table.authors, builder: (column) => column);
+
+  GeneratedColumn<String> get publisher =>
+      $composableBuilder(column: $table.publisher, builder: (column) => column);
+
+  GeneratedColumn<int> get year =>
+      $composableBuilder(column: $table.year, builder: (column) => column);
+
+  GeneratedColumn<String> get isbn =>
+      $composableBuilder(column: $table.isbn, builder: (column) => column);
+
+  GeneratedColumn<String> get cover =>
+      $composableBuilder(column: $table.cover, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$BooksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BooksTable,
+          BookRow,
+          $$BooksTableFilterComposer,
+          $$BooksTableOrderingComposer,
+          $$BooksTableAnnotationComposer,
+          $$BooksTableCreateCompanionBuilder,
+          $$BooksTableUpdateCompanionBuilder,
+          (BookRow, BaseReferences<_$AppDatabase, $BooksTable, BookRow>),
+          BookRow,
+          PrefetchHooks Function()
+        > {
+  $$BooksTableTableManager(_$AppDatabase db, $BooksTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BooksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BooksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BooksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> authors = const Value.absent(),
+                Value<String> publisher = const Value.absent(),
+                Value<int?> year = const Value.absent(),
+                Value<String> isbn = const Value.absent(),
+                Value<String?> cover = const Value.absent(),
+                Value<String> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BooksCompanion(
+                id: id,
+                title: title,
+                authors: authors,
+                publisher: publisher,
+                year: year,
+                isbn: isbn,
+                cover: cover,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                Value<String> authors = const Value.absent(),
+                Value<String> publisher = const Value.absent(),
+                Value<int?> year = const Value.absent(),
+                Value<String> isbn = const Value.absent(),
+                Value<String?> cover = const Value.absent(),
+                Value<String> notes = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BooksCompanion.insert(
+                id: id,
+                title: title,
+                authors: authors,
+                publisher: publisher,
+                year: year,
+                isbn: isbn,
+                cover: cover,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$BooksTable, BookRow>(table),
+                  BaseReferences<_$AppDatabase, $BooksTable, BookRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BooksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BooksTable,
+      BookRow,
+      $$BooksTableFilterComposer,
+      $$BooksTableOrderingComposer,
+      $$BooksTableAnnotationComposer,
+      $$BooksTableCreateCompanionBuilder,
+      $$BooksTableUpdateCompanionBuilder,
+      (BookRow, BaseReferences<_$AppDatabase, $BooksTable, BookRow>),
+      BookRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -15013,4 +16100,6 @@ class $AppDatabaseManager {
       $$PlannerSetupsTableTableManager(_db, _db.plannerSetups);
   $$SavedSearchesTableTableManager get savedSearches =>
       $$SavedSearchesTableTableManager(_db, _db.savedSearches);
+  $$BooksTableTableManager get books =>
+      $$BooksTableTableManager(_db, _db.books);
 }

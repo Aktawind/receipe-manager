@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../../domain/book.dart';
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
 import '../../domain/meal_planner.dart';
@@ -258,6 +259,20 @@ class SyncEngine {
         put: recipes.putSavedSearch,
         titleOf: (s) => s.name,
       ),
+      _Adapter.of<Book>(
+        kind: SyncKind.book,
+        stamps: () => _stamps(_db.books, _db.books.id, _db.books.updatedAt),
+        load: recipes.getBook,
+        loadAll: () async => {
+          for (final b in await recipes.getAllBooks()) b.id: b,
+        },
+        idOf: (b) => b.id,
+        updatedAt: (b) => b.updatedAt,
+        encode: SyncCodec.book,
+        decode: SyncCodec.decodeBook,
+        put: recipes.putBook,
+        titleOf: (b) => b.title,
+      ),
       _Adapter.of<Recipe>(
         kind: SyncKind.recipe,
         stamps: () =>
@@ -500,12 +515,10 @@ class SyncEngine {
     SyncReport report, {
     bool count = true,
   }) async {
-    if (remote is Recipe) {
-      for (final name in remote.allPhotos) {
-        if (_photos.file(name).existsSync()) continue;
-        final bytes = await _remote.read(SyncKind.media.path(name));
-        await _photos.write(name, bytes);
-      }
+    for (final name in _photosOf(remote)) {
+      if (_photos.file(name).existsSync()) continue;
+      final bytes = await _remote.read(SyncKind.media.path(name));
+      await _photos.write(name, bytes);
     }
     await adapter.put(remote);
     await _markSynced(
@@ -564,7 +577,7 @@ class SyncEngine {
         try {
           final item = cache != null ? cache[id] : await adapter.load(id);
           if (item != null) {
-            if (item is Recipe) await _pushPhotos(item, report);
+            await _pushPhotos(item, report);
             final path = adapter.kind.path(id);
             _own[path] = await _remote.write(path, adapter.encode(item));
             await _markSynced(adapter.kind, id, adapter.updatedAt(item));
@@ -592,8 +605,16 @@ class SyncEngine {
     return sent;
   }
 
-  Future<void> _pushPhotos(Recipe recipe, SyncReport report) async {
-    for (final name in recipe.allPhotos) {
+  /// Les photos d'un élément : celles d'une recette, la couverture d'un
+  /// livre ; elles voyagent dans `media/`.
+  static Iterable<String> _photosOf(Object item) => switch (item) {
+    final Recipe r => r.allPhotos,
+    final Book b => [?b.cover],
+    _ => const [],
+  };
+
+  Future<void> _pushPhotos(Object item, SyncReport report) async {
+    for (final name in _photosOf(item)) {
       await (_mediaUploads[name] ??= _pushPhoto(name, report));
     }
   }

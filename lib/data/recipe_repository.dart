@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import '../domain/book.dart';
 import '../domain/recipe.dart';
 import '../domain/recipe_filter.dart';
 import '../domain/saved_search.dart';
@@ -115,6 +116,8 @@ class RecipeRepository {
       labelIds: original.labelIds,
       equipmentIds: original.equipmentIds,
       videoLinks: original.videoLinks,
+      bookId: original.bookId,
+      bookPage: original.bookPage,
       createdAt: now,
       updatedAt: now,
       ingredients: [
@@ -208,13 +211,19 @@ class RecipeRepository {
   Future<T> transaction<T>(Future<T> Function() action) =>
       _db.transaction(action);
 
+  /// Les photos encore utilisées (recettes, couvertures des livres).
   Future<Set<String>> usedPhotos() async {
     final main =
         await (_db.selectOnly(_db.recipes)..addColumns([_db.recipes.mainPhoto]))
             .map((row) => row.read(_db.recipes.mainPhoto))
             .get();
     final extra = await _db.select(_db.recipePhotos).get();
-    return {...main.nonNulls, ...extra.map((p) => p.file)};
+    // Les couvertures des livres sont aussi dans le dossier des photos.
+    final covers =
+        await (_db.selectOnly(_db.books)..addColumns([_db.books.cover]))
+            .map((row) => row.read(_db.books.cover))
+            .get();
+    return {...main.nonNulls, ...extra.map((p) => p.file), ...covers.nonNulls};
   }
 
   Future<Set<String>> _unusedPhotos(Set<String> candidates) async {
@@ -243,6 +252,8 @@ class RecipeRepository {
             rating: Value(recipe.rating),
             status: Value(recipe.status?.code),
             videoLinks: Value(recipe.videoLinks.join('\n')),
+            bookId: Value(recipe.bookId),
+            bookPage: Value(recipe.bookPage),
             createdAt: recipe.createdAt,
             updatedAt: recipe.updatedAt,
             deletedAt: Value(recipe.deletedAt),
@@ -421,6 +432,8 @@ class RecipeRepository {
     status: RecipeStatus.fromCode(row.status),
     lastViewedAt: row.lastViewedAt,
     videoLinks: _lines(row.videoLinks),
+    bookId: row.bookId,
+    bookPage: row.bookPage,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -499,4 +512,114 @@ class RecipeRepository {
       deletedAt: r.deletedAt,
     );
   }
+
+  // --- Livres de cuisine ---
+
+  /// Les livres (hors corbeille), par titre.
+  Stream<List<Book>> watchBooks() {
+    final query = _db.select(_db.books)..where((b) => b.deletedAt.isNull());
+    return query.watch().map(
+      (rows) => [for (final r in rows) _book(r)]
+        ..sort((a, b) => Book.keyOf(a.title).compareTo(Book.keyOf(b.title))),
+    );
+  }
+
+  /// Tous les livres, supprimés compris (sauvegarde, synchro).
+  Future<List<Book>> getAllBooks() async => [
+    for (final r in await _db.select(_db.books).get()) _book(r),
+  ];
+
+  Future<Book?> getBook(String id) async {
+    final row = await (_db.select(
+      _db.books,
+    )..where((b) => b.id.equals(id))).getSingleOrNull();
+    return row == null ? null : _book(row);
+  }
+
+  Future<Book> createBook({
+    required String title,
+    String authors = '',
+    String publisher = '',
+    int? year,
+    String isbn = '',
+    String? cover,
+  }) async {
+    final now = _clock();
+    final book = Book(
+      id: newId(),
+      title: title.trim(),
+      authors: authors.trim(),
+      publisher: publisher.trim(),
+      year: year,
+      isbn: isbn.trim(),
+      cover: cover,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await putBook(book);
+    return book;
+  }
+
+  Future<void> saveBook(Book book) =>
+      putBook(book.copyWith(updatedAt: _clock()));
+
+  /// Met le livre à la corbeille ; ses recettes gardent leur lien (le livre
+  /// peut revenir par « Annuler » ou la synchro).
+  Future<void> deleteBook(Book book) {
+    final now = _clock();
+    return putBook(book.copyWith(updatedAt: now, deletedAt: () => now));
+  }
+
+  Future<void> restoreBook(Book book) =>
+      putBook(book.copyWith(updatedAt: _clock(), deletedAt: () => null));
+
+  Future<void> putBook(Book book) => _db
+      .into(_db.books)
+      .insertOnConflictUpdate(
+        BooksCompanion.insert(
+          id: book.id,
+          title: book.title,
+          authors: Value(book.authors),
+          publisher: Value(book.publisher),
+          year: Value(book.year),
+          isbn: Value(book.isbn),
+          cover: Value(book.cover),
+          notes: Value(book.notes),
+          createdAt: book.createdAt,
+          updatedAt: book.updatedAt,
+          deletedAt: Value(book.deletedAt),
+        ),
+      );
+
+  /// Rattache des recettes à un livre (liens faits depuis « Source ») :
+  /// [pages] donne la page de chaque recette.
+  Future<void> linkToBook(String bookId, Map<String, String> pages) =>
+      _db.transaction(() async {
+        final now = _clock();
+        for (final e in pages.entries) {
+          await (_db.update(
+            _db.recipes,
+          )..where((r) => r.id.equals(e.key))).write(
+            RecipesCompanion(
+              bookId: Value(bookId),
+              bookPage: Value(e.value),
+              updatedAt: Value(now),
+            ),
+          );
+        }
+      });
+
+  static Book _book(BookRow r) => Book(
+    id: r.id,
+    title: r.title,
+    authors: r.authors,
+    publisher: r.publisher,
+    year: r.year,
+    isbn: r.isbn,
+    cover: r.cover,
+    notes: r.notes,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+    deletedAt: r.deletedAt,
+  );
 }

@@ -117,7 +117,10 @@ class DriveBackupService {
     final contents = backups.readJson(await remote.downloadBackup(backup.id));
 
     var missing = 0;
-    final names = contents.recipes.expand((r) => r.allPhotos).toSet();
+    final names = {
+      ...contents.recipes.expand((r) => r.allPhotos),
+      for (final b in contents.books) ?b.cover,
+    };
     for (final name in names) {
       if (photos.file(name).existsSync()) continue;
       try {
@@ -159,6 +162,7 @@ class DriveBackupService {
         savedSearches: [
           for (final s in contents.savedSearches) s.copyWith(updatedAt: stamp),
         ],
+        books: [for (final b in contents.books) b.copyWith(updatedAt: stamp)],
       ),
       ImportMode.replace,
     );

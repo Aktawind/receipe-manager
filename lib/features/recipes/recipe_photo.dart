@@ -13,11 +13,15 @@ class RecipePhoto extends ConsumerWidget {
     required this.photo,
     this.decodeWidth,
     this.iconSize = 40,
+    this.icon = Icons.restaurant,
   });
 
   final String? photo;
   final int? decodeWidth;
   final double iconSize;
+
+  /// L'illustration sans photo (une assiette ; un livre pour une couverture).
+  final IconData icon;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,7 +30,7 @@ class RecipePhoto extends ConsumerWidget {
       color: scheme.primaryContainer,
       child: Center(
         child: Icon(
-          Icons.restaurant,
+          icon,
           size: iconSize,
           color: scheme.onPrimaryContainer.withValues(alpha: 0.7),
         ),
