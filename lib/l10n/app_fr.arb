@@ -1234,7 +1234,7 @@
   "privacyDriveTitle": "Dans ton Google Drive",
   "privacyDriveText": "Si la synchronisation est activée, une copie est rangée dans le dossier « Recettes » de ton propre Google Drive, avec les sauvegardes. Personne d'autre n'y a accès, sauf si tu le partages.",
   "privacyInternetTitle": "Ce qui passe par Internet",
-  "privacyInternetText": "Seulement : la page d'un site de recettes que tu choisis d'importer, la connexion à Google et la synchronisation avec ton Drive. Quand tu scannes un livre, seul son numéro ISBN est envoyé à Google Books et Open Library pour retrouver sa fiche et sa couverture. La dictée utilise la reconnaissance vocale d'Android, qui peut passer par les serveurs de Google selon ton téléphone.",
+  "privacyInternetText": "Seulement : la page d'un site de recettes que tu choisis d'importer, la connexion à Google et la synchronisation avec ton Drive. Quand tu scannes un livre, seul son numéro ISBN est envoyé à Google Books, au catalogue de la BnF et à Open Library pour retrouver sa fiche et sa couverture. La dictée utilise la reconnaissance vocale d'Android, qui peut passer par les serveurs de Google selon ton téléphone.",
   "privacyPermissionsTitle": "Autorisations",
   "privacyPermissionsText": "Le micro, pour la dictée des courses ; les notifications et alarmes, pour les minuteurs du mode cuisine. Rien d'autre.",
   "privacyNeverTitle": "Jamais",
