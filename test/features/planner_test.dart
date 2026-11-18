@@ -145,8 +145,7 @@ void main() {
     usePhoneSize(tester);
     final app = (await tester.runAsync(TestApp.create))!;
     await app.pump(tester);
-    await tester.tap(find.text('Réglages').last);
-    await settle(tester);
+    await openSettings(tester);
     await scrollTo(tester, find.byKey(const ValueKey('settings-side-dishes')));
     await tester.tap(find.byKey(const ValueKey('settings-side-dishes')));
     await settle(tester);

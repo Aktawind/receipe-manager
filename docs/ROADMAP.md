@@ -492,7 +492,8 @@ principaux.
 Avancée depuis l'ancienne 1.5 « Mode collectionneur » : c'est la seule fonction d'après la 1.0 qui
 t'intéresse pour l'instant.
 
-- Un **onglet « Livres »** (le 6ᵉ, après Recettes) : la bibliothèque en couvertures, recherche
+- Un **onglet « Livres »** (après Recettes) ; pour rester à 5 onglets, les Réglages s'ouvrent
+  depuis la roue dentée de l'accueil, et « Écran d'accueil » est rangé dans les Réglages : la bibliothèque en couvertures, recherche
   (titre, auteur), tri (titre, auteur, nombre de recettes)
 - La **fiche d'un livre** : couverture, auteurs, éditeur, année, ISBN, notes ; ses recettes dans
   l'ordre des pages ; « Recette repérée » (juste un titre et une page, notée « à tester ») ;
@@ -505,7 +506,8 @@ t'intéresse pour l'instant.
   livres, et leurs recettes y sont reliées (avec la page quand elle est écrite)
 - Livres et couvertures dans les sauvegardes (format 14) et la synchro
 
-*Décisions du 2026-11-18* : une vingtaine de livres ; un onglet dédié ; le lien automatique depuis
+*Décisions du 2026-11-18* : une vingtaine de livres ; un onglet dédié, à la place de Réglages
+(roue dentée de l'accueil) ; le lien automatique depuis
 « Source » est un plus (tu referas les liens à la main sinon) ; le scan du code-barres seulement
 s'il remplit tout ; pas d'emplacement ni de prêt.
 

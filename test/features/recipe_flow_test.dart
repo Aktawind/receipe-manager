@@ -187,8 +187,7 @@ Pour la pâte :
     );
     expect(trashed!.isDeleted, isTrue);
 
-    await tester.tap(find.text('Réglages').last);
-    await settle(tester);
+    await openSettings(tester);
     await scrollTo(tester, find.text('Corbeille'));
     await tester.tap(find.text('Corbeille'));
     await settle(tester);

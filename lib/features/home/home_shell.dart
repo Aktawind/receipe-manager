@@ -27,7 +27,6 @@ class HomeShell extends StatelessWidget {
       (Icons.menu_book_outlined, Icons.menu_book, l10n.navBooks),
       (Icons.calendar_month_outlined, Icons.calendar_month, l10n.navPlanning),
       (Icons.shopping_basket_outlined, Icons.shopping_basket, l10n.navShopping),
-      (Icons.settings_outlined, Icons.settings, l10n.navSettings),
     ];
 
     final isTablet = MediaQuery.sizeOf(context).width >= tabletBreakpoint;

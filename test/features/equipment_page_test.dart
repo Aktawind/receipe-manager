@@ -11,8 +11,7 @@ void main() {
     final app = (await tester.runAsync(TestApp.create))!;
     await app.pump(tester);
 
-    await tester.tap(find.text('Réglages').last);
-    await settle(tester);
+    await openSettings(tester);
     await scrollTo(tester, find.text('Matériel'));
     await tester.tap(find.text('Matériel'));
     await settle(tester);

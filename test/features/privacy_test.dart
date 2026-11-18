@@ -23,8 +23,7 @@ class _FakeExport implements ExportActions {
 }
 
 Future<void> _openSetting(WidgetTester tester, String key) async {
-  await tester.tap(find.text('Réglages').last);
-  await settle(tester);
+  await openSettings(tester);
   await scrollTo(tester, find.byKey(ValueKey(key)));
   await tester.tap(find.byKey(ValueKey(key)));
   await settle(tester);

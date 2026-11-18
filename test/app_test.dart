@@ -30,8 +30,7 @@ void main() {
     final app = (await tester.runAsync(TestApp.create))!;
     await app.pump(tester);
 
-    await tester.tap(find.text('Réglages').last);
-    await tester.pumpAndSettle();
+    await openSettings(tester);
     await tester.tap(find.text('Automatique'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sombre').last);

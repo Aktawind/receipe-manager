@@ -157,78 +157,74 @@ GoRouter buildRouter({String initialLocation = '/accueil'}) => GoRouter(
             ),
           ],
         ),
-        StatefulShellBranch(
+      ],
+    ),
+    // Les réglages s'ouvrent depuis l'accueil (roue dentée) : pas d'onglet.
+    GoRoute(
+      path: '/reglages',
+      builder: (context, state) => const SettingsPage(),
+      routes: [
+        GoRoute(
+          path: 'classement',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const ClassificationPage(),
           routes: [
             GoRoute(
-              path: '/reglages',
-              builder: (context, state) => const SettingsPage(),
-              routes: [
-                GoRoute(
-                  path: 'classement',
-                  parentNavigatorKey: _rootKey,
-                  builder: (context, state) => const ClassificationPage(),
-                  routes: [
-                    GoRoute(
-                      path: 'ordre/:id',
-                      parentNavigatorKey: _rootKey,
-                      builder: (context, state) => CollectionOrderPage(
-                        labelId: state.pathParameters['id']!,
-                      ),
-                    ),
-                    GoRoute(
-                      path: ':kind',
-                      parentNavigatorKey: _rootKey,
-                      builder: (context, state) => LabelsPage(
-                        kind:
-                            LabelKind.fromCode(state.pathParameters['kind']) ??
-                            LabelKind.collection,
-                      ),
-                    ),
-                  ],
-                ),
-                GoRoute(
-                  path: 'synchronisation',
-                  parentNavigatorKey: _rootKey,
-                  builder: (context, state) => const SyncPage(),
-                ),
-                GoRoute(
-                  path: 'creneaux',
-                  parentNavigatorKey: _rootKey,
-                  builder: (context, state) => const MealSlotsPage(),
-                ),
-                GoRoute(
-                  path: 'accompagnements',
-                  parentNavigatorKey: _rootKey,
-                  builder: (context, state) => const SideDishesPage(),
-                ),
-                GoRoute(
-                  path: 'rayons',
-                  parentNavigatorKey: _rootKey,
-                  builder: (context, state) => const AislesPage(),
-                ),
-                GoRoute(
-                  path: 'materiel',
-                  parentNavigatorKey: _rootKey,
-                  builder: (context, state) => const EquipmentPage(),
-                ),
-                GoRoute(
-                  path: 'journal',
-                  parentNavigatorKey: _rootKey,
-                  builder: (context, state) => const ErrorLogPage(),
-                ),
-                GoRoute(
-                  path: 'confidentialite',
-                  parentNavigatorKey: _rootKey,
-                  builder: (context, state) => const PrivacyPage(),
-                ),
-                GoRoute(
-                  path: 'corbeille',
-                  parentNavigatorKey: _rootKey,
-                  builder: (context, state) => const TrashPage(),
-                ),
-              ],
+              path: 'ordre/:id',
+              parentNavigatorKey: _rootKey,
+              builder: (context, state) =>
+                  CollectionOrderPage(labelId: state.pathParameters['id']!),
+            ),
+            GoRoute(
+              path: ':kind',
+              parentNavigatorKey: _rootKey,
+              builder: (context, state) => LabelsPage(
+                kind:
+                    LabelKind.fromCode(state.pathParameters['kind']) ??
+                    LabelKind.collection,
+              ),
             ),
           ],
+        ),
+        GoRoute(
+          path: 'synchronisation',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const SyncPage(),
+        ),
+        GoRoute(
+          path: 'creneaux',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const MealSlotsPage(),
+        ),
+        GoRoute(
+          path: 'accompagnements',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const SideDishesPage(),
+        ),
+        GoRoute(
+          path: 'rayons',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const AislesPage(),
+        ),
+        GoRoute(
+          path: 'materiel',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const EquipmentPage(),
+        ),
+        GoRoute(
+          path: 'journal',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const ErrorLogPage(),
+        ),
+        GoRoute(
+          path: 'confidentialite',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const PrivacyPage(),
+        ),
+        GoRoute(
+          path: 'corbeille',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const TrashPage(),
         ),
       ],
     ),

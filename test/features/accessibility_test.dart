@@ -60,17 +60,14 @@ void main() {
   ) async {
     await open(tester);
     await check(tester, 'Accueil');
-    for (final tab in [
-      'Recettes',
-      'Livres',
-      'Planning',
-      'Courses',
-      'Réglages',
-    ]) {
+    for (final tab in ['Recettes', 'Livres', 'Planning', 'Courses']) {
       await tester.tap(find.text(tab).last);
       await settle(tester);
       await check(tester, tab);
     }
+    await openSettings(tester);
+    await check(tester, 'Réglages');
+    await goBack(tester);
     await tester.tap(find.text('Recettes').last);
     await settle(tester);
     await tester.tap(find.text('Quiche').first);
