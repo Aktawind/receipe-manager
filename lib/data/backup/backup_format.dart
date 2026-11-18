@@ -1,3 +1,4 @@
+import '../../domain/book.dart';
 import '../../domain/equipment.dart';
 import '../../domain/label.dart';
 import '../../domain/legacy_classification.dart';
@@ -37,9 +38,11 @@ import '../photo_store.dart';
 ///   des `mealSlots`) ; le temps disponible d'une planification peut être
 ///   `null` (sans limite).
 /// - v13 : recherches enregistrées (`savedSearches`), synchronisées.
+/// - v14 : livres de cuisine (`books`) ; le livre et la page de chaque
+///   recette (`book`, `bookPage`).
 abstract final class BackupFormat {
   static const formatName = 'recettes-backup';
-  static const currentVersion = 13;
+  static const currentVersion = 14;
   static const dataFile = 'recettes.json';
   static const photosFolder = 'photos/';
 
@@ -55,6 +58,7 @@ abstract final class BackupFormat {
     List<SideDish> sideDishes = const [],
     List<PlannerSetup> plannerSetups = const [],
     List<SavedSearch> savedSearches = const [],
+    List<Book> books = const [],
     required DateTime exportedAt,
     required String appVersion,
   }) {
@@ -152,6 +156,23 @@ abstract final class BackupFormat {
               'deletedAt': p.deletedAt?.toUtc().toIso8601String(),
             },
         ],
+      if (books.isNotEmpty)
+        'books': [
+          for (final b in books)
+            {
+              'id': b.id,
+              'title': b.title,
+              'authors': b.authors,
+              'publisher': b.publisher,
+              'year': b.year,
+              'isbn': b.isbn,
+              'cover': b.cover,
+              'notes': b.notes,
+              'createdAt': b.createdAt.toUtc().toIso8601String(),
+              'updatedAt': b.updatedAt.toUtc().toIso8601String(),
+              'deletedAt': b.deletedAt?.toUtc().toIso8601String(),
+            },
+        ],
       if (savedSearches.isNotEmpty)
         'savedSearches': [
           for (final s in savedSearches)
@@ -235,6 +256,8 @@ abstract final class BackupFormat {
     'labels': r.labelIds,
     'equipment': r.equipmentIds,
     'videoLinks': r.videoLinks,
+    if (r.bookId != null) 'book': r.bookId,
+    if (r.bookPage.isNotEmpty) 'bookPage': r.bookPage,
     'createdAt': r.createdAt.toUtc().toIso8601String(),
     'updatedAt': r.updatedAt.toUtc().toIso8601String(),
     'deletedAt': r.deletedAt?.toUtc().toIso8601String(),
@@ -430,8 +453,37 @@ abstract final class BackupFormat {
       sideDishes: version >= 11 ? _decodeSides(root) : const [],
       plannerSetups: version >= 11 ? _decodeSetups(root) : const [],
       savedSearches: version >= 13 ? _decodeSearches(root) : const [],
+      books: version >= 14 ? _decodeBooks(root) : const [],
     );
   }
+
+  static List<Book> _decodeBooks(Map<String, Object?> root) => [
+    for (final item in _list(root, 'books'))
+      () {
+        final m = _map(item, 'book');
+        final id = _string(m, 'id', required: true);
+        final title = _string(m, 'title', required: true).trim();
+        if (id.isEmpty || title.isEmpty) {
+          throw const BackupFormatException(BackupError.invalid, 'books');
+        }
+        final cover = m['cover'];
+        return Book(
+          id: id,
+          title: title,
+          authors: _string(m, 'authors'),
+          publisher: _string(m, 'publisher'),
+          year: _int(m, 'year'),
+          isbn: _string(m, 'isbn'),
+          cover: cover is String && PhotoStore.isValidName(cover)
+              ? cover
+              : null,
+          notes: _string(m, 'notes'),
+          createdAt: _date(m, 'createdAt')!,
+          updatedAt: _date(m, 'updatedAt')!,
+          deletedAt: _date(m, 'deletedAt', required: false),
+        );
+      }(),
+  ];
 
   static List<SavedSearch> _decodeSearches(Map<String, Object?> root) => [
     for (final item in _list(root, 'savedSearches'))
@@ -692,6 +744,8 @@ abstract final class BackupFormat {
       labelIds: version >= 7 ? _strings(m, 'labels') : const [],
       equipmentIds: version >= 6 ? _strings(m, 'equipment') : const [],
       videoLinks: _strings(m, 'videoLinks'),
+      bookId: m['book'] is String ? m['book'] as String : null,
+      bookPage: m['bookPage'] is String ? m['bookPage'] as String : '',
       createdAt: _date(m, 'createdAt')!,
       updatedAt: _date(m, 'updatedAt')!,
       deletedAt: _date(m, 'deletedAt', required: false),
@@ -807,6 +861,7 @@ class BackupData {
     this.sideDishes = const [],
     this.plannerSetups = const [],
     this.savedSearches = const [],
+    this.books = const [],
   });
 
   final List<Recipe> recipes;
@@ -820,6 +875,7 @@ class BackupData {
   final List<SideDish> sideDishes;
   final List<PlannerSetup> plannerSetups;
   final List<SavedSearch> savedSearches;
+  final List<Book> books;
 }
 
 enum BackupError { notABackup, newerVersion, invalid, missingPhoto }

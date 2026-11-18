@@ -381,8 +381,7 @@ void orderPageTests() {
     tester,
   ) async {
     final app = await setUpLibrary(tester, collection: true);
-    await tester.tap(find.text('Réglages').last);
-    await settle(tester);
+    await openSettings(tester);
     await scrollTo(tester, find.text('Classement'));
     await tester.tap(find.text('Classement'));
     await settle(tester);

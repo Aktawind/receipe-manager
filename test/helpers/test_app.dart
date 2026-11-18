@@ -108,3 +108,14 @@ Future<void> scrollTo(WidgetTester tester, Finder finder) async {
   );
   await tester.pump();
 }
+
+/// Ouvre les réglages : la roue dentée de l'accueil (ce n'est pas un onglet).
+Future<void> openSettings(WidgetTester tester) async {
+  final gear = find.byKey(const ValueKey('home-settings'));
+  if (gear.evaluate().isEmpty) {
+    await tester.tap(find.text('Accueil').last);
+    await settle(tester);
+  }
+  await tester.tap(gear);
+  await settle(tester);
+}

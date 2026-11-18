@@ -99,7 +99,10 @@ Future<bool> runBackgroundSync() async {
 
   final root = await getApplicationDocumentsDirectory();
   ErrorLog.current = ErrorLog(File(p.join(root.path, ErrorLog.fileName)));
-  final gate = SyncGate(File(p.join(root.path, SyncGate.fileName)));
+  final gate = SyncGate(
+    File(p.join(root.path, SyncGate.fileName)),
+    owner: 'background-${DateTime.now().microsecondsSinceEpoch}',
+  );
   // L'application, ou une autre tâche, est déjà en train de synchroniser.
   if (!gate.tryAcquire()) return true;
 

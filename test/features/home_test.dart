@@ -79,10 +79,14 @@ void main() {
   testWidgets('personnaliser : cacher une rubrique', (tester) async {
     final app = await open(tester);
     expect(find.byKey(const ValueKey('home-shortcut-new')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('home-customize')));
+    // Réglages (roue dentée) → Écran d'accueil.
+    await openSettings(tester);
+    await scrollTo(tester, find.byKey(const ValueKey('settings-home')));
+    await tester.tap(find.byKey(const ValueKey('settings-home')));
     await settle(tester);
     await tester.tap(find.byKey(const ValueKey('home-section-shortcuts')));
     await settle(tester);
+    await goBack(tester);
     await goBack(tester);
     expect(find.byKey(const ValueKey('home-shortcut-new')), findsNothing);
     expect(app.prefs.getStringList('home_sections'), contains('shortcuts:0'));

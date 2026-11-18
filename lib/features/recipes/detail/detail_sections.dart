@@ -13,6 +13,8 @@ import '../../../domain/ingredient_scaling.dart';
 import '../../../domain/ingredient_text.dart';
 import '../../../domain/recipe.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../books/book_cover.dart';
+import '../../books/book_providers.dart';
 import '../../classification/label_chips.dart';
 import '../../equipment/equipment_providers.dart';
 import '../recipe_photo.dart';
@@ -358,15 +360,17 @@ class DetailNotesSection extends StatelessWidget {
   }
 }
 
-class DetailAboutSection extends StatelessWidget {
+class DetailAboutSection extends ConsumerWidget {
   const DetailAboutSection({super.key, required this.recipe});
 
   final Recipe recipe;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final bookId = recipe.bookId;
+    final book = bookId == null ? null : ref.watch(bookProvider(bookId));
     final source = recipe.source.trim();
     final links = findLinks(source);
     final host = links.isEmpty ? '' : links.first.host.toLowerCase();
@@ -385,6 +389,59 @@ class DetailAboutSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DetailSectionTitle(l10n.sectionAbout),
+        // Le livre d'où vient la recette : un toucher ouvre sa fiche.
+        if (book != null) ...[
+          Material(
+            color: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(color: theme.colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              key: const ValueKey('recipe-book'),
+              onTap: () => context.push('/livres/${book.id}'),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    BookCover(cover: book.cover, width: 44),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.bookLabel,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(book.title, style: theme.textTheme.bodyLarge),
+                          if (recipe.bookPage.isNotEmpty)
+                            Text(
+                              l10n.bookPageShort(recipe.bookPage),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (source.isNotEmpty) const SizedBox(height: 12),
+        ],
         if (source.isNotEmpty)
           Container(
             width: double.infinity,

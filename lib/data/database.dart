@@ -61,6 +61,10 @@ class Recipes extends Table {
   /// v5) est vidé par la migration v6 : le matériel est dans [RecipeEquipment].
   TextColumn get equipment => text().withDefault(const Constant(''))();
   TextColumn get videoLinks => text().withDefault(const Constant(''))();
+
+  /// Le livre de la recette et la page ; ajoutés en v15.
+  TextColumn get bookId => text().nullable()();
+  TextColumn get bookPage => text().withDefault(const Constant(''))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -335,6 +339,26 @@ class PlannerSetups extends Table {
 
 /// Les recherches enregistrées (v14) : le contenu en JSON (`SavedSearch`),
 /// l'identifiant vient du nom.
+/// Les livres de cuisine (v15) ; les recettes y renvoient par
+/// [Recipes.bookId].
+@DataClassName('BookRow')
+class Books extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text()();
+  TextColumn get authors => text().withDefault(const Constant(''))();
+  TextColumn get publisher => text().withDefault(const Constant(''))();
+  IntColumn get year => integer().nullable()();
+  TextColumn get isbn => text().withDefault(const Constant(''))();
+  TextColumn get cover => text().nullable()();
+  TextColumn get notes => text().withDefault(const Constant(''))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 @DataClassName('SavedSearchRow')
 class SavedSearches extends Table {
   TextColumn get id => text()();
@@ -369,6 +393,7 @@ class SavedSearches extends Table {
     SideDishes,
     PlannerSetups,
     SavedSearches,
+    Books,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -376,7 +401,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 14;
+  static const latestSchemaVersion = 15;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -517,6 +542,12 @@ UPDATE recipes SET
     // reprises au démarrage, voir AppServices).
     from13To14: (m, schema) async {
       await m.createTable(schema.savedSearches);
+    },
+    // v15 : livres de cuisine, et le livre (avec la page) de chaque recette.
+    from14To15: (m, schema) async {
+      await m.createTable(schema.books);
+      await m.addColumn(schema.recipes, schema.recipes.bookId);
+      await m.addColumn(schema.recipes, schema.recipes.bookPage);
     },
   );
 
