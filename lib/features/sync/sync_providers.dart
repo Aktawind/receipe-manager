@@ -269,6 +269,9 @@ class SyncController extends Notifier<SyncState> {
   /// bloquée (réseau coupé en plein transfert…) : on repart de zéro.
   static const _stuckAfter = Duration(minutes: 3);
 
+  /// Le nom de l'application sur le verrou : elle peut reprendre le sien.
+  static final _gateOwner = 'app-${DateTime.now().microsecondsSinceEpoch}';
+
   /// Synchronise maintenant (bouton, ou déclenchement automatique).
   /// Renvoie [SyncRun.busy] si une autre synchro travaille déjà (celle de
   /// l'application ou celle d'arrière-plan) : elle est alors relancée
@@ -285,6 +288,7 @@ class SyncController extends Notifier<SyncState> {
     // La tâche d'arrière-plan travaille peut-être déjà : on repasse après.
     final gate = SyncGate(
       File(p.join(ref.read(appServicesProvider).root.path, SyncGate.fileName)),
+      owner: _gateOwner,
     );
     if (!gate.tryAcquire()) {
       _schedule(const Duration(seconds: 30));

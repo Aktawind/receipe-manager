@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../domain/label.dart';
 import '../../features/books/book_detail_page.dart';
-import '../../features/books/book_links_page.dart';
 import '../../features/books/books_page.dart';
 import '../../features/classification/collection_order_page.dart';
 import '../../features/classification/labels_page.dart';
@@ -111,12 +110,6 @@ GoRouter buildRouter({String initialLocation = '/accueil'}) => GoRouter(
               path: '/livres',
               builder: (context, state) => const BooksPage(),
               routes: [
-                // Avant « :id » : « sources » n'est pas un livre.
-                GoRoute(
-                  path: 'sources',
-                  parentNavigatorKey: _rootKey,
-                  builder: (context, state) => const BookLinksPage(),
-                ),
                 GoRoute(
                   path: ':id',
                   parentNavigatorKey: _rootKey,

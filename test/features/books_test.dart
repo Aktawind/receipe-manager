@@ -44,7 +44,12 @@ void main() {
     final app = (await tester.runAsync(TestApp.create))!;
     await app.pump(tester);
     await _openBooks(tester);
-    expect(find.byKey(const ValueKey('books-empty-sources')), findsOneWidget);
+    expect(
+      find.text(
+        'Aucun livre pour l\'instant. Ajoute tes livres de cuisine : le code-barres au dos suffit.',
+      ),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const ValueKey('books-add')));
     await settle(tester);
@@ -152,48 +157,6 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('book-save')), findsNothing);
-  });
-
-  testWidgets('retrouver les livres cités dans « Source »', (tester) async {
-    usePhoneSize(tester);
-    final app = (await tester.runAsync(TestApp.create))!;
-    await tester.runAsync(() async {
-      final repo = app.services.recipes;
-      for (final (title, source) in [
-        ('Tarte au citron', 'Le grand livre de la pâtisserie p. 42'),
-        ('Éclairs', 'Grand livre de la patisserie, page 120'),
-        ('Quiche', 'https://www.marmiton.org/quiche'),
-        ('Gratin', 'Livre de mamie'),
-      ]) {
-        final r = await repo.create();
-        await repo.save(r.copyWith(title: title, source: source));
-      }
-    });
-    await app.pump(tester);
-    await _openBooks(tester);
-    await tester.tap(find.byKey(const ValueKey('books-empty-sources')));
-    await settle(tester);
-
-    expect(find.text('Le grand livre de la pâtisserie'), findsOneWidget);
-    expect(find.text('2 recettes'), findsOneWidget);
-    // Pas « Livre de mamie » cette fois-ci.
-    await tester.tap(find.byKey(const ValueKey('source-book-Livre de mamie')));
-    await tester.pump();
-    expect(find.text('Relier 1 livre'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('book-links-apply')));
-    await settle(tester);
-    expect(find.text('1 livre créé, 2 recettes reliées'), findsOneWidget);
-    expect(find.text('2 recettes'), findsOneWidget);
-
-    final recipes = (await tester.runAsync(
-      () => app.services.recipes.watchRecipes().first,
-    ))!;
-    final pages = {for (final r in recipes) r.title: (r.bookId, r.bookPage)};
-    expect(pages['Tarte au citron']!.$2, '42');
-    expect(pages['Éclairs']!.$2, '120');
-    expect(pages['Tarte au citron']!.$1, pages['Éclairs']!.$1);
-    expect(pages['Gratin']!.$1, isNull);
-    expect(pages['Quiche']!.$1, isNull);
   });
 
   testWidgets('la recette montre son livre ; l’éditeur le choisit', (

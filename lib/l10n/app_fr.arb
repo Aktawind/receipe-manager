@@ -1293,18 +1293,10 @@
   "bookSpotted": "« {title} » ajoutée, à tester",
   "@bookSpotted": {"placeholders": {"title": {"type": "String"}}},
   "bookLinkRecipes": "Relier des recettes",
-  "booksEmpty": "Aucun livre pour l'instant. Ajoute tes livres de cuisine, ou retrouve ceux que citent tes recettes.",
+  "booksEmpty": "Aucun livre pour l'instant. Ajoute tes livres de cuisine : le code-barres au dos suffit.",
   "booksSearch": "Chercher un livre ou un auteur",
   "booksSort": "Trier",
   "booksSortTitle": "Par titre",
   "booksSortAuthor": "Par auteur",
-  "booksSortRecipes": "Par nombre de recettes",
-  "bookLinksTitle": "Retrouver mes livres",
-  "bookLinksHint": "Les livres cités dans la source de tes recettes. Ceux qui sont cochés deviennent des livres de ta bibliothèque, et leurs recettes y sont reliées (avec la page quand elle est indiquée).",
-  "bookLinksNone": "Aucun livre trouvé dans la source de tes recettes (ou elles sont déjà reliées).",
-  "bookLinksExisting": "déjà dans ta bibliothèque",
-  "bookLinksApply": "{count, plural, =0{Relier} =1{Relier 1 livre} other{Relier {count} livres}}",
-  "@bookLinksApply": {"placeholders": {"count": {"type": "int"}}},
-  "bookLinksDone": "{books, plural, =0{Aucun livre créé} =1{1 livre créé} other{{books} livres créés}}, {recipes, plural, =1{1 recette reliée} other{{recipes} recettes reliées}}",
-  "@bookLinksDone": {"placeholders": {"books": {"type": "int"}, "recipes": {"type": "int"}}}
+  "booksSortRecipes": "Par nombre de recettes"
 }
