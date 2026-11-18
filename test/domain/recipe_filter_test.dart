@@ -10,7 +10,7 @@ Recipe recipe(
   bool favorite = false,
   int? prep,
   int? cook,
-  int? rating,
+  double? rating,
   RecipeStatus? status,
   DateTime? viewed,
   DateTime? created,

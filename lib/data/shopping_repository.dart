@@ -83,9 +83,10 @@ class ShoppingRepository {
     return list;
   }
 
-  /// Déplace les produits [ids] de [from] vers la liste [toId] (ou une
-  /// nouvelle liste nommée [newName]) ; renvoie la liste d'arrivée.
-  Future<ShoppingList?> transferItems(
+  /// Copie les produits [ids] de [from] dans la liste [toId] (ou une
+  /// nouvelle liste nommée [newName]) ; [from] ne change pas. Renvoie la
+  /// liste d'arrivée.
+  Future<ShoppingList?> copyItems(
     ShoppingList from,
     Set<String> ids, {
     String? toId,
@@ -98,9 +99,9 @@ class ShoppingRepository {
     if (source == null || target == null || target.id == source.id) {
       return null;
     }
-    final moved = ShoppingProducts.transfer(source.items, target.items, ids);
-    await save(source.copyWith(items: moved.from));
-    final result = target.copyWith(items: moved.to);
+    final result = target.copyWith(
+      items: ShoppingProducts.copy(source.items, target.items, ids),
+    );
     await save(result);
     return result;
   });

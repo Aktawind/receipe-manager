@@ -149,11 +149,18 @@ class RecipeRepository {
     );
   }
 
-  Future<void> setRating(String id, int? rating) {
+  Future<void> setRating(String id, double? rating) {
     return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
-      RecipesCompanion(rating: Value(rating), updatedAt: Value(_clock())),
+      RecipesCompanion(
+        rating: Value(_halves(rating)),
+        updatedAt: Value(_clock()),
+      ),
     );
   }
+
+  /// La note en base : en demi-étoiles (4,5 → 9).
+  static int? _halves(double? rating) =>
+      rating == null ? null : (rating * 2).round().clamp(1, 10);
 
   Future<void> setStatus(String id, RecipeStatus? status) {
     return (_db.update(_db.recipes)..where((r) => r.id.equals(id))).write(
@@ -249,7 +256,7 @@ class RecipeRepository {
             timesCooked: Value(recipe.timesCooked),
             mainPhoto: Value(recipe.mainPhoto),
             isFavorite: Value(recipe.isFavorite),
-            rating: Value(recipe.rating),
+            rating: Value(_halves(recipe.rating)),
             status: Value(recipe.status?.code),
             videoLinks: Value(recipe.videoLinks.join('\n')),
             bookId: Value(recipe.bookId),
@@ -428,7 +435,7 @@ class RecipeRepository {
     timesCooked: row.timesCooked,
     mainPhoto: row.mainPhoto,
     isFavorite: row.isFavorite,
-    rating: row.rating,
+    rating: row.rating == null ? null : row.rating! / 2,
     status: RecipeStatus.fromCode(row.status),
     lastViewedAt: row.lastViewedAt,
     videoLinks: _lines(row.videoLinks),

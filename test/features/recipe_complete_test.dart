@@ -57,17 +57,27 @@ void main() {
     expect(find.text('Cuire 40 minutes à feu doux.'), findsOneWidget);
     await scrollTo(tester, find.text('https://youtu.be/abc'));
 
-    // Étoiles : 4 étoiles, puis un second appui sur la même retire la note.
+    // Étoiles : 4, puis 4,5 et 5 ; un appui sur la note choisie la retire.
     await tester.drag(find.byType(Scrollable).first, const Offset(0, 4000));
     await tester.pump();
     await tester.tap(find.byTooltip('Noter 4 sur 5'));
     await settle(tester);
-    Future<int?> rating() async {
+    Future<double?> rating() async {
       final recipe = await tester.runAsync(() => repo.getRecipe(id));
       return recipe!.rating;
     }
 
     expect(await rating(), 4);
+    // La moitié gauche de la 5ᵉ étoile : 4,5 étoiles.
+    final fifth = find.byTooltip('Noter 5 sur 5');
+    await tester.tapAt(tester.getCenter(fifth) - const Offset(12, 0));
+    await settle(tester);
+    expect(await rating(), 4.5);
+    expect(find.byIcon(Icons.star_half), findsWidgets);
+    // La moitié droite : 5 étoiles.
+    await tester.tapAt(tester.getCenter(fifth) + const Offset(12, 0));
+    await settle(tester);
+    expect(await rating(), 5);
     await tester.tap(find.byTooltip('Retirer la note'));
     await settle(tester);
     expect(await rating(), isNull);

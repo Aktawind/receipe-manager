@@ -514,6 +514,8 @@ s'il remplit tout ; pas d'emplacement ni de prêt.
 *Avancement* : **validée le 2026-11-18**.
 1.1.1 : scan du code-barres réparé (catalogue de la BnF en plus de Google Books, souvent refusé
 sans clé, et d'Open Library).
+1.1.2 : « Copier des produits » remplace « Transférer des produits » dans les listes de courses ;
+notes par demi-étoile (retours du 2026-11-18).
 
 ## Plus tard, si besoin
 

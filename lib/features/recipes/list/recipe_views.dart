@@ -10,6 +10,7 @@ import '../../../domain/label.dart';
 import '../../../domain/recipe.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../classification/labels_providers.dart';
+import '../rating_stars.dart';
 import '../recipe_photo.dart';
 import '../recipe_providers.dart';
 
@@ -262,14 +263,7 @@ class RecipeCards extends ConsumerWidget {
                             Row(
                               children: [
                                 if (recipe.rating case final rating?) ...[
-                                  for (var i = 1; i <= 5; i++)
-                                    Icon(
-                                      i <= rating
-                                          ? Icons.star
-                                          : Icons.star_border,
-                                      size: 16,
-                                      color: scheme.tertiary,
-                                    ),
+                                  RatingStars(rating: rating),
                                   const SizedBox(width: 8),
                                 ],
                                 if (recipe.status case final status?)

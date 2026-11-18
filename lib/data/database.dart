@@ -40,7 +40,8 @@ class Recipes extends Table {
   /// Favori ; ajouté en v3.
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
 
-  /// Note de 1 à 5, `null` si non notée ; ajouté en v3.
+  /// Note en demi-étoiles, de 1 (½) à 10 (5 étoiles), `null` si non notée ;
+  /// ajouté en v3 (de 1 à 5 jusqu'en v15).
   IntColumn get rating => integer().nullable()();
 
   /// `toTest`, `validated`, `toImprove` ou `null` ; ajouté en v3.
@@ -401,7 +402,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Toute modification du schéma : incrémenter, écrire la migration, puis
   /// `dart run drift_dev make-migrations` (voir CLAUDE.md).
-  static const latestSchemaVersion = 15;
+  static const latestSchemaVersion = 16;
 
   @override
   int get schemaVersion => latestSchemaVersion;
@@ -548,6 +549,12 @@ UPDATE recipes SET
       await m.createTable(schema.books);
       await m.addColumn(schema.recipes, schema.recipes.bookId);
       await m.addColumn(schema.recipes, schema.recipes.bookPage);
+    },
+    // Les demi-étoiles : la note se compte en demi-étoiles (4 → 8).
+    from15To16: (m, schema) async {
+      await customStatement(
+        'UPDATE recipes SET rating = rating * 2 WHERE rating IS NOT NULL',
+      );
     },
   );
 

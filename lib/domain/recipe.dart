@@ -79,8 +79,9 @@ class Recipe {
   final List<String> extraPhotos;
   final bool isFavorite;
 
-  /// Note de 1 à 5 étoiles ; `null` tant que la recette n'est pas notée.
-  final int? rating;
+  /// Note de 0,5 à 5 étoiles, par demi-étoile (4,5) ; `null` tant que la
+  /// recette n'est pas notée.
+  final double? rating;
   final RecipeStatus? status;
 
   /// Classement : catégories, collections, étiquettes, saisons… (voir
@@ -156,7 +157,7 @@ class Recipe {
     String? Function()? mainPhoto,
     List<String>? extraPhotos,
     bool? isFavorite,
-    int? Function()? rating,
+    double? Function()? rating,
     RecipeStatus? Function()? status,
     List<String>? labelIds,
     DateTime? Function()? lastViewedAt,

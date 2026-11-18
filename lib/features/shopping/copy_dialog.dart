@@ -7,9 +7,9 @@ import '../../domain/shopping.dart';
 import '../../l10n/app_localizations.dart';
 import 'shopping_providers.dart';
 
-/// « Transférer des produits » : cocher des produits encore à acheter de
-/// [list], choisir une autre liste (ou une nouvelle), et les y déplacer.
-Future<void> transferShoppingItems(
+/// « Copier des produits » : cocher des produits de [list], choisir une autre
+/// liste (ou une nouvelle), et les y copier ; [list] ne change pas.
+Future<void> copyShoppingItems(
   BuildContext context,
   WidgetRef ref,
   ShoppingList list,
@@ -19,12 +19,12 @@ Future<void> transferShoppingItems(
   final router = GoRouter.of(context);
   final choice = await showDialog<({Set<String> ids, String? toId})>(
     context: context,
-    builder: (context) => _TransferDialog(list: list),
+    builder: (context) => _CopyDialog(list: list),
   );
   if (choice == null || choice.ids.isEmpty) return;
   final target = await ref
       .read(shoppingRepositoryProvider)
-      .transferItems(
+      .copyItems(
         list,
         choice.ids,
         toId: choice.toId,
@@ -36,7 +36,7 @@ Future<void> transferShoppingItems(
     ..showSnackBar(
       SnackBar(
         persist: false,
-        content: Text(l10n.productsTransferred(choice.ids.length, target.name)),
+        content: Text(l10n.productsCopied(choice.ids.length, target.name)),
         action: SnackBarAction(
           label: l10n.openShoppingList,
           onPressed: () => router.push('/courses/${target.id}'),
@@ -45,16 +45,16 @@ Future<void> transferShoppingItems(
     );
 }
 
-class _TransferDialog extends ConsumerStatefulWidget {
-  const _TransferDialog({required this.list});
+class _CopyDialog extends ConsumerStatefulWidget {
+  const _CopyDialog({required this.list});
 
   final ShoppingList list;
 
   @override
-  ConsumerState<_TransferDialog> createState() => _TransferDialogState();
+  ConsumerState<_CopyDialog> createState() => _CopyDialogState();
 }
 
-class _TransferDialogState extends ConsumerState<_TransferDialog> {
+class _CopyDialogState extends ConsumerState<_CopyDialog> {
   final _chosen = <String>{};
 
   /// La liste d'arrivée ; `null` = une nouvelle liste.
@@ -64,9 +64,13 @@ class _TransferDialogState extends ConsumerState<_TransferDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // Tous les produits, ceux du panier compris (ils arrivent à acheter) :
+    // ceux qui restent à acheter d'abord.
     final items = [
       for (final i in widget.list.items)
         if (!i.checked) i,
+      for (final i in widget.list.items)
+        if (i.checked) i,
     ];
     final others = [
       for (final l
@@ -77,7 +81,7 @@ class _TransferDialogState extends ConsumerState<_TransferDialog> {
     if (!_targetChosen && others.isNotEmpty) _toId = others.first.id;
     final all = items.isNotEmpty && _chosen.length == items.length;
     return AlertDialog(
-      title: Text(l10n.transferProducts),
+      title: Text(l10n.copyProducts),
       contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       content: SizedBox(
         width: 400,
@@ -89,11 +93,11 @@ class _TransferDialogState extends ConsumerState<_TransferDialog> {
             KeyedSubtree(
               key: ValueKey(others.length),
               child: DropdownButtonFormField<String?>(
-                key: const ValueKey('transfer-target'),
+                key: const ValueKey('copy-target'),
                 initialValue: _toId,
                 isExpanded: true,
                 decoration: InputDecoration(
-                  labelText: l10n.transferTo,
+                  labelText: l10n.copyTo,
                   border: const OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -116,11 +120,11 @@ class _TransferDialogState extends ConsumerState<_TransferDialog> {
             if (items.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text(l10n.transferNothing),
+                child: Text(l10n.copyNothing),
               )
             else ...[
               CheckboxListTile(
-                key: const ValueKey('transfer-all'),
+                key: const ValueKey('copy-all'),
                 dense: true,
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
@@ -138,7 +142,7 @@ class _TransferDialogState extends ConsumerState<_TransferDialog> {
                   children: [
                     for (final item in items)
                       CheckboxListTile(
-                        key: ValueKey('transfer-item-${item.id}'),
+                        key: ValueKey('copy-item-${item.id}'),
                         dense: true,
                         controlAffinity: ListTileControlAffinity.leading,
                         contentPadding: EdgeInsets.zero,
@@ -168,11 +172,11 @@ class _TransferDialogState extends ConsumerState<_TransferDialog> {
           child: Text(l10n.cancel),
         ),
         FilledButton(
-          key: const ValueKey('transfer-confirm'),
+          key: const ValueKey('copy-confirm'),
           onPressed: _chosen.isEmpty
               ? null
               : () => Navigator.pop(context, (ids: {..._chosen}, toId: _toId)),
-          child: Text(l10n.transferConfirm(_chosen.length)),
+          child: Text(l10n.copyConfirm(_chosen.length)),
         ),
       ],
     );
