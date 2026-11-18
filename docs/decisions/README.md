@@ -9,3 +9,4 @@ Une décision n'est jamais modifiée après coup : on en écrit une nouvelle qui
 | [0002](0002-synchronisation-google-drive.md) | Synchronisation via un dossier Google Drive | Acceptée (mise en œuvre en 0.4) |
 | [0003](0003-workflow-git-et-versions.md) | Workflow Git, versions, signature et variantes | Acceptée |
 | [0004](0004-sans-ia.md) | Pas d'IA | Acceptée |
+| [0005](0005-releases-directes.md) | Releases directes, sans version de test | Acceptée |

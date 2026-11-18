@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import '../../core/logging/error_log.dart';
+
 /// Ce qu'une base de livres sait d'un ISBN.
 typedef BookInfo = ({
   String title,
@@ -15,31 +17,62 @@ typedef BookInfo = ({
   String? coverUrl,
 });
 
-/// Retrouve un livre d'après son ISBN dans des bases publiques : Google Books
-/// d'abord (bien fourni en livres français), puis Open Library pour ce qui
-/// manque (et une couverture plus grande). Rien d'autre que l'ISBN n'est
-/// envoyé.
+/// Retrouve un livre d'après son ISBN dans des bases publiques, interrogées en
+/// même temps : Google Books, le catalogue de la BnF (tous les livres publiés
+/// en France, sans clé ni quota) et Open Library (couvertures). Une base qui ne
+/// répond pas n'empêche pas les autres : Google Books sans clé refuse souvent
+/// (« quota dépassé »). Rien d'autre que l'ISBN n'est envoyé.
 class BookLookup {
   BookLookup({http.Client? client}) : _client = client ?? http.Client();
 
   final http.Client _client;
   static const _timeout = Duration(seconds: 12);
 
-  /// Le livre, ou `null` si aucune base ne le connaît. Une erreur de réseau
-  /// est levée telle quelle (pas de réseau, délai dépassé).
+  /// Le livre, ou `null` si aucune base ne le connaît. Si aucune base n'a pu
+  /// répondre (pas de réseau, délai dépassé), la première erreur est levée.
   Future<BookInfo?> find(String isbn) async {
-    final google = await _google(isbn);
-    final open = await _openLibrary(isbn);
-    if (google == null && open == null) return null;
-    String pick(String? a, String? b) =>
-        (a != null && a.isNotEmpty) ? a : (b ?? '');
+    final sources = <(String, Future<BookInfo?> Function(String))>[
+      ('Google Books', _google),
+      ('BnF', _bnf),
+      ('Open Library', _openLibrary),
+    ];
+    final errors = <Object>[];
+    final found = await Future.wait([
+      for (final (name, source) in sources)
+        source(isbn).then<BookInfo?>(
+          (info) => info,
+          onError: (Object error, StackTrace stack) {
+            errors.add(error);
+            ErrorLog.current.add('Recherche du livre ($name)', error, stack);
+            return null;
+          },
+        ),
+    ]);
+    final known = [
+      for (final info in found)
+        if (info != null && info.title.isNotEmpty) info,
+    ];
+    if (known.isEmpty) {
+      if (errors.length == sources.length) throw errors.first;
+      return null;
+    }
+    String pick(String Function(BookInfo) field) => known
+        .map(field)
+        .firstWhere((value) => value.isNotEmpty, orElse: () => '');
+    final [google, bnf, open] = found;
     return (
-      title: pick(google?.title, open?.title),
-      authors: pick(google?.authors, open?.authors),
-      publisher: pick(google?.publisher, open?.publisher),
-      year: google?.year ?? open?.year,
+      title: pick((b) => b.title),
+      authors: pick((b) => b.authors),
+      publisher: pick((b) => b.publisher),
+      year: known.map((b) => b.year).nonNulls.firstOrNull,
       isbn: isbn,
-      coverUrl: open?.coverUrl ?? google?.coverUrl,
+      // La grande couverture d'Open Library d'abord ; sinon celle de Google,
+      // sinon Open Library par l'ISBN (absente : le téléchargement échoue).
+      coverUrl:
+          open?.coverUrl ??
+          google?.coverUrl ??
+          bnf?.coverUrl ??
+          'https://covers.openlibrary.org/b/isbn/$isbn-L.jpg?default=false',
     );
   }
 
@@ -126,6 +159,70 @@ class BookLookup {
           : null,
     );
   }
+
+  /// Le catalogue général de la BnF (SRU, notice en Dublin Core) :
+  /// « Titre : sous-titre / Auteur », « Nom, Prénom (1961-....). Auteur du
+  /// texte », « Éditeur (Ville) ».
+  Future<BookInfo?> _bnf(String isbn) async {
+    final response = await _client
+        .get(
+          Uri.https('catalogue.bnf.fr', '/api/SRU', {
+            'version': '1.2',
+            'operation': 'searchRetrieve',
+            'query': 'bib.isbn adj "$isbn"',
+            'recordSchema': 'dublincore',
+            'maximumRecords': '1',
+          }),
+        )
+        .timeout(_timeout);
+    if (response.statusCode != 200) return null;
+    final record = RegExp(r'<oai_dc:dc[\s\S]*?</oai_dc:dc>')
+        .firstMatch(utf8.decode(response.bodyBytes))
+        ?.group(0);
+    if (record == null) return null;
+    List<String> all(String tag) => [
+      for (final m in RegExp(
+        '<dc:$tag(?:\\s[^>]*)?>([\\s\\S]*?)</dc:$tag>',
+      ).allMatches(record))
+        _xmlText(m.group(1)!),
+    ];
+    final title = (all('title').firstOrNull ?? '')
+        .split(' / ')
+        .first
+        .replaceAll(RegExp(r'\s*\[[^\]]*\]'), '')
+        .trim();
+    return (
+      title: title,
+      authors: [
+        for (final creator in all('creator'))
+          if (_person(creator) case final name when name.isNotEmpty) name,
+      ].join(', '),
+      publisher: (all('publisher').firstOrNull ?? '')
+          .replaceFirst(RegExp(r'\s*\([^)]*\)\s*$'), '')
+          .trim(),
+      year: _year(all('date').firstOrNull),
+      isbn: isbn,
+      coverUrl: null,
+    );
+  }
+
+  /// « Mallet, Jean-François (1961-....). Auteur du texte » → « Jean-François
+  /// Mallet ».
+  static String _person(String text) {
+    final name = text.split(RegExp(r'\s*\(|\.\s')).first.trim();
+    final parts = name.split(', ');
+    return parts.length == 2 ? '${parts[1]} ${parts[0]}' : name;
+  }
+
+  static String _xmlText(String text) => text
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&apos;', "'")
+      .replaceAll('&#39;', "'")
+      .replaceAll('&amp;', '&')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
 
   /// « 2014-10-01 », « 2014 », « oct. 2014 » → 2014.
   static int? _year(Object? date) {

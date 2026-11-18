@@ -17,9 +17,11 @@ téléphone et tablette. Nom provisoire : « Recettes ».
 - Une version de la roadmap à la fois. On ne commence la suivante qu'après validation.
 - Retours de test : GitHub Issues (modèles Bug / Amélioration / Idée).
 - Branches : travail sur une branche de fonctionnalité → PR vers `develop` (CI verte obligatoire)
-  → à la validation, PR `develop` → `main` puis workflow « Release » lancé sur `main` avec le
-  numéro (il pose le tag `vX.Y.Z`, voir `docs/decisions/0003-…`). La session cloud ne peut pas
-  pousser de tag : passer par ce workflow.
+  → PR `develop` → `main` puis workflow « Release » lancé sur `main` avec le numéro (il pose le
+  tag `vX.Y.Z`, voir `docs/decisions/0003-…`). La session cloud ne peut pas pousser de tag :
+  passer par ce workflow.
+- **Pas de version de test** (`docs/decisions/0005-releases-directes.md`) : chaque correction
+  part directement en release (`1.1.1`, `1.1.2`…), testée sur l'application principale.
 - Chaque version livrée a ses notes dans `docs/releases/vX.Y.Z.md` (obligatoire pour la release),
   avec une **checklist de test** concrète.
 - Pas d'IA dans l'app (`docs/decisions/0004-sans-ia.md`).
