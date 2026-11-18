@@ -502,8 +502,8 @@ t'intéresse pour l'instant.
   montre son livre
 - **Scanner le code-barres** au dos du livre : la fiche se remplit (titre, auteurs, éditeur,
   année, couverture) depuis Google Books et Open Library ; seul l'ISBN est envoyé
-- **Retrouver mes livres** : les livres cités dans le champ « Source » des recettes deviennent des
-  livres, et leurs recettes y sont reliées (avec la page quand elle est écrite)
+- ~~Retrouver mes livres~~ (les livres cités dans « Source ») : utilisé une fois sur la version de
+  test, puis retiré (retour du 2026-11-18 : plus besoin)
 - Livres et couvertures dans les sauvegardes (format 14) et la synchro
 
 *Décisions du 2026-11-18* : une vingtaine de livres ; un onglet dédié, à la place de Réglages

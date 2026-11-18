@@ -11,7 +11,6 @@ import '../../l10n/app_localizations.dart';
 import '../recipes/recipe_providers.dart';
 import 'book_add.dart';
 import 'book_cover.dart';
-import 'book_links_page.dart';
 import 'book_providers.dart';
 
 enum _BookSort { title, author, recipes }
@@ -89,12 +88,6 @@ class _BooksPageState extends ConsumerState<BooksPage> {
               ),
             ],
           ),
-          IconButton(
-            key: const ValueKey('books-find-sources'),
-            tooltip: l10n.bookLinksTitle,
-            icon: const Icon(Icons.auto_fix_high_outlined),
-            onPressed: () => showBookLinks(context),
-          ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -124,13 +117,6 @@ class _BooksPageState extends ConsumerState<BooksPage> {
                       l10n.booksEmpty,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      key: const ValueKey('books-empty-sources'),
-                      onPressed: () => showBookLinks(context),
-                      icon: const Icon(Icons.auto_fix_high_outlined),
-                      label: Text(l10n.bookLinksTitle),
                     ),
                   ],
                 ),
