@@ -1209,11 +1209,9 @@
   "statsIngredients": "Ingrédients les plus utilisés",
   "statsInRecipes": "Nombre de recettes qui en contiennent (sel, poivre et basiques à part)",
   "statsBestRated": "Les mieux notées",
-  "statsRating": "{count, plural, =1{1 étoile} other{{count} étoiles}}",
-  "@statsRating": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
+  "ratingValue": "{value} étoiles sur 5",
+  "@ratingValue": {
+    "placeholders": {"value": {"type": "String"}}
   },
   "errorLogTitle": "Journal des erreurs",
   "errorLogSubtitle": "Ce qui n'a pas marché, pour me le signaler",

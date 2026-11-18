@@ -22,7 +22,7 @@ Recipe recipe(
   String id, {
   String ingredients = '',
   int? prep,
-  int? rating,
+  double? rating,
   RecipeStatus? status,
   bool favorite = false,
 }) => Recipe(

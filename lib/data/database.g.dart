@@ -684,7 +684,8 @@ class RecipeRow extends DataClass implements Insertable<RecipeRow> {
   /// Favori ; ajouté en v3.
   final bool isFavorite;
 
-  /// Note de 1 à 5, `null` si non notée ; ajouté en v3.
+  /// Note en demi-étoiles, de 1 (½) à 10 (5 étoiles), `null` si non notée ;
+  /// ajouté en v3 (de 1 à 5 jusqu'en v15).
   final int? rating;
 
   /// `toTest`, `validated`, `toImprove` ou `null` ; ajouté en v3.

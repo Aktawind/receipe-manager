@@ -12,7 +12,7 @@ recettes-2026-10-27-1430.zip
 
 ## Règles de compatibilité
 
-- Le champ `version` indique la version du format (actuellement **14**).
+- Le champ `version` indique la version du format (actuellement **15**).
 - Toute version de l'application sait lire **toutes les versions précédentes** du format.
 - Une sauvegarde d'une version **plus récente** que l'application est refusée, sans rien
   modifier (message : « Mets l'application à jour »).
@@ -37,6 +37,9 @@ recettes-2026-10-27-1430.zip
 | 12 | 0.11.0 | Types de plat d'un créneau (`mealSlots[].categories`) ; temps d'une planification `null` = sans limite |
 | 13 | 0.11.0 | Recherches enregistrées (`savedSearches`), synchronisées ; avant, gardées sur l'appareil et absentes des sauvegardes |
 | 14 | 1.1.0 | Livres de cuisine (`books`, avec leur couverture dans `photos/`) ; livre et page d'une recette (`book`, `bookPage`), écrits seulement quand ils sont renseignés |
+| 15 | 1.1.2 | Note par demi-étoile : `rating` est un nombre de 0.5 à 5 par pas de 0.5 (`4.5`) ; une note ronde reste écrite en entier (`4`) |
+
+Lecture d'une version 14 (et avant) : la note est un entier de 1 à 5 (des étoiles entières).
 
 Lecture d'une version 13 (et avant) : pas de livres ; aucune recette n'est reliée à un livre (la
 source reste telle quelle).

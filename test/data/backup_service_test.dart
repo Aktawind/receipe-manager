@@ -223,13 +223,73 @@ void main() {
     expect((await target.repo.getRecipe('old-1'))!.notes, contains('Précuire'));
   });
 
-  test('l’export est en version 14, sans champ « tips »', () async {
+  test('la note en demi-étoiles (v15) ; une note entière de la v14', () {
+    Recipe recipe(double? rating) => Recipe(
+      id: 'r',
+      title: 'Tarte',
+      rating: rating,
+      createdAt: DateTime.utc(2026, 11),
+      updatedAt: DateTime.utc(2026, 11),
+    );
+    Map<String, Object?> written(double? rating) =>
+        ((jsonDecode(
+                      jsonEncode(
+                        BackupFormat.encode(
+                          [recipe(rating)],
+                          exportedAt: DateTime.utc(2026, 11),
+                          appVersion: '1.1.3',
+                        ),
+                      ),
+                    ) as Map<String, Object?>)['recipes']
+                    as List)
+                .single
+            as Map<String, Object?>;
+    expect(written(4.5)['rating'], 4.5);
+    // Une note ronde reste un entier, comme avant.
+    expect(written(4)['rating'], 4);
+    final half = BackupFormat.decode(
+      jsonDecode(
+        jsonEncode(
+          BackupFormat.encode(
+            [recipe(4.5)],
+            exportedAt: DateTime.utc(2026, 11),
+            appVersion: '1.1.3',
+          ),
+        ),
+      ),
+    );
+    expect(half.recipes.single.rating, 4.5);
+
+    Map<String, Object?> v14(Object rating) => {
+      'format': 'recettes-backup',
+      'version': 14,
+      'recipes': [
+        {
+          'id': 'r',
+          'title': 'Tarte',
+          'rating': rating,
+          'createdAt': '2026-11-01T08:00:00Z',
+          'updatedAt': '2026-11-01T08:00:00Z',
+        },
+      ],
+    };
+    expect(BackupFormat.decode(v14(4)).recipes.single.rating, 4);
+    for (final bad in [0, 6, 4.3]) {
+      expect(
+        () => BackupFormat.decode(v14(bad)),
+        throwsA(isA<BackupFormatException>()),
+        reason: '$bad',
+      );
+    }
+  });
+
+  test('l’export est en version 15, sans champ « tips »', () async {
     await addRecipe(source, 'Tarte');
     final archive = ZipDecoder().decodeBytes(await source.service.exportZip());
     final json = jsonDecode(
       utf8.decode(archive.findFile(BackupFormat.dataFile)!.content),
     ) as Map<String, Object?>;
-    expect(json['version'], 14);
+    expect(json['version'], 15);
     final recipe = (json['recipes'] as List).single as Map<String, Object?>;
     expect(recipe.containsKey('tips'), isFalse);
   });
